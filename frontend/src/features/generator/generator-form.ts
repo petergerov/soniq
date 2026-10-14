@@ -2,10 +2,11 @@
 import type { AnalyzeResult, GenerateRequest, Song } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { byId, restartAnimation, scrollToTop } from "../../core/dom.ts";
+import { storage } from "../../core/storage.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import { BubbleSlider } from "./bubble-slider.ts";
 import { LyricsEditor } from "./lyrics-editor.ts";
-import { randomPrompt, randomStyle, randomTitle } from "./random-content.ts";
+import { randomPrompt, randomStyle, randomTitle, varyPrompt, varyStyle } from "./random-content.ts";
 import { StyleChips } from "./style-chips.ts";
 
 interface FormControls extends HTMLFormControlsCollection {
@@ -32,6 +33,10 @@ export interface GeneratorFormDeps {
 
 const DEFAULTS = { duration: 90, inferenceSteps: 50, lmTemperature: 0.85, language: "en" };
 
+/** Felder, die Zufall und Variation unverändert lassen (pro Browser gemerkt). */
+type LockableField = "prompt" | "style";
+const LOCKS_KEY = "lockedFields";
+
 /** Auswahlfeld setzen; unbekannte Werte werden ergänzt (Tonart aus der Analyse) oder fallen auf Auto zurück. */
 function setSelect(select: HTMLSelectElement, value: string | null | undefined, addUnknown = false): void {
   let v = value || "";
@@ -55,6 +60,7 @@ export class GeneratorForm {
   private readonly styleChips: StyleChips;
   private readonly lyrics: LyricsEditor;
   private readonly sliders: Record<"duration" | "bpm" | "steps" | "temperature" | "variants", BubbleSlider>;
+  private readonly locked = new Set<LockableField>(storage.getJson<LockableField[]>(LOCKS_KEY, []));
 
   constructor(deps: GeneratorFormDeps) {
     this.deps = deps;
@@ -169,12 +175,24 @@ export class GeneratorForm {
     roll("diceBtn", this.f.prompt, () => randomPrompt());
     roll("titleDice", this.f.title, () => randomTitle());
     roll("styleDice", this.f.style, () => randomStyle(!this.lyrics.instrumental), () => this.styleChips.sync());
-    // Zufallsmodus: Prompt und Stil auf einen Klick
-    byId("randomBtn").addEventListener("click", (e) => {
-      this.f.prompt.value = randomPrompt();
-      this.f.style.value = randomStyle(!this.lyrics.instrumental);
-      this.styleChips.sync();
-      restartAnimation(e.currentTarget as HTMLElement, "roll");
+    // Zufall würfelt Prompt und Stil neu, Variation wandelt sie leicht ab; gesperrte Felder bleiben
+    const both = (buttonId: string, prompt: (text: string) => string, style: (text: string, withVocals: boolean) => string) =>
+      byId(buttonId).addEventListener("click", (e) => {
+        if (!this.locked.has("prompt")) this.f.prompt.value = prompt(this.f.prompt.value);
+        if (!this.locked.has("style")) this.f.style.value = style(this.f.style.value, !this.lyrics.instrumental);
+        this.styleChips.sync();
+        restartAnimation(e.currentTarget as HTMLElement, "roll");
+      });
+    both("randomBtn", () => randomPrompt(), (_, withVocals) => randomStyle(withVocals));
+    both("varyBtn", (text) => varyPrompt(text), (text, withVocals) => varyStyle(text, withVocals));
+    this.form.querySelectorAll<HTMLButtonElement>("button[data-lock]").forEach((button) => {
+      const field = button.dataset.lock as LockableField;
+      button.setAttribute("aria-pressed", String(this.locked.has(field)));
+      button.addEventListener("click", () => {
+        if (!this.locked.delete(field)) this.locked.add(field);
+        button.setAttribute("aria-pressed", String(this.locked.has(field)));
+        storage.setJson(LOCKS_KEY, [...this.locked]);
+      });
     });
   }
 

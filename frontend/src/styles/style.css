@@ -165,7 +165,11 @@ summary::before { content: ""; flex: none; width: 6px; height: 6px; margin: 0 6p
 details[open] > summary::before { transform: rotate(45deg); margin-bottom: 4px; }
 @media (prefers-reduced-motion: reduce) { summary::before { transition: none; } }
 summary > :first-child:not(:only-child) { margin-right: auto; }
-.randrow { display: flex; justify-content: flex-end; margin: -6px 0 6px; }
+.randrow { display: flex; justify-content: flex-end; gap: 8px; margin: -6px 0 6px; }
+.lblrow .dice-wrap { gap: 2px; }
+.dice.lock .shackle-closed, .dice.lock[aria-pressed="true"] .shackle-open { display: none; }
+.dice.lock[aria-pressed="true"] .shackle-closed { display: inline; }
+.dice.lock[aria-pressed="true"] { color: var(--accent-soft); background: var(--accent-tint); }
 .sek.rand { display: inline-flex; align-items: center; gap: 6px; }
 .sek.rand:hover { color: var(--accent-soft); }
 .sek.rand.roll svg { animation: roll .35s ease; }
