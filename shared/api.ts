@@ -199,7 +199,8 @@ export interface SetupStatus {
   packaged: boolean;
   /** Fertige App, deren Einrichtung fehlt oder unvollständig ist (dann zeigt die Oberfläche die Einrichtung) */
   needed: boolean;
-  phase: "idle" | "downloading" | "testing" | "starting" | "done" | "error";
+  /** verifying = vorhandene Dateien per Prüfsumme kontrollieren (file, done_mb, total_mb wie beim Download) */
+  phase: "idle" | "verifying" | "downloading" | "testing" | "starting" | "done" | "error";
   ram_gb: number;
   free_gb: number;
   recommended_lm: LmSize;

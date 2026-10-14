@@ -8,6 +8,13 @@ import type { Translate } from "../../i18n/i18n.ts";
 const POLL_MS = 1000;
 const LM_HINT: Record<LmSize, string> = { "0.6B": "setup_lm_small", "1.7B": "setup_lm_medium", "4B": "setup_lm_large" };
 
+/** Vorauswahl: ein schon vorhandenes Sprachmodell (die Empfehlung, wenn sie dabei ist, sonst das größte), sonst die Empfehlung. */
+function initialLm(s: SetupStatus): LmSize {
+  const present = s.lm_options.filter((o) => o.present).map((o) => o.size);
+  if (!present.length || present.includes(s.recommended_lm)) return s.recommended_lm;
+  return present[present.length - 1]!;
+}
+
 function gb(mb: number): string {
   return (mb / 1000).toFixed(1);
 }
@@ -60,7 +67,7 @@ export class SetupDialog {
   }
 
   private busy(s: SetupStatus): boolean {
-    return s.phase === "downloading" || s.phase === "testing" || s.phase === "starting";
+    return s.phase === "verifying" || s.phase === "downloading" || s.phase === "testing" || s.phase === "starting";
   }
 
   private get chosenLm(): LmSize {
@@ -86,7 +93,7 @@ export class SetupDialog {
 
   private renderChoice(s: SetupStatus, first: boolean): void {
     const { t } = this;
-    const selected = first ? s.recommended_lm : this.chosenLm;
+    const selected = first ? initialLm(s) : this.chosenLm;
     this.lmBox.replaceChildren(...s.lm_options.map((o) => {
       const label = document.createElement("label");
       label.className = "setup-option";
@@ -118,10 +125,12 @@ export class SetupDialog {
   private renderProgress(s: SetupStatus): void {
     const { t } = this;
     const bar = byId("setupBarFill");
-    const downloading = s.phase === "downloading";
+    // Prüfen und Laden zeigen echten Fortschritt, Test und Start nur einen laufenden Balken
+    const downloading = s.phase === "downloading" || s.phase === "verifying";
     bar.parentElement!.classList.toggle("busy", !downloading);
     bar.style.width = downloading && s.total_mb ? `${Math.min(100, (s.done_mb / s.total_mb) * 100)}%` : "";
-    byId("setupPhase").textContent = t(downloading ? "setup_downloading" : s.phase === "testing" ? "setup_testing" : "setup_starting");
+    const phase = { verifying: "setup_verifying", downloading: "setup_downloading", testing: "setup_testing" } as const;
+    byId("setupPhase").textContent = t(phase[s.phase as keyof typeof phase] ?? "setup_starting");
     byId("setupDetail").textContent = downloading ? `${s.file} · ${gb(s.done_mb)} / ${gb(s.total_mb)} GB` : "";
     byId<HTMLButtonElement>("setupCancel").hidden = !downloading;
   }

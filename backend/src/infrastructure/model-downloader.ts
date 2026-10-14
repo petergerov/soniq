@@ -15,10 +15,20 @@ async function size(path: string): Promise<number> {
   return stat(path).then((s) => s.size, () => 0);
 }
 
-async function sha256(path: string, signal: AbortSignal): Promise<string> {
+async function sha256(path: string, signal: AbortSignal, onProgress?: (bytes: number) => void): Promise<string> {
   const hash = createHash("sha256");
-  await pipeline(createReadStream(path), hash, { signal });
+  const stream = createReadStream(path, { highWaterMark: 4 << 20 });
+  if (onProgress) {
+    let bytes = 0;
+    stream.on("data", (chunk) => onProgress((bytes += chunk.length)));
+  }
+  await pipeline(stream, hash, { signal });
   return hash.digest("hex");
+}
+
+/** Prüft eine vorhandene Modelldatei per SHA-256 (z. B. vom Nutzer hineinkopiert). */
+export async function verifyModel(path: string, expectedSha: string, onProgress: (bytes: number) => void, signal: AbortSignal): Promise<boolean> {
+  return (await sha256(path, signal, onProgress)) === expectedSha;
 }
 
 /**

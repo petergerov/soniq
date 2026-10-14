@@ -1,6 +1,7 @@
 // Einrichtung der fertigen App (MG_PACKAGED): Modelle laden, Grafikchip testen, Modellserver starten.
 // Macht dasselbe wie der Installer (install.command), nur aus der Oberfläche heraus und im Hintergrund.
 import { mkdirSync, statfsSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { totalmem } from "node:os";
 import { join } from "node:path";
 import type { LmSize, SetupRequest, SetupStatus } from "../../../shared/api.ts";
@@ -10,8 +11,8 @@ import type { EngineConf, EngineMode } from "../infrastructure/engine-conf.ts";
 import type { EngineSupervisor } from "../infrastructure/engine-supervisor.ts";
 import { isFileSync } from "../infrastructure/files.ts";
 import { languageModelWorks } from "../infrastructure/lm-selftest.ts";
-import type { ModelCatalog } from "../infrastructure/model-catalog.ts";
-import { ChecksumError, downloadModel } from "../infrastructure/model-downloader.ts";
+import type { ModelCatalog, ModelFile } from "../infrastructure/model-catalog.ts";
+import { ChecksumError, downloadModel, verifyModel } from "../infrastructure/model-downloader.ts";
 
 export interface SetupServiceDeps {
   packaged: boolean;
@@ -46,7 +47,7 @@ export class SetupService {
   }
 
   private get busy(): boolean {
-    return this.phase === "downloading" || this.phase === "testing" || this.phase === "starting";
+    return this.phase === "verifying" || this.phase === "downloading" || this.phase === "testing" || this.phase === "starting";
   }
 
   /** Fertige App ohne getestete Einrichtung, oder es fehlen Modelldateien bzw. die acestep.cpp-Version ist neu. */
@@ -83,7 +84,11 @@ export class SetupService {
   start(request: SetupRequest): SetupStatus {
     if (!this.deps.packaged) throw new AppError("bad_request", "setup_unavailable");
     if (this.busy) throw new AppError("conflict", "setup_busy");
-    const missing = requiredFiles(this.deps.catalog, request.lm, request.xl).filter((f) => !this.has(f.name));
+    const required = requiredFiles(this.deps.catalog, request.lm, request.xl);
+    const missing = required.filter((f) => !this.has(f.name));
+    // Neue Einrichtung: schon vorhandene Dateien (z. B. hineinkopiert) einmal per Prüfsumme kontrollieren.
+    // Beim späteren Nachladen von XL sind sie schon geprüft.
+    const verify = this.deps.engineConf.get().mode ? [] : required.filter((f) => this.has(f.name));
     const needMb = missing.reduce((sum, f) => sum + f.mb, 0);
     const freeMb = this.freeMb();
     if (needMb && freeMb < needMb + RESERVE_MB) {
@@ -91,7 +96,7 @@ export class SetupService {
     }
     this.error = "";
     this.abort = new AbortController();
-    void this.run(request.lm, missing, this.abort.signal);
+    void this.run(request.lm, verify, missing, this.abort.signal);
     return this.status();
   }
 
@@ -127,9 +132,26 @@ export class SetupService {
     }
   }
 
-  private async run(size: LmSize, missing: ReturnType<typeof requiredFiles>, signal: AbortSignal): Promise<void> {
+  private async run(size: LmSize, verify: ModelFile[], missing: ModelFile[], signal: AbortSignal): Promise<void> {
     const { catalog, modelsDir, engineConf, engine, log } = this.deps;
     try {
+      if (verify.length) {
+        this.phase = "verifying";
+        this.totalBytes = verify.reduce((sum, f) => sum + f.mb * MB, 0);
+        this.doneBytes = 0;
+        for (const f of verify) {
+          this.file = f.name;
+          const before = this.doneBytes;
+          const path = join(modelsDir, f.name);
+          if (!(await verifyModel(path, f.sha256, (bytes) => { this.doneBytes = before + bytes; }, signal))) {
+            log(`Model ${f.name} is damaged, downloading it again`);
+            await rm(path, { force: true });
+            missing = [...missing, f];
+          }
+          this.doneBytes = before + f.mb * MB;
+        }
+        signal.throwIfAborted();
+      }
       this.phase = "downloading";
       this.totalBytes = missing.reduce((sum, f) => sum + f.mb * MB, 0);
       this.doneBytes = 0;
