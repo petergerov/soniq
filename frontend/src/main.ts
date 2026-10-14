@@ -86,9 +86,15 @@ store.onChange(() => {
 const health = new HealthIndicator(api, t);
 // Fertige App ohne Modelle: Einrichtung zeigen
 const setup = new SetupDialog(api, t, () => void health.check());
-void setup.check();
 const updates = new UpdatePanel(api, t);
-new SettingsDialog(api, () => updates.reset(), () => void health.check());
+// Fertige App: beim Start still nach einem neuen Release sehen und dann das Zahnrad markieren
+void setup.check().then(async (packaged) => {
+  if (!packaged || !(await updates.hasNewRelease())) return;
+  const gear = byId("btnSettings");
+  gear.classList.add("has-update");
+  gear.title = t("upd_badge");
+});
+new SettingsDialog(api, () => updates.reset(), () => void health.check(), () => void setup.addXl());
 new ServerControl(api, t, () => store.stopPolling(), () => void store.refresh());
 
 i18n.onChange(() => {

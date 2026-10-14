@@ -3,21 +3,25 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { UpdateStatus } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
+import { compareVersions } from "../domain/version.ts";
+import { latestRelease } from "../infrastructure/github-releases.ts";
 import { GitError, type Git } from "../infrastructure/git.ts";
 import { psQuote, type ProcessLauncher } from "../infrastructure/process-launcher.ts";
 import type { SongRepository } from "../infrastructure/song-repository.ts";
 import type { Translate } from "../i18n/translator.ts";
 
 export const BRANCH = "main";
-export const REPO_URL = "https://github.com/petergerov/soniq.git";
+export const REPO = "petergerov/soniq";
+export const REPO_URL = `https://github.com/${REPO}.git`;
 /** Ändern sich diese Dateien (neue acestep.cpp- oder Node-Version), muss der Installer noch einmal laufen. */
 const INSTALLER_FILES = ["scripts/common.sh", "scripts/common.ps1"];
 
 export interface UpdateServiceDeps {
   root: string;
   platform: NodeJS.Platform;
-  /** Fertige App: kommt als neue App-Version, nicht per Git */
+  /** Fertige App: kommt als neue App-Version (GitHub-Release), nicht per Git */
   packaged: boolean;
+  appVersion: string;
   git: Git;
   songs: SongRepository;
   launcher: ProcessLauncher;
@@ -34,7 +38,7 @@ export class UpdateService {
   }
 
   async status(t: Translate): Promise<UpdateStatus> {
-    if (this.deps.packaged) throw new AppError("bad_request", "upd_packaged");
+    if (this.deps.packaged) return this.releaseStatus();
     const { git } = this.deps;
     if (!(await this.hasHead())) {
       // Ohne Git installiert (z. B. als ZIP geladen): Version unbekannt, das Update stellt auf Git um
@@ -58,6 +62,7 @@ export class UpdateService {
   }
 
   async apply(t: Translate): Promise<UpdateStatus> {
+    if (this.deps.packaged) throw new AppError("bad_request", "upd_packaged");
     if (this.deps.songs.countActive()) throw new AppError("conflict", "busy");
     const s = await this.status(t);
     if (!s.behind) throw new AppError("bad_request", "up_to_date");
@@ -88,6 +93,23 @@ export class UpdateService {
       }
       process.kill(process.pid, "SIGTERM");
     }, delayMs);
+  }
+
+  /** Fertige App: neuestes GitHub-Release mit der eigenen Version vergleichen. */
+  private async releaseStatus(): Promise<UpdateStatus> {
+    let release;
+    try {
+      release = await latestRelease(REPO);
+    } catch {
+      throw new AppError("upstream", "gh_unreachable");
+    }
+    const current = this.deps.appVersion;
+    const newer = !!release && compareVersions(release.version, current) > 0;
+    return {
+      current, latest: release?.version || current, behind: newer ? 1 : 0, ahead: 0,
+      changes: newer ? release!.notes : [], dirty: false, needs_install: false,
+      packaged: true, download_url: newer ? release!.downloadUrl : undefined,
+    };
   }
 
   /** Verständlicher Text für Git-Fehler. */

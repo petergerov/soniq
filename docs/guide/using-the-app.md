@@ -133,6 +133,11 @@ moves the existing songs there. Leaving the field empty means back to default.
 In the app: **Gear › Check for updates › Update now**. The app fetches the new version from GitHub and restarts;
 your songs are kept. If it reports a new installer version, run **install** once afterwards.
 
+**Mac app (SONIQ.app):** at start the app looks for a new version on GitHub; if there is one, the gear gets a dot.
+**Gear › Check for updates** then shows what is new and **Download new version**: open the DMG and drag SONIQ to
+Applications (replace). Songs, settings and models stay in `~/Library/Application Support/SONIQ`.
+In the Mac app, a missing XL sound model can be downloaded under **Gear › Sound model**.
+
 ---
 
 Something not working? See [Help](troubleshooting.md).

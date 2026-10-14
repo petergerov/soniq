@@ -251,6 +251,7 @@
     <label class="field"><span class="lbl" title="" data-i18n-title="dit_tip" data-i18n="dit">Klangmodell</span>
       <select name="dit"><option value="standard" data-i18n="dit_standard">Standard</option><option value="xl" data-i18n="dit_xl">XL</option></select>
       <span class="small" id="ditHint" hidden data-i18n="dit_xl_missing"></span>
+      <button type="button" id="ditGetXl" class="sek" hidden data-i18n="dit_xl_get">XL-Klangmodell laden (5,1 GB)</button>
     </label>
     <label class="field"><span class="lbl" title="" data-i18n-title="out_fmt_tip" data-i18n="out_fmt">Ausgabeformat</span>
       <select name="output_format">
@@ -269,6 +270,7 @@
       <div class="upd-row"><button type="button" id="updCheck" class="sek" data-i18n="upd_check">Nach Updates suchen</button><span id="updInfo" class="small"></span></div>
       <ul id="updList" class="upd-list" hidden></ul>
       <button type="button" id="updApply" class="aktion" hidden data-i18n="upd_apply">JETZT AKTUALISIEREN</button>
+      <a id="updDownload" class="aktion" hidden target="_blank" rel="noopener" data-i18n="upd_download">NEUE VERSION LADEN</a>
     </div>
     <div class="field"><span class="lbl" data-i18n="servers">Server</span>
       <div class="upd-row"><button type="button" id="stopBtn" class="sek danger" data-i18n="stop">Server stoppen</button><span id="stopInfo" class="small"></span></div>

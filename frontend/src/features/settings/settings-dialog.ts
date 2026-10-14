@@ -18,17 +18,24 @@ export class SettingsDialog {
   private readonly api: ApiClient;
   private readonly onOpen: () => void;
   private readonly onSaved: () => void;
+  private readonly onGetXl: () => void;
   private readonly dialog = byId<HTMLDialogElement>("settingsDlg");
   private readonly f = byId<HTMLFormElement>("settingsForm").elements as SettingsControls;
 
   /**
    * @param onOpen   beim Öffnen (z. B. Update-Bereich zurücksetzen)
    * @param onSaved  nach dem Speichern (z. B. Serverstatus neu prüfen)
+   * @param onGetXl  fertige App: XL-Klangmodell nachladen (über die Einrichtung)
    */
-  constructor(api: ApiClient, onOpen: () => void, onSaved: () => void) {
+  constructor(api: ApiClient, onOpen: () => void, onSaved: () => void, onGetXl: () => void) {
     this.api = api;
     this.onOpen = onOpen;
     this.onSaved = onSaved;
+    this.onGetXl = onGetXl;
+    byId("ditGetXl").addEventListener("click", () => {
+      this.dialog.close();
+      this.onGetXl();
+    });
     byId("btnSettings").addEventListener("click", () => void this.open());
     this.dialog.addEventListener("close", () => {
       if (this.dialog.returnValue === "save") void this.save();
@@ -45,7 +52,9 @@ export class SettingsDialog {
     this.f.dit.value = s.dit;
     this.f.output_format.value = s.output_format;
     this.f.dit.querySelector<HTMLOptionElement>('option[value="xl"]')!.disabled = !s.dit_xl_available;   // XL nur, wenn die Datei da ist
-    byId("ditHint").hidden = s.dit_xl_available;
+    // Fehlt XL: in der fertigen App ein Knopf zum Nachladen, sonst der Hinweis auf den Installer
+    byId("ditHint").hidden = s.dit_xl_available || s.packaged;
+    byId("ditGetXl").hidden = s.dit_xl_available || !s.packaged;
     this.onOpen();
     this.dialog.showModal();
   }

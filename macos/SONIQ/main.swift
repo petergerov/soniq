@@ -97,6 +97,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     serverEnv["MG_DATA_DIR"] = dataDir.path
     serverEnv["MG_MODELS_DIR"] = modelsDir.path
     serverEnv["MG_ENGINE_BIN"] = contents.appendingPathComponent("MacOS/ace-server").path
+    // Version der App (für die Update-Prüfung gegen GitHub-Releases)
+    serverEnv["MG_APP_VERSION"] = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
     process.environment = serverEnv
     if !FileManager.default.fileExists(atPath: logFile.path) { FileManager.default.createFile(atPath: logFile.path, contents: nil) }
     if let log = try? FileHandle(forWritingTo: logFile) {

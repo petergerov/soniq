@@ -25,6 +25,8 @@ export interface AppConfig {
   /** Modellserver acestep.cpp; die fertige App startet ihn selbst */
   engineBin: string;
   platform: NodeJS.Platform;
+  /** Versionsnummer: von der App (MG_APP_VERSION, aus Info.plist) oder aus package.json */
+  appVersion: string;
   /** Läuft als fertige App (z. B. SONIQ.app): Oberfläche liegt gebaut bei, keine Git-Updates, Start/Stopp macht die App */
   packaged: boolean;
 }
@@ -43,6 +45,15 @@ export function readKeyValueFile(path: string): Record<string, string> {
     if (eq > 0) result[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
   }
   return result;
+}
+
+/** "version" aus package.json des Programmordners ("" wenn nicht lesbar). */
+function packageVersion(root: string): string {
+  try {
+    return String((JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as { version?: unknown }).version ?? "");
+  } catch {
+    return "";
+  }
 }
 
 function parsePort(value: string | undefined, fallback: number): number {
@@ -72,5 +83,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
     engineBin: env.MG_ENGINE_BIN ? resolve(env.MG_ENGINE_BIN) : join(root, "engine", "acestep.cpp", "build", "ace-server"),
     platform: process.platform,
     packaged: env.MG_PACKAGED === "1",
+    appVersion: env.MG_APP_VERSION || packageVersion(root),
   };
 }

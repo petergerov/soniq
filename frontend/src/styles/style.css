@@ -444,3 +444,9 @@ dialog.setup { width: min(560px, calc(100vw - 32px)); }
 .setup-bar.busy > div { width: 35% !important; animation: setup-busy 1.4s ease-in-out infinite alternate; }
 @keyframes setup-busy { from { margin-left: 0; } to { margin-left: 65%; } }
 @media (prefers-reduced-motion: reduce) { .setup-bar.busy > div { animation: none; } }
+
+/* Fertige App: neues Release verfügbar (Punkt am Zahnrad) */
+.gear.has-update { position: relative; }
+.gear.has-update::after { content: ""; position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent-soft); }
+#updDownload { display: inline-block; text-decoration: none; margin-top: 10px; }
+#updDownload[hidden] { display: none; }

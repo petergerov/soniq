@@ -14,6 +14,7 @@ export interface SettingsServiceDeps {
   songs: SongRepository;
   storage: SongStorage;
   modelsDir: string;
+  packaged: boolean;
 }
 
 const POSITIVE_NUMBERS = ["timeout_minutes", "poll_interval"] as const;
@@ -26,7 +27,7 @@ export class SettingsService {
   }
 
   view(): SettingsView {
-    return { ...this.deps.settings.get(), songs_dir_default: this.deps.storage.defaultDirectory, dit_xl_available: this.xlAvailable() };
+    return { ...this.deps.settings.get(), songs_dir_default: this.deps.storage.defaultDirectory, dit_xl_available: this.xlAvailable(), packaged: this.deps.packaged };
   }
 
   async update(input: Record<string, unknown>): Promise<Settings> {

@@ -12,5 +12,9 @@ export function registerSetupRoutes(router: Router, setup: SetupService): void {
       if (!isLmSize(body.lm)) throw new HttpError(422, 'lm: "0.6B", "1.7B" or "4B" expected');
       return setup.start({ lm: body.lm, xl: body.xl === true });
     })
+    .post("/api/setup/xl", (ctx) => {
+      requireLangHeader(ctx);
+      return setup.addXl();
+    })
     .post("/api/setup/cancel", () => setup.cancel());
 }

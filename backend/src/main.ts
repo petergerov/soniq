@@ -79,7 +79,7 @@ async function main(): Promise<void> {
   const generation = new GenerationService({ songs, folders, storage, jobs: worker });
   const library = new LibraryService({ songs, folders, storage });
   const folderService = new FolderService(folders, songs);
-  const settingsService = new SettingsService({ settings, songs, storage, modelsDir: config.modelsDir });
+  const settingsService = new SettingsService({ settings, songs, storage, modelsDir: config.modelsDir, packaged: config.packaged });
   const analysis = new AnalysisService(settings, engineFactory);
   const system = new SystemService({ root: config.root, platform: config.platform, packaged: config.packaged, settings, engineFactory, launcher });
   // Fertige App: Modellserver startet das Backend selbst, die Einrichtung lädt Modelle und testet den Grafikchip
@@ -88,7 +88,7 @@ async function main(): Promise<void> {
     packaged: config.packaged, catalog: loadCatalog(config.root), modelsDir: config.modelsDir, engineConf, engine, synthPort: config.synthPort, log,
   });
   const updates = new UpdateService({
-    root: config.root, platform: config.platform, packaged: config.packaged, git: new Git(config.root), songs, launcher, port: config.port,
+    root: config.root, platform: config.platform, packaged: config.packaged, appVersion: config.appVersion, git: new Git(config.root), songs, launcher, port: config.port,
     serverCommand: [process.execPath, ...process.execArgv, config.entryFile, "--port", String(config.port)],
   });
 

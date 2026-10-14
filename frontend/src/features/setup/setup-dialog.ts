@@ -34,13 +34,23 @@ export class SetupDialog {
     byId("setupCancel").addEventListener("click", () => void this.api.cancelSetup().then((s) => this.show(s)));
   }
 
-  /** Beim Laden der Seite: Einrichtung nötig oder schon im Gange? Dann zeigen. */
-  async check(): Promise<void> {
+  /** Beim Laden der Seite: Einrichtung nötig oder schon im Gange? Dann zeigen. Liefert, ob es die fertige App ist. */
+  async check(): Promise<boolean> {
     try {
       const s = await this.api.setup();
       if (s.needed || this.busy(s)) this.show(s);
+      return s.packaged;
     } catch {
-      // Server (noch) nicht erreichbar: dann ohne Einrichtung
+      return false;   // Server (noch) nicht erreichbar: dann ohne Einrichtung
+    }
+  }
+
+  /** Fertige App, Einstellungen › Klangmodell: XL nachladen; zeigt den Fortschritt wie bei der Einrichtung. */
+  async addXl(): Promise<void> {
+    try {
+      this.show(await this.api.addXl());
+    } catch (e) {
+      alert((e as Error).message);
     }
   }
 

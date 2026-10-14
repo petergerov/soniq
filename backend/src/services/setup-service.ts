@@ -63,6 +63,7 @@ export class SetupService {
     const ramGb = Math.round(totalmem() / 2 ** 30);
     const xl = xlFile(catalog);
     return {
+      packaged: this.deps.packaged,
       needed: this.needed(),
       phase: this.phase,
       ram_gb: ramGb,
@@ -92,6 +93,13 @@ export class SetupService {
     this.abort = new AbortController();
     void this.run(request.lm, missing, this.abort.signal);
     return this.status();
+  }
+
+  /** XL-Klangmodell nachladen (Einstellungen › Klangmodell); das Sprachmodell bleibt das eingerichtete. */
+  addXl(): SetupStatus {
+    const size = LM_SIZES.find((s) => lmFileName(s) === this.deps.engineConf.get().lmFile);
+    if (!this.deps.packaged || !size) throw new AppError("bad_request", "setup_unavailable");
+    return this.start({ lm: size, xl: true });
   }
 
   cancel(): SetupStatus {

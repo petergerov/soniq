@@ -153,6 +153,8 @@ export interface Settings {
 export interface SettingsView extends Settings {
   songs_dir_default: string;
   dit_xl_available: boolean;
+  /** Fertige App: XL lässt sich über die Einrichtung nachladen statt über den Installer */
+  packaged: boolean;
 }
 
 export interface AnalyzeResult {
@@ -181,6 +183,9 @@ export interface UpdateStatus {
   dirty: boolean;
   needs_install: boolean;
   nogit?: boolean;
+  /** Fertige App: Update kommt als neue DMG (download_url), nicht per git */
+  packaged?: boolean;
+  download_url?: string;
 }
 
 export type UpdateCheck = ({ ok: true } & UpdateStatus) | { ok: false; error: string };
@@ -190,6 +195,8 @@ export type LmSize = "0.6B" | "1.7B" | "4B";
 
 /** Einrichtung der fertigen App: Modelle laden, Grafikchip testen, Modellserver starten. */
 export interface SetupStatus {
+  /** Läuft als fertige App (MG_PACKAGED) */
+  packaged: boolean;
   /** Fertige App, deren Einrichtung fehlt oder unvollständig ist (dann zeigt die Oberfläche die Einrichtung) */
   needed: boolean;
   phase: "idle" | "downloading" | "testing" | "starting" | "done" | "error";

@@ -97,6 +97,9 @@ export const TRANSLATIONS = {
     upd_loading: "Lade herunter …", upd_restart: "Installiert, App startet neu …",
     upd_restart_install: "Aktualisiert. Bitte einmal install starten (neue Modellversion), dann diese Seite neu laden.",
     upd_slow: "Neustart dauert ungewöhnlich lang. Bitte „start“ ausführen.",
+    upd_new_app: (v, cur) => `Version ${v} ist verfügbar (du hast ${cur})`, upd_download: "NEUE VERSION LADEN",
+    upd_download_hint: " · Öffne die DMG und ziehe SONIQ nach „Programme“ (ersetzen). Songs und Modelle bleiben.", upd_badge: "Neue Version von SONIQ verfügbar (Einstellungen › Nach Updates suchen)",
+    dit_xl_get: "XL-Klangmodell laden (5,1 GB)",
   },
   en: {
     vocals: "Composition", instrumental: "Instrumental", song: "Song",
@@ -178,6 +181,9 @@ export const TRANSLATIONS = {
     upd_loading: "Downloading …", upd_restart: "Installed, app is restarting …",
     upd_restart_install: "Updated. Please run install once (new model version), then reload this page.",
     upd_slow: "Restart is taking unusually long. Please run “start”.",
+    upd_new_app: (v, cur) => `Version ${v} is available (you have ${cur})`, upd_download: "DOWNLOAD NEW VERSION",
+    upd_download_hint: " · Open the DMG and drag SONIQ to Applications (replace). Songs and models stay.", upd_badge: "New version of SONIQ available (Settings › Check for updates)",
+    dit_xl_get: "Download XL sound model (5.1 GB)",
   },
   es: {
     vocals: "Composición", instrumental: "Instrumental", song: "Canción",
@@ -259,6 +265,9 @@ export const TRANSLATIONS = {
     upd_loading: "Descargando …", upd_restart: "Instalado, la aplicación se reinicia …",
     upd_restart_install: "Actualizado. Ejecuta install una vez (nueva versión del modelo) y luego recarga esta página.",
     upd_slow: "El reinicio tarda más de lo normal. Ejecuta «start».",
+    upd_new_app: (v, cur) => `La versión ${v} está disponible (tienes ${cur})`, upd_download: "DESCARGAR NUEVA VERSIÓN",
+    upd_download_hint: " · Abre el DMG y arrastra SONIQ a Aplicaciones (reemplazar). Las canciones y los modelos se conservan.", upd_badge: "Nueva versión de SONIQ disponible (Ajustes › Buscar actualizaciones)",
+    dit_xl_get: "Descargar modelo de sonido XL (5,1 GB)",
   },
   fr: {
     vocals: "Composition", instrumental: "Instrumental", song: "Chanson",
@@ -340,6 +349,9 @@ export const TRANSLATIONS = {
     upd_loading: "Téléchargement …", upd_restart: "Installé, l'application redémarre …",
     upd_restart_install: "Mis à jour. Lance install une fois (nouvelle version du modèle), puis recharge cette page.",
     upd_slow: "Le redémarrage prend anormalement longtemps. Lance « start ».",
+    upd_new_app: (v, cur) => `La version ${v} est disponible (tu as la ${cur})`, upd_download: "TÉLÉCHARGER LA NOUVELLE VERSION",
+    upd_download_hint: " · Ouvre le DMG et glisse SONIQ dans Applications (remplacer). Morceaux et modèles sont conservés.", upd_badge: "Nouvelle version de SONIQ disponible (Réglages › Rechercher des mises à jour)",
+    dit_xl_get: "Télécharger le modèle sonore XL (5,1 Go)",
   },
   it: {
     vocals: "Composizione", instrumental: "Strumentale", song: "Canzone",
@@ -421,6 +433,9 @@ export const TRANSLATIONS = {
     upd_loading: "Download in corso …", upd_restart: "Installato, l'app si riavvia …",
     upd_restart_install: "Aggiornato. Avvia install una volta (nuova versione del modello), poi ricarica questa pagina.",
     upd_slow: "Il riavvio sta durando più del solito. Avvia «start».",
+    upd_new_app: (v, cur) => `È disponibile la versione ${v} (hai la ${cur})`, upd_download: "SCARICA LA NUOVA VERSIONE",
+    upd_download_hint: " · Apri il DMG e trascina SONIQ in Applicazioni (sostituisci). Brani e modelli restano.", upd_badge: "Nuova versione di SONIQ disponibile (Impostazioni › Cerca aggiornamenti)",
+    dit_xl_get: "Scarica il modello sonoro XL (5,1 GB)",
   },
   pt: {
     vocals: "Composição", instrumental: "Instrumental", song: "Canção",
@@ -502,6 +517,9 @@ export const TRANSLATIONS = {
     upd_loading: "Baixando …", upd_restart: "Instalado, o aplicativo está reiniciando …",
     upd_restart_install: "Atualizado. Execute o install uma vez (nova versão do modelo) e depois recarregue esta página.",
     upd_slow: "A reinicialização está demorando mais que o normal. Execute «start».",
+    upd_new_app: (v, cur) => `A versão ${v} está disponível (você tem a ${cur})`, upd_download: "BAIXAR NOVA VERSÃO",
+    upd_download_hint: " · Abra o DMG e arraste o SONIQ para Aplicativos (substituir). Músicas e modelos ficam.", upd_badge: "Nova versão do SONIQ disponível (Configurações › Procurar atualizações)",
+    dit_xl_get: "Baixar modelo de som XL (5,1 GB)",
   },
   tr: {
     vocals: "Kompozisyon", instrumental: "Enstrümantal", song: "Şarkı",
@@ -583,6 +601,9 @@ export const TRANSLATIONS = {
     upd_loading: "İndiriliyor …", upd_restart: "Yüklendi, uygulama yeniden başlıyor …",
     upd_restart_install: "Güncellendi. install'ı bir kez çalıştır (yeni model sürümü), sonra bu sayfayı yenile.",
     upd_slow: "Yeniden başlatma alışılmadık derecede uzun sürüyor. Lütfen «start» dosyasını çalıştır.",
+    upd_new_app: (v, cur) => `${v} sürümü mevcut (sende ${cur} var)`, upd_download: "YENİ SÜRÜMÜ İNDİR",
+    upd_download_hint: " · DMG'yi aç ve SONIQ'i Uygulamalar'a sürükle (değiştir). Şarkılar ve modeller kalır.", upd_badge: "SONIQ'in yeni sürümü mevcut (Ayarlar › Güncellemeleri ara)",
+    dit_xl_get: "XL ses modelini indir (5,1 GB)",
   },
   pl: {
     vocals: "Kompozycja", instrumental: "Instrumentalny", song: "Piosenka",
@@ -664,6 +685,9 @@ export const TRANSLATIONS = {
     upd_loading: "Pobieranie …", upd_restart: "Zainstalowano, aplikacja uruchamia się ponownie …",
     upd_restart_install: "Zaktualizowano. Uruchom raz install (nowa wersja modelu), a potem odśwież tę stronę.",
     upd_slow: "Ponowne uruchomienie trwa nietypowo długo. Uruchom „start”.",
+    upd_new_app: (v, cur) => `Dostępna jest wersja ${v} (masz ${cur})`, upd_download: "POBIERZ NOWĄ WERSJĘ",
+    upd_download_hint: " · Otwórz DMG i przeciągnij SONIQ do Aplikacji (zastąp). Utwory i modele zostają.", upd_badge: "Dostępna nowa wersja SONIQ (Ustawienia › Szukaj aktualizacji)",
+    dit_xl_get: "Pobierz model dźwięku XL (5,1 GB)",
   },
   ru: {
     vocals: "Композиция", instrumental: "Инструментал", song: "Песня",
@@ -745,6 +769,9 @@ export const TRANSLATIONS = {
     upd_loading: "Загрузка …", upd_restart: "Установлено, приложение перезапускается …",
     upd_restart_install: "Обновлено. Запусти install один раз (новая версия модели), затем перезагрузи эту страницу.",
     upd_slow: "Перезапуск длится необычно долго. Запусти «start».",
+    upd_new_app: (v, cur) => `Доступна версия ${v} (у тебя ${cur})`, upd_download: "ЗАГРУЗИТЬ НОВУЮ ВЕРСИЮ",
+    upd_download_hint: " · Открой DMG и перетащи SONIQ в «Программы» (заменить). Песни и модели сохранятся.", upd_badge: "Доступна новая версия SONIQ (Настройки › Проверить обновления)",
+    dit_xl_get: "Загрузить звуковую модель XL (5,1 ГБ)",
   },
   uk: {
     vocals: "Композиція", instrumental: "Інструментал", song: "Пісня",
@@ -826,6 +853,9 @@ export const TRANSLATIONS = {
     upd_loading: "Завантаження …", upd_restart: "Встановлено, застосунок перезапускається …",
     upd_restart_install: "Оновлено. Запусти install один раз (нова версія моделі), потім перезавантаж цю сторінку.",
     upd_slow: "Перезапуск триває незвично довго. Запусти «start».",
+    upd_new_app: (v, cur) => `Доступна версія ${v} (у тебе ${cur})`, upd_download: "ЗАВАНТАЖИТИ НОВУ ВЕРСІЮ",
+    upd_download_hint: " · Відкрий DMG і перетягни SONIQ у «Програми» (замінити). Пісні й моделі збережуться.", upd_badge: "Доступна нова версія SONIQ (Налаштування › Перевірити оновлення)",
+    dit_xl_get: "Завантажити звукову модель XL (5,1 ГБ)",
   },
   ja: {
     vocals: "構成", instrumental: "インスト", song: "歌あり",
@@ -907,6 +937,9 @@ export const TRANSLATIONS = {
     upd_loading: "ダウンロード中 …", upd_restart: "インストール完了、アプリを再起動中 …",
     upd_restart_install: "更新しました。install を一度実行し (新しいモデルバージョン)、このページを再読み込みしてください。",
     upd_slow: "再起動に通常より時間がかかっています。「start」を実行してください。",
+    upd_new_app: (v, cur) => `バージョン ${v} が利用できます (現在 ${cur})`, upd_download: "新しいバージョンをダウンロード",
+    upd_download_hint: " · DMG を開き、SONIQ を「アプリケーション」へドラッグ (置き換え)。曲とモデルはそのまま残ります。", upd_badge: "SONIQ の新しいバージョンがあります (設定 › アップデートを確認)",
+    dit_xl_get: "XL サウンドモデルをダウンロード (5.1 GB)",
   },
   zh: {
     vocals: "构成", instrumental: "纯音乐", song: "歌曲",
@@ -988,5 +1021,8 @@ export const TRANSLATIONS = {
     upd_loading: "正在下载 …", upd_restart: "已安装, 应用正在重启 …",
     upd_restart_install: "已更新。请运行一次 install (新的模型版本), 然后刷新本页。",
     upd_slow: "重启时间异常长。请运行「start」。",
+    upd_new_app: (v, cur) => `有新版本 ${v} (当前 ${cur})`, upd_download: "下载新版本",
+    upd_download_hint: " · 打开 DMG, 把 SONIQ 拖到“应用程序” (替换)。歌曲和模型会保留。", upd_badge: "SONIQ 有新版本 (设置 › 检查更新)",
+    dit_xl_get: "下载 XL 声音模型 (5.1 GB)",
   },
 } satisfies Record<Lang, Dictionary>;
