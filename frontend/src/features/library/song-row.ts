@@ -1,5 +1,5 @@
 // HTML einer Songzeile. Reine Darstellung: kennt weder API noch Ereignisse.
-import type { Song } from "../../../../shared/api.ts";
+import type { Song, Stem } from "../../../../shared/api.ts";
 import { escapeHtml as esc } from "../../core/dom.ts";
 import { formatDuration, generationTime } from "../../core/format.ts";
 import type { Translate } from "../../i18n/i18n.ts";
@@ -18,11 +18,18 @@ export interface SongRowContext {
   crossing: "from" | "pick" | null;
   /** Geschätzte Sekunden, bis der Song fertig ist (laufend/wartend), sonst undefined */
   eta: number | undefined;
+  /** Spurenliste aufgeklappt; stems = geladene Spuren (undefined = lädt noch) */
+  stemsOpen: boolean;
+  stems: Stem[] | undefined;
+  /** Spur, die gerade im Player ist, und ob sie läuft */
+  currentStemId: string | null;
+  stemPlaying: boolean;
 }
 
 const ICON_FOLDER = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`;
 const ICON_CROSS = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>`;
 const ICON_THUMB_DOWN = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 14V3"/><path d="M9 18.5L10 14H4.7a2 2 0 0 1-2-2.3l1.2-7A2 2 0 0 1 5.9 3H17v11l-4 7a2.4 2.4 0 0 1-4-2.5z"/></svg>`;
+const ICON_STEMS = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h13"/></svg>`;
 const ICON_REUSE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M12 3l7 7h-4v10h-6V10H5l7-7z"/></svg>`;
 
 export function shortCaption(song: Song): string {
@@ -99,6 +106,7 @@ function actionButtons(song: Song, lyrics: string, ctx: SongRowContext): string 
     done && `<button class="sek icon hide ${song.hidden ? "on" : ""}" data-a="hide" title="${t(song.hidden ? "unhide" : "hide")}">${ICON_THUMB_DOWN}</button>`,
     done && `<a class="download icon fmt" href="${song.url}?download=1" title="${t("download")}">${song.file?.endsWith(".wav") ? "WAV" : "MP3"}</a>`,
     lyrics && `<button class="sek icon txt ${ctx.lyricsOpen ? "on" : ""}" data-a="lyrics" title="${t("show_lyrics")}">TXT</button>`,
+    hasStems(song) && `<button class="sek icon ${ctx.stemsOpen ? "on" : ""}" data-a="stems" title="${t("stems_tip")}">${ICON_STEMS}</button>`,
     ctx.hasFolders && `<button class="sek icon" data-a="move" title="${t("move")}">${ICON_FOLDER}</button>`,
     `<button class="sek icon" data-a="more" title="${t("more")}">＋</button>`,
     `<button class="sek icon cross ${ctx.crossing === "from" ? "on" : ""}" data-a="cross" title="${t(ctx.crossing === "from" ? "cross_cancel" : ctx.crossing === "pick" ? "cross_pick" : "cross")}">${ICON_CROSS}</button>`,
@@ -122,11 +130,37 @@ function lyricsBlock(song: Song, lyrics: string, ctx: SongRowContext): string {
     `href="data:text/plain;charset=utf-8,${encodeURIComponent(lyrics)}" title="${ctx.t("lyrics_dl")}">TXT ↓</a></div>`;
 }
 
+/** Song mit Einzelspuren (fertig oder "Spur für Spur" in Arbeit) */
+export function hasStems(song: Song): boolean {
+  return song.stems > 0 || (song.params.mode === "tracks" && song.status !== "queued");
+}
+
+function stemRow(stem: Stem, ctx: SongRowContext): string {
+  const { t } = ctx;
+  const current = stem.id === ctx.currentStemId;
+  const state = stem.status === "done" ? "" : stem.status === "running" ? `<span class="s run">${t("stem_running")}</span>`
+    : stem.status === "error" ? `<span class="s err" title="${esc(stem.message)}">${t(stem.message === "cancelled" ? "cancelled" : "error")}</span>`
+    : `<span class="s">${t("waiting")}</span>`;
+  const kind = stem.kind === "generated" ? "" : ` <span class="stem-kind">${t(`stem_kind_${stem.kind}`)}</span>`;
+  return `<div class="stem ${current ? "playing" : ""}">
+      <button class="sek icon" data-a="stem-play" data-stem="${stem.id}" ${stem.url ? "" : "disabled"} aria-label="${t("play")}">${current && ctx.stemPlaying ? "❚❚" : "▶"}</button>
+      <span class="stem-name">${esc(t(`track_${stem.track}`))}${kind}</span>${state}
+      ${stem.url ? `<a class="download mini" href="${stem.url}?download=1" title="${t("download")}">WAV ↓</a>` : ""}</div>`;
+}
+
+function stemsBlock(song: Song, ctx: SongRowContext): string {
+  if (!ctx.stemsOpen) return "";
+  if (!ctx.stems) return `<div class="stems"><div class="small">…</div></div>`;
+  const zip = ctx.stems.some((s) => s.url)
+    ? `<a class="download mini stems-zip" href="/api/songs/${song.id}/stems.zip" title="${ctx.t("stems_zip_tip")}">ZIP ↓</a>` : "";
+  return `<div class="stems">${ctx.stems.map((s) => stemRow(s, ctx)).join("")}${zip}</div>`;
+}
+
 export function renderSongRow(song: Song, ctx: SongRowContext): string {
   const lyrics = generatedLyrics(song);
   const classes = ["song", ctx.isCurrent && "playing", ctx.startsGroup && "new-group", ctx.crossing === "from" && "cross-from", song.hidden && "is-hidden"].filter(Boolean).join(" ");
   return `<div class="${classes}" data-id="${song.id}" draggable="${ctx.hasFolders && !ctx.editing}">
       ${leftSlot(song, ctx)}
       <div style="min-width:0">${titleBlock(song, ctx)}<div class="m" title="${ctx.t("meta_tip")}">${esc(metaLine(song))}</div>${stateLine(song, ctx)}</div>
-      <div class="actions">${actionButtons(song, lyrics, ctx)}</div>${lyricsBlock(song, lyrics, ctx)}</div>`;
+      <div class="actions">${actionButtons(song, lyrics, ctx)}</div>${lyricsBlock(song, lyrics, ctx)}${stemsBlock(song, ctx)}</div>`;
 }

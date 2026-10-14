@@ -20,6 +20,8 @@ export interface LibraryServiceDeps {
   songs: SongRepository;
   folders: FolderRepository;
   storage: SongStorage;
+  /** Fertige Einzelspuren je Song */
+  stemCounts: () => Map<string, number>;
 }
 
 export class LibraryService {
@@ -31,13 +33,14 @@ export class LibraryService {
 
   list(query: SongQuery): Song[] {
     const letters = this.letters();
-    return this.deps.songs.list(query).map((r) => toSongDto(r, letters));
+    const stems = this.deps.stemCounts();
+    return this.deps.songs.list(query).map((r) => toSongDto(r, letters, stems.get(r.id) ?? 0));
   }
 
   get(id: string): Song {
     const r = this.deps.songs.find(id);
     if (!r) throw new AppError("not_found");
-    return toSongDto(r);
+    return toSongDto(r, undefined, this.deps.stemCounts().get(id) ?? 0);
   }
 
   update(id: string, patch: SongPatch): Song {

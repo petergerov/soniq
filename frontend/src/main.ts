@@ -13,6 +13,7 @@ import { LibraryStore } from "./features/library/library-store.ts";
 import { PlayedSongs } from "./features/library/played-songs.ts";
 import { SongDrag } from "./features/library/song-drag.ts";
 import { SongList } from "./features/library/song-list.ts";
+import { displayTitle } from "./features/library/song-row.ts";
 import { AudioPlayer, type PlayOptions } from "./features/player/audio-player.ts";
 import { ServerControl } from "./features/settings/server-control.ts";
 import { SettingsDialog } from "./features/settings/settings-dialog.ts";
@@ -62,6 +63,9 @@ songList = new SongList({
   store, played, playback: player, drag, t, play: playSong, // Übernehmen und Kreuzen füllen das Formular: dafür auf die Seite „Erzeugen“ wechseln
   reuse: (song) => { form.fill(song); router.go("generate"); },
   cross: (a, b) => { form.cross(a, b); router.go("generate"); },
+  loadStems: (songId) => api.stems(songId),
+  // Eine Spur spielt der Player wie einen eigenen Song (eigene Gruppe: keine A/B-Knöpfe)
+  playStem: (song, stem) => playSong({ ...song, id: stem.id, group_id: `stem:${stem.id}`, letter: "", url: stem.url, title: `${displayTitle(song)} · ${t(`track_${stem.track}`)}` }),
 });
 bindKeyboardShortcuts({
   form, playback: player, songs: () => store.songs, play: playSong, nextVersion: () => player.nextVersion(),

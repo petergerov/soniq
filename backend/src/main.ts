@@ -87,7 +87,7 @@ async function main(): Promise<void> {
     songs, folders, storage, jobs: worker, removeStems: (id) => stemService.removeForSong(id),
     stemsAvailable: () => existsSync(join(config.modelsDir, STEM_MODEL)),
   });
-  const library = new LibraryService({ songs, folders, storage });
+  const library = new LibraryService({ songs, folders, storage, stemCounts: () => stems.doneCounts() });
   const folderService = new FolderService(folders, songs);
   const settingsService = new SettingsService({ settings, songs, storage, modelsDir: config.modelsDir, packaged: config.packaged });
   const analysis = new AnalysisService(settings, engineFactory);

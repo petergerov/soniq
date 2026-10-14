@@ -10,6 +10,7 @@ import { PresetPicker } from "./preset-picker.ts";
 import { PromptBlocks } from "./prompt-blocks.ts";
 import { isThemeId, promptBlock, randomPrompt, randomStyle, randomTitle, setPromptBlock, type DiceOptions, type ThemeId, varyPrompt, varyStyle } from "./random-content.ts";
 import { StyleAxisSliders } from "./style-axis-sliders.ts";
+import { TrackPicker } from "./track-picker.ts";
 import { VoicePicker } from "./voice-picker.ts";
 import { StyleChips } from "./style-chips.ts";
 
@@ -71,6 +72,7 @@ export class GeneratorForm {
   private readonly styleChips: StyleChips;
   private readonly styleAxes: StyleAxisSliders;
   private readonly voice: VoicePicker;
+  private readonly trackPicker: TrackPicker;
   private readonly lyrics: LyricsEditor;
   private readonly sliders: Record<"duration" | "bpm" | "steps" | "temperature" | "variants", BubbleSlider>;
   private readonly locked = new Set<LockableField>(storage.getJson<LockableField[]>(LOCKS_KEY, []));
@@ -99,6 +101,10 @@ export class GeneratorForm {
     this.styleAxes = new StyleAxisSliders(this.f.style, this.form.querySelector(".axes")!, () => this.remember());
     this.voice = new VoicePicker(this.f.style, byId("voiceBox"), () => this.remember());
     this.lyrics = new LyricsEditor({ instrumental: this.f.instrumental, lyrics: this.f.lyrics }, deps.t);
+    // Nach dem Lyrics-Editor: die Spurauswahl fragt ihn, ob "Instrumental" gewählt ist
+    this.trackPicker = new TrackPicker({ t: deps.t, instrumental: () => this.lyrics.instrumental });
+    // Spur für Spur geht nur mit dem Spuren-Modell; die Einstellungen sagen, ob es da ist
+    void deps.api.settings().then((s) => this.trackPicker.setAvailable(s.stems_available), () => {});
     const slider = (name: string, onChange?: () => void) => new BubbleSlider(this.form.querySelector(`input[name="${name}"]`)!.closest<HTMLElement>(".slider")!, onChange);
     this.sliders = {
       duration: slider("duration"),
@@ -198,6 +204,7 @@ export class GeneratorForm {
   refreshTexts(): void {
     Object.values(this.sliders).forEach((s) => s.update());
     this.presets.refreshTexts();
+    this.trackPicker.refreshTexts();
     this.lyrics.sync();
     this.updateButton();
   }
@@ -212,6 +219,7 @@ export class GeneratorForm {
     this.blocks.sync();
     this.f.keep_caption.checked = true;          // Prompt wörtlich ist fest die Vorgabe
     this.lyrics.load(p.lyrics || "");
+    this.trackPicker.apply(p);
     this.sliders.duration.value = p.duration || DEFAULTS.duration;
     this.sliders.bpm.value = p.bpm || this.sliders.bpm.min;
     this.sliders.steps.value = p.inference_steps || DEFAULTS.inferenceSteps;
@@ -292,6 +300,7 @@ export class GeneratorForm {
       variants: this.sliders.variants.value,
       inference_steps: this.sliders.steps.value,
       lm_temperature: this.sliders.temperature.value,
+      ...this.trackPicker.request,
     };
   }
 

@@ -1,5 +1,5 @@
 // Songliste der Bibliothek: zeichnet die Zeilen und setzt Klicks in Befehle um.
-import type { Song } from "../../../../shared/api.ts";
+import type { Song, Stem } from "../../../../shared/api.ts";
 import { byId, closest, labelIconButtons } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import type { LibraryStore } from "./library-store.ts";
@@ -24,6 +24,9 @@ export interface SongListDeps {
   reuse: (song: Song) => void;
   /** Stil von a, Szene von b ins Formular */
   cross: (a: Song, b: Song) => void;
+  /** Einzelspuren eines Songs laden bzw. eine davon im Player abspielen */
+  loadStems: (songId: string) => Promise<Stem[]>;
+  playStem: (song: Song, stem: Stem) => void;
 }
 
 export class SongList {
@@ -36,6 +39,10 @@ export class SongList {
   private editingId: string | null = null;
   /** Kreuzen: zuerst gewählter Song (A) */
   private crossFrom: string | null = null;
+  /** Songs mit aufgeklappter Spurenliste und ihre geladenen Spuren */
+  private readonly openStems = new Set<string>();
+  private readonly stemCache = new Map<string, Stem[]>();
+  private readonly stemLoading = new Set<string>();
 
   constructor(deps: SongListDeps) {
     this.deps = deps;
@@ -45,6 +52,24 @@ export class SongList {
   /** Neu zeichnen, außer beim Umbenennen (Feld verlöre den Fokus) oder Ziehen. */
   refresh(): void {
     if (!this.editingId && !this.deps.drag.active) this.render();
+    // Aufgeklappte Spurenlisten nachladen, solange sich etwas tut (Spur für Spur läuft, neue Spuren fertig)
+    for (const id of this.openStems) {
+      const song = this.deps.store.find(id);
+      const cached = this.stemCache.get(id);
+      const doneCount = cached?.filter((s) => s.status === "done").length;
+      if (song && (song.status === "running" || doneCount !== song.stems)) void this.loadStems(id);
+    }
+  }
+
+  private async loadStems(songId: string): Promise<void> {
+    if (this.stemLoading.has(songId)) return;
+    this.stemLoading.add(songId);
+    try {
+      this.stemCache.set(songId, await this.deps.loadStems(songId));
+    } finally {
+      this.stemLoading.delete(songId);
+    }
+    this.render();
   }
 
   render(): void {
@@ -65,6 +90,10 @@ export class SongList {
       startsGroup: i > 0 && songs[i - 1]!.group_id !== s.group_id,
       crossing: !this.crossFrom ? null : s.id === this.crossFrom ? "from" : "pick",
       eta: store.estimates[s.id],
+      stemsOpen: this.openStems.has(s.id),
+      stems: this.stemCache.get(s.id),
+      currentStemId: playback.currentId,
+      stemPlaying: playback.isPlaying(),
     })).join("");
     this.root.classList.toggle("crossing", !!this.crossFrom);
     labelIconButtons(this.root);
@@ -81,6 +110,16 @@ export class SongList {
       case "lyrics":
         if (!this.openLyrics.delete(song.id)) this.openLyrics.add(song.id);
         return this.render();
+      case "stems":
+        if (this.openStems.delete(song.id)) return this.render();
+        this.openStems.add(song.id);
+        this.render();
+        return this.loadStems(song.id);
+      case "stem-play": {
+        const stem = this.stemCache.get(song.id)?.find((s) => s.id === button.dataset.stem);
+        if (stem?.url) this.deps.playStem(song, stem);
+        return;
+      }
       case "fav": return store.toggleFavorite(song);
       case "hide": return store.toggleHidden(song);
       case "retry": return store.retry(song.id);

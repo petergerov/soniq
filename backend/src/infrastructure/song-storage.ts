@@ -50,7 +50,8 @@ export class SongStorage {
     let count = 0, bytes = 0;
     for (const entry of await readdir(dir, { withFileTypes: true })) {
       if (!entry.isFile()) continue;
-      count++;
+      // Songs heißen <id>.wav/.mp3; Einzelspuren (<id>.<spur>.wav) belegen Platz, zählen aber nicht als Song
+      if (/^[^.]+\.(wav|mp3)$/i.test(entry.name)) count++;
       bytes += (await stat(join(dir, entry.name))).size;
     }
     return { count, bytes };

@@ -404,7 +404,7 @@ dialog .col-title { margin-bottom: 18px; font-size: 17px; }
 .voice-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .lyrics-panel .field.voice { flex-direction: row; align-items: center; gap: 12px; margin: 0 0 10px; }
 .lyrics-panel .field.voice > .lbl { margin: 0; }
-.vocals .seg button[aria-pressed=true], .voice .seg button[aria-pressed=true] { color: var(--accent-soft); border-color: rgba(167, 139, 250, .45); background: var(--accent-tint); }
+.vocals .seg button[aria-pressed=true], .voice .seg button[aria-pressed=true], .genmode .seg button[aria-pressed=true] { color: var(--accent-soft); border-color: rgba(167, 139, 250, .45); background: var(--accent-tint); }
 .upd-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .upd-row .small { font-size: 12px; color: var(--muted); }
 .upd-list { margin: 6px 0 8px; padding-left: 18px; font-size: 12px; color: var(--muted); }
@@ -450,3 +450,24 @@ dialog.setup { width: min(560px, calc(100vw - 32px)); }
 .gear.has-update::after { content: ""; position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent-soft); }
 #updDownload { display: inline-block; text-decoration: none; margin-top: 10px; }
 #updDownload[hidden] { display: none; }
+
+/* Erzeugung: Spur für Spur (Spurauswahl) */
+.genmode .seg button:disabled { opacity: .45; cursor: not-allowed; }
+.track-chips { margin: 2px 0 0; }
+.track-chips .chip { cursor: pointer; font: inherit; font-size: 12px; }
+.track-chips .chip:disabled { opacity: .35; cursor: not-allowed; }
+
+/* Spurenliste an einem Song */
+.song .stems { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; margin: 8px 0 2px 58px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(255, 255, 255, .015); }
+.stem { display: flex; align-items: center; gap: 10px; min-height: 30px; }
+.stem.playing .stem-name { color: var(--accent-soft); }
+.stem .sek.icon { width: 28px; height: 28px; padding: 0; }
+.stem-name { font-size: 13px; min-width: 120px; }
+.stem-kind { color: var(--faint); font-size: 11px; }
+.stem .s { font-size: 12px; color: var(--muted); }
+.stem .s.run { color: var(--accent-soft); }
+.stem .s.err { color: var(--error); }
+.stem .download { margin-left: auto; }
+.stems-zip { align-self: flex-end; margin-top: 4px; }
+@media (max-width: 720px) { .song .stems { margin-left: 0; } }

@@ -58,6 +58,8 @@ export interface Song {
   hidden: boolean;
   /** Beginn der Rechenzeit (ältere Songs: null) */
   started_at: string | null;
+  /** Anzahl fertiger Einzelspuren (Spur für Spur, herausgelöst …) */
+  stems: number;
   /** Versionen desselben Prompts heißen A, B, C … ("" bei Einzelstücken). */
   letter: string;
   url: string | null;

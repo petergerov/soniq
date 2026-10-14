@@ -193,11 +193,18 @@ returns are ignored), otherwise `"format"` (~3 s) — the normal `generate` take
 retry starts over. The time estimate counts each track as one pass (`units` in `queue-estimate.ts`).
 Measured: 30 s song with drums, bass, vocals in 2:18.
 
+Step 3 in the code: `features/generator/track-picker.ts` (switch "Whole song | Track by track" under Composition,
+track chips in "rhythm first" order, vocals only in song mode, choice remembered per browser, taken over by "Reuse",
+greyed out with a tooltip when the base model is missing); `song-row.ts` / `song-list.ts` (button "Tracks" on songs
+with tracks, also while they are generated; list with play in the player bar, WAV download per track, ZIP of all;
+reloads while generating). The library count only counts songs, track files only add to the size.
+Not yet: presets do not store the generation mode and tracks.
+
 | Step | Content | Depends on |
 |---|---|---|
 | 1 | ✅ Base model in the catalog; tracks table, storage, engine methods (`lego`, `extract`, mixing), API | – |
 | 2 | ✅ **B** backend: track-by-track generation in the worker, time estimate | 1 |
-| 3 | **B** interface: switch, track choice, track list on the song (play, download, ZIP) | 2 |
+| 3 | ✅ **B** interface: switch, track choice, track list on the song (play, download, ZIP) | 2 |
 | 4 | **A**: extract in the worker + "Extract tracks …" in the track list | 1, 3 |
 | 5 | Experiment **C**, then decide variants with the user | 1 |
 | 6 | **C**: upload area, choice replace / accompany, instruments or "All", results | 4, 5 |

@@ -72,6 +72,15 @@
         </div>
       </div>
 
+      <div id="genModeBox" class="field genmode"><span class="lbl" data-i18n="gen_mode">Erzeugung</span>
+        <div class="seg" role="group" aria-label="Erzeugung" data-i18n-aria="gen_mode">
+          <button type="button" class="sek" data-genmode="full" aria-pressed="true" data-i18n="gen_full">Ganzer Song</button>
+          <button type="button" class="sek" data-genmode="tracks" aria-pressed="false" data-i18n="gen_tracks">Spur für Spur</button>
+        </div>
+        <div id="trackChips" class="chips track-chips" hidden></div>
+        <span id="trackHint" class="small" hidden></span>
+      </div>
+
       <div class="field"><div class="lblrow"><span class="lbl" id="lblTitle" title="Nur zum Wiederfinden, hat keinen Einfluss auf die Musik." data-i18n-title="title_tip" data-i18n="title">Titel</span>
         <button type="button" id="titleDice" class="dice" title="Zufälligen Titel würfeln" aria-label="Zufälligen Titel würfeln" data-i18n-title="title_dice" data-i18n-aria="title_dice"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg></button></div>
         <input name="title" aria-labelledby="lblTitle" placeholder="optional" data-i18n-ph="title_ph">
