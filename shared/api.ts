@@ -185,6 +185,34 @@ export interface UpdateStatus {
 
 export type UpdateCheck = ({ ok: true } & UpdateStatus) | { ok: false; error: string };
 
+/** Größe des Sprachmodells (plant Struktur, Tempo, Tonart; größer = bessere Songs, mehr Speicher) */
+export type LmSize = "0.6B" | "1.7B" | "4B";
+
+/** Einrichtung der fertigen App: Modelle laden, Grafikchip testen, Modellserver starten. */
+export interface SetupStatus {
+  /** Fertige App, deren Einrichtung fehlt oder unvollständig ist (dann zeigt die Oberfläche die Einrichtung) */
+  needed: boolean;
+  phase: "idle" | "downloading" | "testing" | "starting" | "done" | "error";
+  ram_gb: number;
+  free_gb: number;
+  recommended_lm: LmSize;
+  lm_options: { size: LmSize; mb: number; present: boolean }[];
+  xl: { mb: number; present: boolean };
+  /** Noch fehlende feste Dateien (VAE, Text-Embedding, Klangmodell) in MB */
+  base_mb: number;
+  /** Datei, die gerade geladen wird */
+  file: string;
+  done_mb: number;
+  total_mb: number;
+  /** Fehlermeldung bei phase "error" */
+  error: string;
+}
+
+export interface SetupRequest {
+  lm: LmSize;
+  xl: boolean;
+}
+
 export interface ErrorBody {
   detail: string;
 }

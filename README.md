@@ -154,6 +154,10 @@ npm run build          # type-check and build the interface into frontend/dist (
 `MG_MODELS_DIR=/path` does the same for the models. `MG_PACKAGED=1` is set by a packaged app (e.g. `SONIQ.app`):
 the interface ships pre-built, updates come as new app versions instead of `git pull`, and “Stop servers” only ends the
 web server (the app stops the model server).
+In this mode the backend also starts and stops the model server itself (`MG_ENGINE_BIN`, ports `MG_SYNTH_PORT` / `MG_LM_PORT`,
+default 8085 / 8086) and, while models are missing, the interface shows a setup: pick the language model, download the
+models (resumable, SHA-256 checked, list from `scripts/common.sh`; `MG_HF_BASE` replaces the download address, e.g. for
+tests), graphics self-test, then the model server starts. It does the same as `install.command`, see `services/setup-service.ts`.
 
 **Backend** (`backend/src`), layers from the outside in; dependencies only point inwards and are passed in via
 constructors in `main.ts` (composition root):

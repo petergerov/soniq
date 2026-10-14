@@ -8,12 +8,16 @@ import type { MusicEngineFactory } from "./domain/music-engine.ts";
 import { HttpServer } from "./http/http-server.ts";
 import { registerFolderRoutes } from "./http/routes/folder-routes.ts";
 import { registerPresetRoutes } from "./http/routes/preset-routes.ts";
+import { registerSetupRoutes } from "./http/routes/setup-routes.ts";
 import { registerSongRoutes } from "./http/routes/song-routes.ts";
 import { registerSystemRoutes } from "./http/routes/system-routes.ts";
 import { Router } from "./http/router.ts";
 import { StaticFiles } from "./http/static-files.ts";
 import { AceStepEngine } from "./infrastructure/ace-step-engine.ts";
 import { Database } from "./infrastructure/database.ts";
+import { EngineConf } from "./infrastructure/engine-conf.ts";
+import { EngineSupervisor } from "./infrastructure/engine-supervisor.ts";
+import { loadCatalog } from "./infrastructure/model-catalog.ts";
 import { buildFrontendIfStale } from "./infrastructure/frontend-build.ts";
 import { FolderRepository } from "./infrastructure/folder-repository.ts";
 import { PresetRepository } from "./infrastructure/preset-repository.ts";
@@ -26,6 +30,7 @@ import { SongStorage } from "./infrastructure/song-storage.ts";
 import { AnalysisService } from "./services/analysis-service.ts";
 import { FolderService } from "./services/folder-service.ts";
 import { PresetService } from "./services/preset-service.ts";
+import { SetupService } from "./services/setup-service.ts";
 import { GenerationService } from "./services/generation-service.ts";
 import { GenerationWorker } from "./services/generation-worker.ts";
 import { LibraryService } from "./services/library-service.ts";
@@ -63,7 +68,8 @@ async function main(): Promise<void> {
   const songs = new SongRepository(db);
   const folders = new FolderRepository(db);
   const presets = new PresetService(new PresetRepository(db));
-  const settings = new SettingsRepository(db, config);
+  const engineConf = new EngineConf(config.engineConfPath);
+  const settings = new SettingsRepository(db, engineConf, config);
   const storage = new SongStorage(config.defaultSongsDir, () => settings.get().songs_dir);
   const engineFactory: MusicEngineFactory = (s) => new AceStepEngine(s);
   const launcher = createProcessLauncher(config.platform);
@@ -76,6 +82,11 @@ async function main(): Promise<void> {
   const settingsService = new SettingsService({ settings, songs, storage, modelsDir: config.modelsDir });
   const analysis = new AnalysisService(settings, engineFactory);
   const system = new SystemService({ root: config.root, platform: config.platform, packaged: config.packaged, settings, engineFactory, launcher });
+  // Fertige App: Modellserver startet das Backend selbst, die Einrichtung lädt Modelle und testet den Grafikchip
+  const engine = new EngineSupervisor({ bin: config.engineBin, modelsDir: config.modelsDir, dataDir: config.dataDir, synthPort: config.synthPort, lmPort: config.lmPort, log });
+  const setup = new SetupService({
+    packaged: config.packaged, catalog: loadCatalog(config.root), modelsDir: config.modelsDir, engineConf, engine, synthPort: config.synthPort, log,
+  });
   const updates = new UpdateService({
     root: config.root, platform: config.platform, packaged: config.packaged, git: new Git(config.root), songs, launcher, port: config.port,
     serverCommand: [process.execPath, ...process.execArgv, config.entryFile, "--port", String(config.port)],
@@ -86,6 +97,7 @@ async function main(): Promise<void> {
   registerSongRoutes(router, generation, library);
   registerFolderRoutes(router, folderService, library);
   registerPresetRoutes(router, presets);
+  registerSetupRoutes(router, setup);
   registerSystemRoutes(router, { settings: settingsService, analysis, system, updates });
   const server = new HttpServer(router, new StaticFiles(config.frontendDir), log);
 
@@ -100,12 +112,14 @@ async function main(): Promise<void> {
   log(`SONIQ läuft auf http://localhost:${config.port}`);
   // Die fertige App bringt Oberfläche, Symbole und Verknüpfungen selbst mit
   if (!config.packaged) buildFrontendIfStale(config.root, config.dataDir, log);
+  if (config.packaged) void setup.startEngineIfReady();
   const working = worker.run();
   worker.wake();
 
   const shutdown = async () => {
     worker.stop();
     await server.close();
+    await engine.stop();
     await working.catch(() => {});
     db.close();
     process.exit(0);

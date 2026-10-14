@@ -426,3 +426,21 @@ dialog .col-title { margin-bottom: 18px; font-size: 17px; }
   .card { padding: 18px; }
   .genbar { margin: 18px -18px -18px; padding: 12px 18px 16px; }
 }
+
+/* Einrichtung der fertigen App (Modelle laden, Grafikchip testen) */
+dialog.setup { width: min(560px, calc(100vw - 32px)); }
+.setup p { margin: 0 0 12px; line-height: 1.5; }
+.setup .muted { color: var(--muted); }
+.setup-options { display: grid; gap: 8px; margin: 4px 0 14px; }
+.setup-option { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm); cursor: pointer; }
+.setup-option:has(input:checked) { border-color: rgba(167, 139, 250, .55); background: var(--accent-tint); }
+.setup-option .size { color: var(--muted); font-size: 12px; }
+.setup-option .rec { color: var(--accent-soft); font-size: 11px; margin-left: 6px; }
+.setup-xl { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.45; margin: 0 0 12px; cursor: pointer; }
+.setup-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.setup-bar { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; margin: 4px 0 8px; }
+.setup-bar > div { height: 100%; width: 0; background: linear-gradient(90deg, #8b5cf6, #3b82f6); transition: width .4s; }
+.setup-bar.busy > div { width: 35% !important; animation: setup-busy 1.4s ease-in-out infinite alternate; }
+@keyframes setup-busy { from { margin-left: 0; } to { margin-left: 65%; } }
+@media (prefers-reduced-motion: reduce) { .setup-bar.busy > div { animation: none; } }

@@ -17,6 +17,7 @@ import { AudioPlayer, type PlayOptions } from "./features/player/audio-player.ts
 import { ServerControl } from "./features/settings/server-control.ts";
 import { SettingsDialog } from "./features/settings/settings-dialog.ts";
 import { UpdatePanel } from "./features/settings/update-panel.ts";
+import { SetupDialog } from "./features/setup/setup-dialog.ts";
 import { bindKeyboardShortcuts } from "./features/shortcuts/keyboard-shortcuts.ts";
 import { HealthIndicator } from "./features/status/health-indicator.ts";
 import { Notifier } from "./features/status/notifier.ts";
@@ -83,6 +84,9 @@ store.onChange(() => {
 
 // Einstellungen + Status
 const health = new HealthIndicator(api, t);
+// Fertige App ohne Modelle: Einrichtung zeigen
+const setup = new SetupDialog(api, t, () => void health.check());
+void setup.check();
 const updates = new UpdatePanel(api, t);
 new SettingsDialog(api, () => updates.reset(), () => void health.check());
 new ServerControl(api, t, () => store.stopPolling(), () => void store.refresh());
@@ -96,6 +100,7 @@ i18n.onChange(() => {
   notifier.render();
   updates.reset();
   void health.check();
+  setup.refreshTexts();
 });
 
 health.start();

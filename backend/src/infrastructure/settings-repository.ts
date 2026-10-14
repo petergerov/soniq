@@ -4,15 +4,16 @@ import type { Settings } from "../../../shared/api.ts";
 import { DEFAULT_OUTPUT_FORMAT } from "../domain/output-format.ts";
 import type { AppConfig } from "../config/app-config.ts";
 import type { Database } from "./database.ts";
+import type { EngineConf, EngineValues } from "./engine-conf.ts";
 
-const SPLIT_LM_URL = "http://127.0.0.1:8086";
+type Ports = Pick<AppConfig, "synthPort" | "lmPort">;
 
-export function defaultSettings(config: Pick<AppConfig, "engineMode" | "lmFile">): Settings {
+export function defaultSettings(engine: EngineValues, ports: Ports): Settings {
   return {
-    server_url: "http://127.0.0.1:8085",   // Synthese (DiT + VAE, Metal/CUDA)
+    server_url: `http://127.0.0.1:${ports.synthPort}`,   // Synthese (DiT + VAE, Metal/CUDA)
     // Sprachmodell: eigener CPU-Server (Modus split) oder leer = gleicher Server wie Synthese (single)
-    lm_url: config.engineMode === "single" ? "" : SPLIT_LM_URL,
-    lm_model: config.lmFile,                // leer = erstes Sprachmodell im Modellordner
+    lm_url: engine.mode === "single" ? "" : `http://127.0.0.1:${ports.lmPort}`,
+    lm_model: engine.lmFile,                // leer = erstes Sprachmodell im Modellordner
     poll_interval: 1.5,
     timeout_minutes: 30,
     dit: "standard",                        // Klangmodell: "standard" (2B) oder "xl" (4B, braucht die XL-Datei)
@@ -23,17 +24,23 @@ export function defaultSettings(config: Pick<AppConfig, "engineMode" | "lmFile">
 
 export class SettingsRepository {
   private readonly db: Database;
-  private readonly config: Pick<AppConfig, "engineMode" | "lmFile">;
-  private readonly defaults: Settings;
+  private readonly engine: EngineConf;
+  private readonly ports: Ports;
 
-  constructor(db: Database, config: Pick<AppConfig, "engineMode" | "lmFile">) {
+  constructor(db: Database, engine: EngineConf, ports: Ports) {
     this.db = db;
-    this.config = config;
-    this.defaults = defaultSettings(config);
+    this.engine = engine;
+    this.ports = ports;
+  }
+
+  /** Vorgaben; hängen von engine.conf ab, die die Einrichtung zur Laufzeit neu schreiben kann */
+  private get defaults(): Settings {
+    return defaultSettings(this.engine.get(), this.ports);
   }
 
   get(): Settings {
-    const s: Settings = { ...this.defaults };
+    const engine = this.engine.get();
+    const s: Settings = defaultSettings(engine, this.ports);
     for (const r of this.db.all<{ key: string; value: string }>("SELECT key, value FROM settings")) {
       if (r.key in s) {
         try {
@@ -44,7 +51,7 @@ export class SettingsRepository {
       }
     }
     // Früher gespeicherte Standardadresse des CPU-Servers: im Ein-Server-Modus läuft dort nichts
-    if (this.config.engineMode === "single" && s.lm_url.replace(/\/+$/, "") === SPLIT_LM_URL) s.lm_url = "";
+    if (engine.mode === "single" && s.lm_url.replace(/\/+$/, "") === `http://127.0.0.1:${this.ports.lmPort}`) s.lm_url = "";
     return s;
   }
 

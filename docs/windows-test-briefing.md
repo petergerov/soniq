@@ -1,13 +1,13 @@
-# Music Generator – Windows-Test: Briefing für die Claude-Code-Session auf dem PC
+# SONIQ – Windows-Test: Briefing für die Claude-Code-Session auf dem PC
 
 ## Was das ist
 
-„Music Generator" ist eine lokale Web-App (FastAPI + Vanilla-JS), die über acestep.cpp
+„SONIQ" ist eine lokale Web-App (FastAPI + Vanilla-JS), die über acestep.cpp
 (ACE-Step 1.5, GGUF-Modelle) Songs erzeugt. Die Mac-Fassung ist fertig und öffentlich:
-https://github.com/rabbitfiremediacreation/music-generator
+https://github.com/petergerov/soniq
 
 Die Windows-Fassung ist ein **ungetesteter Erstentwurf** im privaten Repo:
-https://github.com/rabbitfiremediacreation/music-generator
+https://github.com/petergerov/soniq
 (Branch `main`; auf dem Mac heißt derselbe Stand Branch `windows` im Hauptprojekt.)
 
 Ziel dieser Session: Installation auf diesem Windows-PC (NVIDIA-Grafikkarte) zum Laufen bringen,
@@ -16,24 +16,24 @@ Fehler in den Skripten beheben, Ergebnis ins private Repo pushen.
 ## Einstieg
 
 ```powershell
-git clone https://github.com/rabbitfiremediacreation/music-generator.git $HOME\MusicGenerator
-cd $HOME\MusicGenerator
-.\Install.bat        # oder: .\Install.ps1 -Yes  (ohne Rückfragen)
+git clone https://github.com/petergerov/soniq.git $HOME\soniq
+cd $HOME\soniq
+.\install.bat        # oder: .\install.ps1 -Yes  (ohne Rückfragen)
 ```
 
-Danach: `Music Generator ON.bat` startet alles und öffnet http://localhost:8765,
-`Music Generator OFF.bat` beendet alles.
+Danach: `start.bat` startet alles und öffnet http://localhost:8765,
+`stop.bat` beendet alles.
 
 ## Aufbau (nur die für Windows relevanten Teile)
 
 | Datei | Zweck |
 |---|---|
-| `Install.ps1` / `Install.bat` | Installer. Optionen: `-Yes`, `-LM 0.6B|1.7B|4B`, `-NoStart`, `-Build` |
-| `Music Generator ON.ps1` / `.bat` | startet ace-server (Port 8085, bei Modus split zusätzlich 8086 auf CPU) und uvicorn (Port 8765) |
-| `Music Generator OFF.ps1` / `.bat` | beendet die Prozesse auf den drei Ports |
+| `install.ps1` / `install.bat` | Installer. Optionen: `-Yes`, `-LM 0.6B|1.7B|4B`, `-NoStart`, `-Build` |
+| `start.ps1` / `.bat` | startet ace-server (Port 8085, bei Modus split zusätzlich 8086 auf CPU) und uvicorn (Port 8765) |
+| `stop.ps1` / `.bat` | beendet die Prozesse auf den drei Ports |
 | `scripts/common.ps1` | Pfade, Port-Hilfsfunktionen, `Start-Hintergrund`. Liest PORT, SYNTH_PORT, LM_PORT, ACESTEP_REPO, ACESTEP_REV, HF_BASE **aus `scripts/common.sh`** (eine Quelle für Mac und Windows) |
 | `scripts/metal_selftest.py` | Selbsttest per HTTP: läuft das Sprachmodell auf der GPU korrekt? Exit 0 = Modus `single`, sonst `split` (LM auf CPU) |
-| `app/main.py` `/api/shutdown` | Knopf „Server stoppen" in der App, Windows-Zweig startet `Music Generator OFF.ps1` |
+| `app/main.py` `/api/shutdown` | Knopf „Server stoppen" in der App, Windows-Zweig startet `stop.ps1` |
 | `app/updater.py` `_restart` | Neustart nach Update, Windows-Zweig wartet per `Get-NetTCPConnection` auf freien Port |
 | `app/db.py` | liest `data/engine.conf` (MODE, LM_FILE), setzt daraus `lm_url` |
 | `assets/icon-on.ico`, `icon-off.ico` | Icons für die `.lnk`-Verknüpfungen |
@@ -105,7 +105,7 @@ Installation, ON, OFF, Song-Erzeugung (30 s und 90 s), „Server stoppen“ und 
 
 - Antworten und Kommentare auf Deutsch, Lee duzen, kurz.
 - Commits mit `Co-Authored-By: Claude …`-Zeile, pushen nach `origin main` des öffentlichen Repos.
-- Mac-Dateien (`*.command`, `scripts/symbole.sh`, `Install.command`) nicht anfassen; sie werden später zurückgemerged.
+- Mac-Dateien (`*.command`, `scripts/symbole.sh`, `install.command`) nicht anfassen; sie werden später zurückgemerged.
 - Werte, die Mac und Windows teilen (Ports, acestep-Version, HF-Adresse), nur in `scripts/common.sh` ändern.
 - Songs/Einstellungen liegen in `data/` und sind in `.gitignore`.
 
@@ -124,10 +124,10 @@ Nebenbefund behoben: `updater.py` dekodierte Git-Ausgabe mit cp1252, Commit-Text
 
 **Vom Mac als ungetestet markiert:**
 - `scripts/common.ps1` liest jetzt zusätzlich `MODEL_FILES` aus `common.sh` in `$MODEL_MB` / `$MODEL_SHA`.
-- `Install.ps1` baut `$FILES` daraus und prüft nach jedem Download die SHA-256 per `Get-FileHash`
+- `install.ps1` baut `$FILES` daraus und prüft nach jedem Download die SHA-256 per `Get-FileHash`
   (Download nach `<datei>.neu`, dann Hash, dann umbenennen). Vorhandene Dateien werden nicht erneut geprüft.
 - Beim `-Build`-Pfad wird `--help` gegen die ersten 7 Zeichen des Hashes verglichen.
-- Schnelltest ohne Neuinstallation: eine Modelldatei umbenennen, `.\Install.ps1 -Yes -NoStart` laufen lassen,
+- Schnelltest ohne Neuinstallation: eine Modelldatei umbenennen, `.\install.ps1 -Yes -NoStart` laufen lassen,
   Prüfsumme muss „ok" melden; danach die umbenannte Datei löschen.
 
 ## Nachtrag: Deinstallation
@@ -159,7 +159,7 @@ Ausgangslage: laufende App (Web-App und Synthese-Server), 7 Songs (82 MB), Model
 Nachkontrolle: Im Programmordner blieben nur die Repo-Dateien (7,6 MB), rund 14,6 GB waren frei.
 Git und uv waren weiter installiert, wie angekündigt. Danach den Ordner von Hand gelöscht, wie das Skript es sagt.
 
-**2. Neuinstallation** nach `README-WINDOWS.md`: `git clone` aus dem öffentlichen Repo (ohne Anmeldung), dann `Install.bat -Yes -XL`.
+**2. Neuinstallation** nach `README-WINDOWS.md`: `git clone` aus dem öffentlichen Repo (ohne Anmeldung), dann `install.bat -Yes -XL`.
 
 - Binaries neu geladen, alle fünf Modelle geladen, jede Prüfsumme „ok“.
 - Selbsttest lief neu (nach frischer Installation nicht mehr „already tested“): Planung ok, 50 Codes → Modus `single`.

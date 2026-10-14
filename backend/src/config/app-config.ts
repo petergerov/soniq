@@ -4,8 +4,6 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export type EngineMode = "single" | "split";
-
 export interface AppConfig {
   /** Programmordner (enthält backend/, frontend/, scripts/ …) */
   root: string;
@@ -19,9 +17,13 @@ export interface AppConfig {
   entryFile: string;
   host: string;
   port: number;
-  /** Aus engine.conf: "single" = ein Modellserver, "split" = Sprachmodell auf eigenem CPU-Server */
-  engineMode: EngineMode | undefined;
-  lmFile: string;
+  /** Vom Installer bzw. der Einrichtung geschrieben: MODE, LM_FILE, TESTED_REV (siehe EngineConf) */
+  engineConfPath: string;
+  /** Ports der Modellserver: Synthese und (Modus "split") Sprachmodell auf der CPU */
+  synthPort: number;
+  lmPort: number;
+  /** Modellserver acestep.cpp; die fertige App startet ihn selbst */
+  engineBin: string;
   platform: NodeJS.Platform;
   /** Läuft als fertige App (z. B. SONIQ.app): Oberfläche liegt gebaut bei, keine Git-Updates, Start/Stopp macht die App */
   packaged: boolean;
@@ -53,9 +55,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
   const root = resolve(srcDir, "..", "..", "..");
   const dataDir = env.MG_DATA_DIR ? resolve(env.MG_DATA_DIR) : join(root, "data");   // MG_DATA_DIR: z. B. für Tests
   const modelsDir = env.MG_MODELS_DIR ? resolve(env.MG_MODELS_DIR) : join(root, "models");
-  const conf = readKeyValueFile(join(dataDir, "engine.conf"));
   const portArg = argv.indexOf("--port");
-  const mode = conf.MODE === "single" || conf.MODE === "split" ? conf.MODE : undefined;
   return {
     root,
     dataDir,
@@ -66,8 +66,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
     entryFile: join(root, "backend", "src", "main.ts"),
     host: "127.0.0.1",
     port: parsePort(portArg >= 0 ? argv[portArg + 1] : env.PORT, 8765),
-    engineMode: mode,
-    lmFile: conf.LM_FILE ?? "",
+    engineConfPath: join(dataDir, "engine.conf"),
+    synthPort: parsePort(env.MG_SYNTH_PORT, 8085),
+    lmPort: parsePort(env.MG_LM_PORT, 8086),
+    engineBin: env.MG_ENGINE_BIN ? resolve(env.MG_ENGINE_BIN) : join(root, "engine", "acestep.cpp", "build", "ace-server"),
     platform: process.platform,
     packaged: env.MG_PACKAGED === "1",
   };
