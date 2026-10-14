@@ -1,5 +1,6 @@
 // Inhalte für die Würfel, die Variation, die Prompt-Bausteine und die Stil-Karten.
 // Reine Funktionen, der Zufall ist austauschbar (Tests). Alle Texte sind Englisch, weil sie ans Modell gehen.
+import { VOICE_CHARACTERS, VOICE_GENDERS, VOICE_RANGES } from "./voice.ts";
 
 export type Random = () => number;
 
@@ -156,8 +157,17 @@ function knownBlock(block: PromptBlock): Set<string> {
   return new Set(ALL_THEMES.flatMap((th) => th.prompt[block]));
 }
 
-function knownStyle(kind: StyleKind | "vocals"): Set<string> {
-  if (kind === "vocals") return new Set(STYLE_GROUPS.vocals);
+/** Stimme beim Würfeln: Geschlecht (Duett seltener) und in jedem zweiten Wurf eine Art der Stimme. */
+const VOICE_POOL = {
+  vocals: Object.values(VOICE_GENDERS) as string[],
+  voicetype: [...Object.values(VOICE_RANGES), ...Object.values(VOICE_CHARACTERS)] as string[],
+};
+const DUET_CHANCE = 0.15;
+const VOICE_TYPE_CHANCE = 0.5;
+type DiceKind = StyleKind | keyof typeof VOICE_POOL;
+
+function knownStyle(kind: DiceKind): Set<string> {
+  if (kind === "vocals" || kind === "voicetype") return new Set(VOICE_POOL[kind]);
   return new Set(ALL_THEMES.flatMap((th) => th.style[kind]).map((t) => t.toLowerCase()));
 }
 
@@ -196,7 +206,7 @@ export function randomTitle(random: Random = Math.random): string {
   return `${pick(TITLE.adj, random)} ${pick(TITLE.noun, random)}`;
 }
 
-/** Ein bis zwei Genres, ein Instrument, eine Stimmung; Gesang nur, wenn der Song nicht instrumental ist. */
+/** Ein bis zwei Genres, ein Instrument, eine Stimmung; Stimme nur, wenn der Song nicht instrumental ist. */
 export function randomStyle(withVocals: boolean, o: DiceOptions = {}): string {
   const random = o.random ?? Math.random;
   const s = THEMES[o.theme ?? "all"].style;
@@ -207,7 +217,10 @@ export function randomStyle(withVocals: boolean, o: DiceOptions = {}): string {
     parts.push(second);
   }
   parts.push(pickPreferred(s.instr, o), pickPreferred(s.mood, o));
-  if (withVocals) parts.push(pick(STYLE_GROUPS.vocals, random));
+  if (withVocals) {
+    parts.push(random() < DUET_CHANCE ? VOICE_GENDERS.duet : pick([VOICE_GENDERS.female, VOICE_GENDERS.male], random));
+    if (random() < VOICE_TYPE_CHANCE) parts.push(pick(VOICE_POOL.voicetype, random));
+  }
   return parts.join(", ");
 }
 
@@ -260,15 +273,15 @@ export function varyPrompt(prompt: string, o: DiceOptions = {}): string {
 }
 
 /** Leicht abgewandelter Stil: meist wird ein bekannter Tag gegen einen derselben Art getauscht,
- *  manchmal kommt ein Instrument oder eine Stimmung dazu. Gesang nur, wenn der Song nicht instrumental ist. */
+ *  manchmal kommt ein Instrument oder eine Stimmung dazu. Stimme (Geschlecht, Art) nur, wenn der Song nicht instrumental ist. */
 export function varyStyle(style: string, withVocals: boolean, o: DiceOptions = {}): string {
   const random = o.random ?? Math.random;
   const theme = o.theme ?? "all";
   const parts = splitParts(style);
   if (!parts.length) return randomStyle(withVocals, o);
   const has = new Set(parts.map((p) => p.toLowerCase()));
-  const pools: Record<StyleKind | "vocals", readonly string[]> = { ...THEMES[theme].style, vocals: STYLE_GROUPS.vocals };
-  const kinds = (withVocals ? ["genre", "instr", "mood", "vocals"] : ["genre", "instr", "mood"]) as (StyleKind | "vocals")[];
+  const pools: Record<DiceKind, readonly string[]> = { ...THEMES[theme].style, ...VOICE_POOL };
+  const kinds = (withVocals ? ["genre", "instr", "mood", "vocals", "voicetype"] : ["genre", "instr", "mood"]) as DiceKind[];
   const known = parts.flatMap((part, i) => {
     const kind = kinds.find((k) => knownStyle(k).has(part.toLowerCase()));
     // Nur tauschen, wenn das Thema für diese Art noch einen unbenutzten Eintrag hat
@@ -279,7 +292,9 @@ export function varyStyle(style: string, withVocals: boolean, o: DiceOptions = {
     const { i, free } = pick(known, random);
     parts[i] = pickPreferred(free, o);
   } else {
-    const free = [...pools.instr, ...pools.mood].filter((t) => !has.has(t.toLowerCase()));
+    // Im Song-Modus ohne Art der Stimme kann auch eine dazukommen
+    const voiceMissing = withVocals && !parts.some((p) => knownStyle("voicetype").has(p.toLowerCase()));
+    const free = [...pools.instr, ...pools.mood, ...(voiceMissing ? pools.voicetype : [])].filter((t) => !has.has(t.toLowerCase()));
     if (free.length) parts.push(pickPreferred(free, o));
   }
   return parts.join(", ");

@@ -41,7 +41,7 @@ While songs are being generated or waiting, the Library tab shows how many (hove
 
 Above the prompt sit three more buttons:
 
-- **Random** rolls prompt and style together.
+- **Random** rolls prompt and style together. In song mode the style also gets a voice (female, male or now and then a duet, often with a type like breathy or tenor).
 - **Variation** changes them only slightly: one building block of the prompt (mood, scene, detail) or one style term is swapped, or a term is added. Your own text stays.
 - **↶** takes back the last roll, step by step.
 

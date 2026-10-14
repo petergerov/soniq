@@ -7,6 +7,8 @@ runtime/
 # Entwicklerwerkzeuge (npm install). frontend/dist/ gehört dagegen ins Repo: Endnutzer bauen nichts.
 node_modules/
 
+frontend/dist/
+
 # Persönliche Daten: Songs, Datenbank, Logs, Installationsergebnis
 data/
 
