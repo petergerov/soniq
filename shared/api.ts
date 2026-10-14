@@ -106,6 +106,9 @@ export interface QueueInfo {
 
 export type DitModel = "standard" | "xl";
 
+/** Dateiformat der erzeugten Songs. */
+export type OutputFormat = "wav16" | "wav24" | "wav32" | "mp3-320" | "mp3-192" | "mp3-128";
+
 export interface Settings {
   server_url: string;
   lm_url: string;
@@ -113,6 +116,7 @@ export interface Settings {
   poll_interval: number;
   timeout_minutes: number;
   dit: DitModel;
+  output_format: OutputFormat;
   songs_dir: string;
 }
 

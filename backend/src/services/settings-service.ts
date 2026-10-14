@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { DitModel, Settings, SettingsView } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
 import { DIT_MODELS } from "../domain/music-engine.ts";
+import { isOutputFormat } from "../domain/output-format.ts";
 import type { SettingsRepository } from "../infrastructure/settings-repository.ts";
 import type { SongRepository } from "../infrastructure/song-repository.ts";
 import { SongStorage } from "../infrastructure/song-storage.ts";
@@ -38,6 +39,7 @@ export class SettingsService {
       values[field] = n;
     }
     if ("dit" in values) values.dit = this.validDit(values.dit);
+    if ("output_format" in values && !isOutputFormat(values.output_format)) throw new AppError("invalid", "bad_format");
     if ("songs_dir" in values) values.songs_dir = await this.changeSongsDir(String(values.songs_dir ?? "").trim());
     return this.deps.settings.save(values as Partial<Settings>);
   }

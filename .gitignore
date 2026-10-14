@@ -16,7 +16,4 @@ data/
 __pycache__/
 *.pyc
 .DS_Store
-
-# Quelldatei des Logos (die App nutzt frontend/public/alphatester.png)
-274_Alphatester_Schrift.png
 .gstack/

@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark">
 <title>Music Generator</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <script type="module" crossorigin src="/assets/index-DOakGILe.js"></script>
+  <script type="module" crossorigin src="/assets/index-CvlQ6F06.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-BpYDaoP1.css">
 </head>
 <body>
@@ -29,8 +29,8 @@
       </svg>
       <div id="dzBubble" class="dz-bubble" role="status" aria-live="polite"></div>
     </div>
-    <a class="brand-link" href="https://alphatester.rabbitfire.de/" target="_blank" rel="noopener" title="Zur Alphatester-Webseite" data-i18n-title="brand_title">
-      <img class="brand" src="/alphatester.png" alt="Alphatester">
+    <a class="brand-link" href="https://alphatester.rabbitfire.de/" target="_blank" rel="noopener" title="Zur SONIQ-Webseite" data-i18n-title="brand_title">
+      <img class="brand" src="/soniq.png" alt="SONIQ">
     </a>
     <div class="divider"></div>
     <h1 class="title"><span>MUSIC</span><span>GENERATOR</span></h1>
@@ -200,6 +200,16 @@
     <label class="field"><span class="lbl" title="" data-i18n-title="dit_tip" data-i18n="dit">Klangmodell</span>
       <select name="dit"><option value="standard" data-i18n="dit_standard">Standard</option><option value="xl" data-i18n="dit_xl">XL</option></select>
       <span class="small" id="ditHint" hidden data-i18n="dit_xl_missing"></span>
+    </label>
+    <label class="field"><span class="lbl" title="" data-i18n-title="out_fmt_tip" data-i18n="out_fmt">Ausgabeformat</span>
+      <select name="output_format">
+        <option value="wav16">WAV 16 Bit</option>
+        <option value="wav24">WAV 24 Bit</option>
+        <option value="wav32">WAV 32 Bit Float</option>
+        <option value="mp3-320">MP3 320 kbit/s</option>
+        <option value="mp3-192">MP3 192 kbit/s</option>
+        <option value="mp3-128">MP3 128 kbit/s</option>
+      </select>
     </label>
     <label class="field"><span class="lbl" title="Leer = data/songs im Programmordner. Beim Ändern werden die vorhandenen Songs dorthin verschoben." data-i18n-title="songs_dir_tip" data-i18n="songs_dir">Song-Ordner</span>
       <input name="songs_dir" placeholder="">

@@ -1,6 +1,7 @@
 // Einstellungen als Schlüssel/JSON-Wert. Vorgaben werden nicht gespeichert, damit spätere
 // Installer-Werte (engine.conf) greifen.
 import type { Settings } from "../../../shared/api.ts";
+import { DEFAULT_OUTPUT_FORMAT } from "../domain/output-format.ts";
 import type { AppConfig } from "../config/app-config.ts";
 import type { Database } from "./database.ts";
 
@@ -15,6 +16,7 @@ export function defaultSettings(config: Pick<AppConfig, "engineMode" | "lmFile">
     poll_interval: 1.5,
     timeout_minutes: 30,
     dit: "standard",                        // Klangmodell: "standard" (2B) oder "xl" (4B, braucht die XL-Datei)
+    output_format: DEFAULT_OUTPUT_FORMAT,   // Dateiformat der Songs (siehe domain/output-format.ts)
     songs_dir: "",                          // leer = data/songs im Programmordner, sonst absoluter Pfad
   };
 }

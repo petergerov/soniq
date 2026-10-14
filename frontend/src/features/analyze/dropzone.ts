@@ -3,6 +3,7 @@ import type { AnalyzeResult } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { byId } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";
+import { toServerReadableAudio, UnsupportedAudioError } from "./audio-converter.ts";
 
 type State = "" | "busy" | "ok" | "err";
 const OK_VISIBLE_MS = 4000;
@@ -46,10 +47,11 @@ export class Dropzone {
     if (!file) return;
     this.show("busy", this.t("analyzing", file.name));
     try {
-      this.onResult(await this.api.analyze(file));
+      this.onResult(await this.api.analyze(await toServerReadableAudio(file)));
       this.show("ok", this.t("analyzed", file.name));
     } catch (err) {
-      this.show("err", `${this.t("error")}: ${(err as Error).message}`);
+      const message = err instanceof UnsupportedAudioError ? this.t("decode_failed", file.name) : (err as Error).message;
+      this.show("err", `${this.t("error")}: ${message}`);
     }
   }
 

@@ -9,12 +9,13 @@ import {
   DIT_MODELS, EngineError,
   type AnalysisResult, type GeneratedAudio, type MusicEngine, type ProgressReporter,
 } from "../domain/music-engine.ts";
+import { DEFAULT_OUTPUT_FORMAT, OUTPUT_FORMATS, type AceOutputFormat } from "../domain/output-format.ts";
 import { parseMultipart } from "./multipart.ts";
 
 /** Felder, die an ace-server durchgereicht werden (Rest bleibt auf Server-Vorgaben). */
 const ACE_FIELDS = new Set([
   "caption", "lyrics", "bpm", "duration", "keyscale", "timesignature", "vocal_language", "seed", "lm_temperature",
-  "lm_cfg_scale", "inference_steps", "guidance_scale", "output_format", "lm_model", "synth_model", "use_cot_caption",
+  "lm_cfg_scale", "inference_steps", "guidance_scale", "output_format", "mp3_bitrate", "lm_model", "synth_model", "use_cot_caption",
 ]);
 const META_FIELDS = ["bpm", "duration", "keyscale", "timesignature", "vocal_language", "lyrics", "caption"] as const;
 const REQUEST_TIMEOUT_MS = 60_000;
@@ -47,6 +48,7 @@ export class AceStepEngine implements MusicEngine {
   private readonly timeoutSeconds: number;
   private readonly lmModel: string;
   private readonly ditModel: string;
+  private readonly outputFormat: AceOutputFormat;
 
   constructor(settings: Settings) {
     this.base = settings.server_url.replace(/\/+$/, "");
@@ -57,6 +59,7 @@ export class AceStepEngine implements MusicEngine {
     // Liegen mehrere Sprachmodelle im Ordner, nähme der Server sonst das erste (alphabetisch)
     this.lmModel = settings.lm_model;
     this.ditModel = DIT_MODELS[settings.dit] ?? DIT_MODELS.standard;
+    this.outputFormat = OUTPUT_FORMATS[settings.output_format] ?? OUTPUT_FORMATS[DEFAULT_OUTPUT_FORMAT];
   }
 
   async health(): Promise<HealthInfo> {
@@ -81,7 +84,7 @@ export class AceStepEngine implements MusicEngine {
       Object.entries(params).filter(([k, v]) => ACE_FIELDS.has(k) && v !== null && v !== undefined && v !== ""),
     );
     req.use_cot_caption ??= false;      // Prompt wörtlich übernehmen
-    req.output_format = "wav16";        // 48 kHz / 16 Bit, verlustfrei
+    Object.assign(req, this.outputFormat);   // Dateiformat aus den Einstellungen (Vorgabe: WAV 16 Bit)
     req.synth_model = this.ditModel;
     if (this.lmModel) req.lm_model = this.lmModel;
     const start = performance.now();    // zählt über beide Phasen (Sprachmodell + Synthese) durch
@@ -93,7 +96,7 @@ export class AceStepEngine implements MusicEngine {
     if (!enriched.audio_codes) {
       throw new EngineError("Sprachmodell hat keine Audio-Codes geliefert (LM auf Metal? LM-Server auf CPU nutzen)");
     }
-    enriched.output_format = req.output_format;
+    Object.assign(enriched, this.outputFormat);
     enriched.synth_model = req.synth_model;
 
     // 2) Synthese

@@ -84,7 +84,7 @@ input::placeholder, textarea::placeholder { color: #7f8596; }
 input:hover, textarea:hover, select:hover { border-color: #3a4050; }
 input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
 input[type=checkbox] { width: auto; accent-color: var(--accent); margin: 0; }
-/* Bubble-Slider: Pille mit Füllung in der Alphatester-Farbe, Wert wandert im Knopf mit */
+/* Bubble-Slider: Pille mit Füllung in der SONIQ-Farbe, Wert wandert im Knopf mit */
 :root { --brand: #b09f84; --slider-h: 44px; --knob: 46px; }
 .slider { position: relative; height: var(--slider-h); border-radius: 999px; background: var(--bg); border: 1px solid var(--border); }
 .slider .fill { position: absolute; left: -1px; top: -1px; bottom: -1px; border-radius: 999px; background: var(--brand);

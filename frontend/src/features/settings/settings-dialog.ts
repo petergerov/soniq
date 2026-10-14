@@ -1,4 +1,5 @@
-// Einstellungs-Dialog (Zahnrad): Server-Adressen, Timeout, Klangmodell, Song-Ordner.
+// Einstellungs-Dialog (Zahnrad): Server-Adressen, Timeout, Klangmodell, Ausgabeformat, Song-Ordner.
+import type { OutputFormat } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { byId } from "../../core/dom.ts";
 
@@ -8,6 +9,7 @@ interface SettingsControls extends HTMLFormControlsCollection {
   timeout_minutes: HTMLInputElement;
   songs_dir: HTMLInputElement;
   dit: HTMLSelectElement;
+  output_format: HTMLSelectElement;
 }
 
 const DEFAULT_TIMEOUT = 30;
@@ -41,6 +43,7 @@ export class SettingsDialog {
     this.f.songs_dir.value = s.songs_dir;
     this.f.songs_dir.placeholder = s.songs_dir_default;   // Standard als Platzhalter, leer lassen = Standard
     this.f.dit.value = s.dit;
+    this.f.output_format.value = s.output_format;
     this.f.dit.querySelector<HTMLOptionElement>('option[value="xl"]')!.disabled = !s.dit_xl_available;   // XL nur, wenn die Datei da ist
     byId("ditHint").hidden = s.dit_xl_available;
     this.onOpen();
@@ -55,6 +58,7 @@ export class SettingsDialog {
         timeout_minutes: Number(this.f.timeout_minutes.value) || DEFAULT_TIMEOUT,
         songs_dir: this.f.songs_dir.value.trim(),
         dit: this.f.dit.value === "xl" ? "xl" : "standard",
+        output_format: this.f.output_format.value as OutputFormat,   // Optionen im HTML, der Server prüft den Wert
       });
       this.onSaved();
     } catch (err) {
