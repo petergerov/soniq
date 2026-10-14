@@ -8,7 +8,7 @@ Open the **Terminal** app (Spotlight: <kbd>Cmd</kbd>+<kbd>Space</kbd>, type “T
 It downloads the project into the folder **MusicGenerator** in your home folder:
 
 ```bash
-git clone https://github.com/rabbitfiremediacreation/music-generator.git ~/MusicGenerator
+git clone https://github.com/petergerov/soniq.git ~/MusicGenerator
 ```
 
 If the Apple developer tools are missing, macOS now asks automatically whether to install them: confirm with

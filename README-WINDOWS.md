@@ -18,7 +18,7 @@ auf einer GTX 1060 (6 GB) dauert ein 30-Sekunden-Song etwa 1 Minute, ein 90-Seku
 2. In der PowerShell:
 
 ```powershell
-git clone https://github.com/rabbitfiremediacreation/music-generator.git $HOME\MusicGenerator
+git clone https://github.com/petergerov/soniq.git $HOME\MusicGenerator
 ```
 
 3. Im Ordner `MusicGenerator` die Datei **Install.bat** doppelklicken.

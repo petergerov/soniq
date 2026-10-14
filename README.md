@@ -13,7 +13,7 @@ Web-Oberfläche für [ACE-Step 1.5](https://github.com/ace-step/ACE-Step-1.5) ü
 Voraussetzungen: Mac mit Apple Silicon (M1 oder neuer), mindestens 8 GB Arbeitsspeicher, 7–11 GB frei.
 
 ```bash
-git clone https://github.com/rabbitfiremediacreation/music-generator.git ~/MusicGenerator
+git clone https://github.com/petergerov/soniq.git ~/MusicGenerator
 open ~/MusicGenerator/Install.command
 ```
 
@@ -62,7 +62,7 @@ Das Skript zeigt, was es entfernt, und fragt vorher. Es beendet die Server, lös
 Unter Arch Linux (sowie CachyOS, EndeavourOS, Manjaro) steht ein automatisches All-in-One-Skript bereit (bereitgestellt von ZeroDot1):
 
 ```bash
-git clone https://github.com/rabbitfiremediacreation/music-generator.git ~/MusicGenerator
+git clone https://github.com/petergerov/soniq.git ~/MusicGenerator
 cd ~/MusicGenerator
 ./arch_linux.sh
 ```
@@ -94,7 +94,7 @@ Das Skript setzt `pacman` voraus. Auf Ubuntu, Debian, Fedora und anderen geht es
 Voraussetzungen: git, cmake, ein C++-Compiler, [Node.js](https://nodejs.org) ab 22.18 (empfohlen: 24 LTS), für NVIDIA das CUDA-Toolkit (AMD/Intel: Vulkan-SDK).
 
 ```bash
-git clone https://github.com/rabbitfiremediacreation/music-generator.git ~/MusicGenerator
+git clone https://github.com/petergerov/soniq.git ~/MusicGenerator
 cd ~/MusicGenerator
 # Modellserver in der getesteten Version bauen (Hash steht in scripts/common.sh)
 git clone --recurse-submodules https://github.com/ServeurpersoCom/acestep.cpp engine/acestep.cpp

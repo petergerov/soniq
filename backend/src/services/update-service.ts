@@ -9,7 +9,7 @@ import type { SongRepository } from "../infrastructure/song-repository.ts";
 import type { Translate } from "../i18n/translator.ts";
 
 export const BRANCH = "main";
-export const REPO_URL = "https://github.com/rabbitfiremediacreation/music-generator.git";
+export const REPO_URL = "https://github.com/petergerov/soniq.git";
 /** Ändern sich diese Dateien (neue acestep.cpp- oder Node-Version), muss der Installer noch einmal laufen. */
 const INSTALLER_FILES = ["scripts/common.sh", "scripts/common.ps1"];
 

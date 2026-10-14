@@ -8,7 +8,7 @@ Open **PowerShell** (Start menu, type “PowerShell”) and paste this command. 
 folder **MusicGenerator** in your user folder:
 
 ```powershell
-git clone https://github.com/rabbitfiremediacreation/music-generator.git $HOME\MusicGenerator
+git clone https://github.com/petergerov/soniq.git $HOME\MusicGenerator
 ```
 
 If Windows doesn't know the `git` command, run `winget install Git.Git` once first and reopen PowerShell.
