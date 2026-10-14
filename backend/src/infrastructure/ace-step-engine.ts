@@ -108,11 +108,12 @@ export class AceStepEngine implements MusicEngine {
     return { audio, extension, meta };
   }
 
-  async plan(params: Json, progress: ProgressReporter, signal: AbortSignal): Promise<SongResultMeta> {
+  async plan(params: Json, writeLyrics: boolean, progress: ProgressReporter, signal: AbortSignal): Promise<SongResultMeta> {
     const req: Json = Object.fromEntries(
       Object.entries(params).filter(([k, v]) => ACE_FIELDS.has(k) && v !== null && v !== undefined && v !== ""),
     );
     req.use_cot_caption ??= false;
+    req.lm_mode = writeLyrics ? "inspire" : "format";   // beide ohne Audio-Codes, viel schneller als "generate"
     if (this.lmModel) req.lm_model = this.lmModel;
     const job = await this.startJob(this.lmBase, "/lm", { body: JSON.stringify(req), headers: { "content-type": "application/json" } }, signal);
     const enriched = firstItem(await (await this.waitForJob(this.lmBase, job, "Sprachmodell", performance.now(), progress, signal)).json());

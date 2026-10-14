@@ -43,8 +43,12 @@ export interface StemRequest {
 
 export interface MusicEngine {
   readonly name: string;
-  /** Nur das Sprachmodell: plant Tempo, Tonart, Takt, Länge und (wenn leer) die Lyrics, ohne Audio. */
-  plan(params: Record<string, unknown>, progress: ProgressReporter, signal: AbortSignal): Promise<SongResultMeta>;
+  /**
+   * Nur das Sprachmodell, ohne Audio-Codes: plant Tempo, Tonart, Takt, Länge.
+   * writeLyrics: auch Lyrics schreiben (Modus "inspire", ~15 s; ändert dabei Länge und Beschreibung), sonst
+   * Modus "format" (~3 s, Lyrics bleiben wie übergeben).
+   */
+  plan(params: Record<string, unknown>, writeLyrics: boolean, progress: ProgressReporter, signal: AbortSignal): Promise<SongResultMeta>;
   /** Eine Einzelspur mit dem Spuren-Modell (Base); liefert WAV (Float 32). */
   stem(request: StemRequest, progress: ProgressReporter, signal: AbortSignal): Promise<Uint8Array>;
   /** Erzeugt einen Song. `signal` bricht ab (der Server-Job wird dann ebenfalls beendet). */

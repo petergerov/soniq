@@ -14,6 +14,16 @@ export interface StemRecord {
   finished_at: string | null;
 }
 
+/** Beschreibung je Spur, vor den Stil gesetzt (die Spur allein soll klar benannt sein) */
+export const TRACK_PROMPTS: Record<StemTrack, string> = {
+  drums: "drums, drum kit, steady groove", percussion: "percussion, shakers and hand drums", bass: "bass, bass line",
+  guitar: "guitar", keyboard: "keyboard, piano", synth: "synthesizer", strings: "string section", brass: "brass section",
+  woodwinds: "woodwinds", fx: "sound effects, fx", vocals: "lead vocals", backing_vocals: "backing vocals, harmonies",
+};
+
+/** Spuren mit Gesang: bekommen die Lyrics, alle anderen "[Instrumental]" */
+export const VOCAL_TRACKS: readonly StemTrack[] = ["vocals", "backing_vocals"];
+
 export function isStemTrack(value: unknown): value is StemTrack {
   return STEM_TRACKS.includes(value as StemTrack);
 }

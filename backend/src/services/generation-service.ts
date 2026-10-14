@@ -1,8 +1,9 @@
 // Neue Songs in Auftrag geben, wiederholen, abbrechen oder löschen.
-import type { GenerateResponse, SongParams } from "../../../shared/api.ts";
+import type { GenerateResponse, GenerationMode, SongParams, StemTrack } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
 import { newId, randomSeed } from "../domain/ids.ts";
 import { INSTRUMENTAL, nowIso } from "../domain/song.ts";
+import { VOCAL_TRACKS } from "../domain/stem.ts";
 import type { FolderRepository } from "../infrastructure/folder-repository.ts";
 import type { SongRepository } from "../infrastructure/song-repository.ts";
 import type { SongStorage } from "../infrastructure/song-storage.ts";
@@ -28,6 +29,8 @@ export interface GenerateCommand {
   lmTemperature: number | null;
   groupId: string | null;  // für "weitere Variante" einer bestehenden Gruppe
   folderId: string | null; // Ordner der Bibliothek, in dem die neuen Songs landen
+  mode: GenerationMode;    // "tracks" = Spur für Spur (siehe services/track-by-track.ts)
+  tracks: StemTrack[];     // bei "tracks", schon in Reihenfolge
 }
 
 export type RemoveOutcome = { cancelled: true } | { deleted: true };
@@ -39,6 +42,8 @@ export interface GenerationServiceDeps {
   jobs: JobRunner;
   /** Einzelspuren des Songs samt Dateien löschen */
   removeStems: (songId: string) => Promise<void>;
+  /** Spuren-Modell (Base) vorhanden? Nötig für "Spur für Spur" */
+  stemsAvailable: () => boolean;
 }
 
 export function buildCaption(style: string, prompt: string, fallback: string): string {
@@ -57,6 +62,12 @@ export class GenerationService {
     const caption = buildCaption(cmd.style, cmd.prompt, cmd.caption);
     if (!caption) throw new AppError("invalid", "no_prompt");
     const lyrics = cmd.instrumental ? INSTRUMENTAL : cmd.lyrics.trim();
+    // Spur für Spur: Gesangsspuren nur bei Songs mit Gesang; braucht das Spuren-Modell
+    const tracks = cmd.mode === "tracks" ? cmd.tracks.filter((t) => !cmd.instrumental || !VOCAL_TRACKS.includes(t)) : [];
+    if (cmd.mode === "tracks") {
+      if (!tracks.length) throw new AppError("invalid", "no_tracks");
+      if (!this.deps.stemsAvailable()) throw new AppError("bad_request", "stems_model_missing");
+    }
     const base: Omit<SongParams, "seed"> = {
       prompt: cmd.prompt,
       style: cmd.style,
@@ -70,6 +81,7 @@ export class GenerationService {
       inference_steps: cmd.inferenceSteps,
       lm_temperature: cmd.lmTemperature,
       use_cot_caption: !cmd.keepCaption,
+      ...(tracks.length ? { mode: "tracks" as const, tracks } : {}),
     };
     const groupId = cmd.groupId || newId();
     const folderId = cmd.folderId && this.deps.folders.find(cmd.folderId) ? cmd.folderId : null;

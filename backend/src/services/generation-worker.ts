@@ -6,6 +6,8 @@ import type { KeepAwake } from "../infrastructure/keep-awake.ts";
 import type { SettingsRepository } from "../infrastructure/settings-repository.ts";
 import type { SongRepository } from "../infrastructure/song-repository.ts";
 import type { SongStorage } from "../infrastructure/song-storage.ts";
+import type { WavDepth } from "../infrastructure/wav.ts";
+import { hasTracks, type TrackByTrack } from "./track-by-track.ts";
 
 /** Was andere Services vom Worker brauchen: anstoßen und einen laufenden Auftrag abbrechen. */
 export interface JobRunner {
@@ -19,6 +21,8 @@ export interface GenerationWorkerDeps {
   storage: SongStorage;
   engineFactory: MusicEngineFactory;
   keepAwake: KeepAwake;
+  /** "Spur für Spur" (Songs mit params.mode "tracks") */
+  trackByTrack: TrackByTrack;
   log?: (message: string) => void;
 }
 
@@ -85,7 +89,16 @@ export class GenerationWorker implements JobRunner {
     const abort = new AbortController();
     this.running = { songId, abort };
     try {
-      const result = await engine.generate({ ...params }, (msg) => songs.setProgress(songId, msg), abort.signal);
+      const report = (msg: string) => songs.setProgress(songId, msg);
+      if (hasTracks(params)) {
+        // Spur für Spur: Spuren und Mix sind immer WAV (gemischt wird als WAV), Bittiefe aus den Einstellungen
+        const depth: WavDepth = settings.output_format === "wav24" ? 24 : settings.output_format === "wav32" ? 32 : 16;
+        const result = await this.deps.trackByTrack.run(songId, params, engine, depth, report, abort.signal);
+        if (songs.status(songId) !== "running") return;   // inzwischen abgebrochen
+        songs.markDone(songId, { file: result.file, engine: `${engine.name}+tracks`, resultMeta: JSON.stringify(result.meta), finishedAt: nowIso() });
+        return;
+      }
+      const result = await engine.generate({ ...params }, report, abort.signal);
       const file = `${songId}.${result.extension}`;
       if (songs.status(songId) !== "running") return;   // inzwischen abgebrochen
       await storage.save(file, result.audio);

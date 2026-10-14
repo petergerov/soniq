@@ -18,7 +18,13 @@ export interface SongParams {
   inference_steps: number;
   lm_temperature?: number | null;
   use_cot_caption?: boolean;
+  /** "tracks" = Spur für Spur (lego, eine Spur nach der anderen); fehlt = ganzer Song */
+  mode?: GenerationMode;
+  /** Bei mode "tracks": die Spuren, in Reihenfolge "Rhythmus zuerst" */
+  tracks?: StemTrack[];
 }
+
+export type GenerationMode = "full" | "tracks";
 
 /** Vom Modell ergänzte Werte. */
 export interface SongResultMeta {
@@ -74,6 +80,9 @@ export interface GenerateRequest {
   variants?: number;
   inference_steps?: number;
   lm_temperature?: number | null;
+  /** "tracks" = Spur für Spur (braucht das Spuren-Modell, siehe SettingsView.stems_available) */
+  mode?: GenerationMode;
+  tracks?: StemTrack[];
   group_id?: string | null;
   folder_id?: string | null;
 }

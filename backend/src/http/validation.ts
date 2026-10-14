@@ -1,5 +1,6 @@
 // Prüft und normalisiert JSON-Eingaben, bevor sie an die Services gehen.
-import type { PresetValues, SongPatch } from "../../../shared/api.ts";
+import type { PresetValues, SongPatch, StemTrack } from "../../../shared/api.ts";
+import { isStemTrack, orderTracks } from "../domain/stem.ts";
 import type { GenerateCommand } from "../services/generation-service.ts";
 import { HttpError } from "./request.ts";
 
@@ -61,7 +62,18 @@ export function parseGenerateCommand(input: Input): GenerateCommand {
     lmTemperature: input.lm_temperature === undefined || input.lm_temperature === null ? null : num(input, "lm_temperature", 0),
     groupId: optionalId(input, "group_id"),
     folderId: optionalId(input, "folder_id"),
+    ...tracksMode(input),
   };
+}
+
+/** mode "tracks" mit mindestens einer bekannten Spur; sonst ganzer Song. */
+function tracksMode(input: Input): { mode: "full" | "tracks"; tracks: StemTrack[] } {
+  const mode = str(input, "mode", "full");
+  if (mode !== "full" && mode !== "tracks") invalid("mode", '"full" or "tracks" expected');
+  if (mode === "full") return { mode, tracks: [] };
+  const tracks = input.tracks;
+  if (!Array.isArray(tracks) || !tracks.length || !tracks.every(isStemTrack)) invalid("tracks", "non-empty list of track names expected");
+  return { mode, tracks: orderTracks(tracks) };
 }
 
 export function parseSongPatch(input: Input): SongPatch {

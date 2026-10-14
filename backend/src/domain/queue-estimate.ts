@@ -9,6 +9,8 @@ export interface RunRecord {
   finished_at: string | null;
   /** Länge der Musik in Sekunden (0 = unbekannt / Modell entscheidet) */
   duration: number;
+  /** Durchläufe des Klangmodells: 1 für einen ganzen Song, die Zahl der Spuren bei "Spur für Spur" */
+  units?: number | null;
 }
 
 export interface RunRate {
@@ -42,7 +44,7 @@ export function learnRate(finished: readonly RunRecord[]): RunRate | null {
     const start = r.started_at ?? (previousEnd && previousEnd > r.created_at ? previousEnd : r.created_at);
     const took = seconds(start, r.finished_at);
     if (r.status === "done" && r.duration > 0 && took > 0) {
-      rates.push(took / r.duration);
+      rates.push(took / (r.duration * (r.units || 1)));
       durations.push(r.duration);
     }
     previousEnd = r.finished_at;
@@ -56,7 +58,7 @@ export function estimateQueue(active: readonly RunRecord[], rate: RunRate, now: 
   const out: Record<string, number> = {};
   let ahead = 0;
   for (const r of active) {
-    const total = rate.rate * (r.duration > 0 ? r.duration : rate.typicalDuration);
+    const total = rate.rate * (r.duration > 0 ? r.duration : rate.typicalDuration) * (r.units || 1);
     const elapsed = r.status === "running" && r.started_at ? Math.max(0, seconds(r.started_at, now)) : 0;
     ahead += Math.max(0, total - elapsed);
     out[r.id] = Math.round(ahead);

@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import { readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { loadConfig, type AppConfig } from "./config/app-config.ts";
-import type { MusicEngineFactory } from "./domain/music-engine.ts";
+import { STEM_MODEL, type MusicEngineFactory } from "./domain/music-engine.ts";
 import { HttpServer } from "./http/http-server.ts";
 import { registerFolderRoutes } from "./http/routes/folder-routes.ts";
 import { registerPresetRoutes } from "./http/routes/preset-routes.ts";
@@ -33,6 +33,7 @@ import { AnalysisService } from "./services/analysis-service.ts";
 import { FolderService } from "./services/folder-service.ts";
 import { PresetService } from "./services/preset-service.ts";
 import { SetupService } from "./services/setup-service.ts";
+import { TrackByTrack } from "./services/track-by-track.ts";
 import { StemService } from "./services/stem-service.ts";
 import { GenerationService } from "./services/generation-service.ts";
 import { GenerationWorker } from "./services/generation-worker.ts";
@@ -78,10 +79,14 @@ async function main(): Promise<void> {
   const launcher = createProcessLauncher(config.platform);
 
   // Services
-  const worker = new GenerationWorker({ songs, settings, storage, engineFactory, keepAwake: createKeepAwake(config.platform), log });
   const stems = new StemRepository(db);
   const stemService = new StemService({ stems, songs, storage });
-  const generation = new GenerationService({ songs, folders, storage, jobs: worker, removeStems: (id) => stemService.removeForSong(id) });
+  const trackByTrack = new TrackByTrack({ stems, storage, removeStems: (id) => stemService.removeForSong(id) });
+  const worker = new GenerationWorker({ songs, settings, storage, engineFactory, keepAwake: createKeepAwake(config.platform), trackByTrack, log });
+  const generation = new GenerationService({
+    songs, folders, storage, jobs: worker, removeStems: (id) => stemService.removeForSong(id),
+    stemsAvailable: () => existsSync(join(config.modelsDir, STEM_MODEL)),
+  });
   const library = new LibraryService({ songs, folders, storage });
   const folderService = new FolderService(folders, songs);
   const settingsService = new SettingsService({ settings, songs, storage, modelsDir: config.modelsDir, packaged: config.packaged });

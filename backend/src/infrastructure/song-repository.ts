@@ -120,7 +120,7 @@ export class SongRepository {
 
   /** Zeiten für die Schätzung: die letzten Songs mit Endzeit (nach Endzeit sortiert) und die aktiven in Abarbeitungsreihenfolge. */
   runRecords(): { finished: RunRecord[]; active: RunRecord[] } {
-    const cols = "id, status, created_at, started_at, finished_at, COALESCE(json_extract(result_meta,'$.duration'), json_extract(params,'$.duration'), 0) AS duration";
+    const cols = "id, status, created_at, started_at, finished_at, COALESCE(json_extract(result_meta,'$.duration'), json_extract(params,'$.duration'), 0) AS duration, json_array_length(json_extract(params,'$.tracks')) AS units";
     const finished = this.db.all<RunRecord>(`SELECT ${cols} FROM songs WHERE finished_at IS NOT NULL ORDER BY finished_at DESC, rowid DESC LIMIT 60`).reverse();
     const active = this.db.all<RunRecord>(
       `SELECT ${cols} FROM songs WHERE status IN ('queued','running') ORDER BY status='running' DESC, created_at, rowid`);

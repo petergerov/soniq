@@ -185,10 +185,18 @@ Step 1 in the code: `scripts/common.sh` (base model, optional; installers and th
 `GET /api/stems/:id/audio`), engine methods `plan()` and `stem()` in `ace-step-engine.ts`, `stems_available` in the
 settings. Deleting a song deletes its tracks.
 
+Step 2 in the code: `services/track-by-track.ts`. `POST /api/generate` takes `mode: "tracks"` and `tracks: [...]`
+(vocal tracks are dropped for instrumental songs, an error if the base model is missing). The plan uses the language
+model without audio codes: `lm_mode: "inspire"` when lyrics have to be written (~15 s, the caption and length it
+returns are ignored), otherwise `"format"` (~3 s) — the normal `generate` takes ~37 s. Tracks and mix are always WAV
+(bit depth from the settings, 16 bit when MP3 is set). Progress "2/5 bass · 1:23"; cancel keeps finished tracks,
+retry starts over. The time estimate counts each track as one pass (`units` in `queue-estimate.ts`).
+Measured: 30 s song with drums, bass, vocals in 2:18.
+
 | Step | Content | Depends on |
 |---|---|---|
 | 1 | ✅ Base model in the catalog; tracks table, storage, engine methods (`lego`, `extract`, mixing), API | – |
-| 2 | **B** backend: track-by-track generation in the worker, time estimate | 1 |
+| 2 | ✅ **B** backend: track-by-track generation in the worker, time estimate | 1 |
 | 3 | **B** interface: switch, track choice, track list on the song (play, download, ZIP) | 2 |
 | 4 | **A**: extract in the worker + "Extract tracks …" in the track list | 1, 3 |
 | 5 | Experiment **C**, then decide variants with the user | 1 |
