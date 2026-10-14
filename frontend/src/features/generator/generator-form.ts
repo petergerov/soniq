@@ -7,7 +7,8 @@ import type { Translate } from "../../i18n/i18n.ts";
 import { BubbleSlider } from "./bubble-slider.ts";
 import { LyricsEditor } from "./lyrics-editor.ts";
 import { PromptBlocks } from "./prompt-blocks.ts";
-import { isThemeId, randomPrompt, randomStyle, randomTitle, type ThemeId, varyPrompt, varyStyle } from "./random-content.ts";
+import { isThemeId, promptBlock, randomPrompt, randomStyle, randomTitle, setPromptBlock, type ThemeId, varyPrompt, varyStyle } from "./random-content.ts";
+import { StyleAxisSliders } from "./style-axis-sliders.ts";
 import { StyleChips } from "./style-chips.ts";
 
 interface FormControls extends HTMLFormControlsCollection {
@@ -64,6 +65,7 @@ export class GeneratorForm {
   private readonly f: FormControls;
   private readonly button: HTMLButtonElement;
   private readonly styleChips: StyleChips;
+  private readonly styleAxes: StyleAxisSliders;
   private readonly lyrics: LyricsEditor;
   private readonly sliders: Record<"duration" | "bpm" | "steps" | "temperature" | "variants", BubbleSlider>;
   private readonly locked = new Set<LockableField>(storage.getJson<LockableField[]>(LOCKS_KEY, []));
@@ -88,6 +90,7 @@ export class GeneratorForm {
     this.blocks = new PromptBlocks({ field: this.f.prompt, root: this.form.querySelector(".blocks")!, theme: () => this.theme, beforeChange: () => this.remember() });
     this.similarButton = byId<HTMLButtonElement>("similarBtn");
     this.styleChips = new StyleChips(this.f.style, byId("tagChips"));
+    this.styleAxes = new StyleAxisSliders(this.f.style, this.form.querySelector(".axes")!, () => this.remember());
     this.lyrics = new LyricsEditor({ instrumental: this.f.instrumental, lyrics: this.f.lyrics }, deps.t);
     const slider = (name: string, onChange?: () => void) => new BubbleSlider(this.form.querySelector(`input[name="${name}"]`)!.closest<HTMLElement>(".slider")!, onChange);
     this.sliders = {
@@ -118,9 +121,23 @@ export class GeneratorForm {
     if (!last) return;
     this.f.prompt.value = last.prompt;
     this.f.style.value = last.style;
-    this.styleChips.sync();
+    this.syncStyle();
     this.blocks.sync();
     this.updateUndo();
+  }
+
+  /** Zwei Songs kreuzen: Stil von A, Szene von B (ohne erkannte Szene: der ganze Prompt von B). */
+  cross(a: Song, b: Song): void {
+    this.remember();
+    const promptA = a.params.prompt ?? "";
+    const promptB = b.params.prompt ?? b.params.caption;
+    const sceneB = promptBlock(promptB, "scene");
+    this.f.style.value = a.params.style || a.params.caption;   // ohne Stil: die ganze Beschreibung von A
+    this.f.prompt.value = sceneB && promptA ? setPromptBlock(promptA, "scene", sceneB) : promptB;
+    this.f.title.value = randomTitle();
+    this.syncStyle();
+    this.blocks.sync();
+    scrollToTop();
   }
 
   /** Wie ein Klick auf Generieren (Tastenkürzel). */
@@ -141,7 +158,7 @@ export class GeneratorForm {
     this.f.title.value = song.title || "";
     this.f.style.value = p.style ?? p.caption;   // ältere Songs haben nur einen Text
     this.f.prompt.value = p.prompt ?? "";
-    this.styleChips.sync();
+    this.syncStyle();
     this.blocks.sync();
     this.f.keep_caption.checked = true;          // Prompt wörtlich ist fest die Vorgabe
     this.lyrics.load(p.lyrics || "");
@@ -178,13 +195,13 @@ export class GeneratorForm {
     if (!this.locked.has("prompt")) this.f.prompt.value = r.caption || "";
     this.applyAnalysisMusic(r);
     if (!this.locked.has("style")) this.f.style.value = randomStyle(!this.lyrics.instrumental, this.theme);
-    this.styleChips.sync();
+    this.syncStyle();
     restartAnimation(this.similarButton, "roll");
   }
 
   /** Alles aus der Analyse außer Prompt und Stil. */
   private applyAnalysisMusic(r: AnalyzeResult): void {
-    this.styleChips.sync();
+    this.syncStyle();
     this.blocks.sync();
     this.f.title.value = randomTitle();
     if (hasVocals(r.lyrics || "")) {
@@ -243,7 +260,7 @@ export class GeneratorForm {
       });
     roll("diceBtn", this.f.prompt, () => randomPrompt(this.theme), () => this.blocks.sync());
     roll("titleDice", this.f.title, () => randomTitle());
-    roll("styleDice", this.f.style, () => randomStyle(!this.lyrics.instrumental, this.theme), () => this.styleChips.sync());
+    roll("styleDice", this.f.style, () => randomStyle(!this.lyrics.instrumental, this.theme), () => this.syncStyle());
     this.themeSelect.addEventListener("change", () => {
       storage.set(THEME_KEY, this.theme);
       this.blocks.sync();
@@ -269,7 +286,7 @@ export class GeneratorForm {
     this.remember();
     if (!this.locked.has("prompt")) this.f.prompt.value = prompt(this.f.prompt.value);
     if (!this.locked.has("style")) this.f.style.value = style(this.f.style.value, !this.lyrics.instrumental);
-    this.styleChips.sync();
+    this.syncStyle();
     this.blocks.sync();
     restartAnimation(button, "roll");
   }
@@ -282,6 +299,12 @@ export class GeneratorForm {
     this.history.push(snap);
     if (this.history.length > HISTORY_LIMIT) this.history.shift();
     this.updateUndo();
+  }
+
+  /** Stil-Karten und Stil-Regler an den Stil-Text anpassen. */
+  private syncStyle(): void {
+    this.styleChips.sync();
+    this.styleAxes.sync();
   }
 
   private get theme(): ThemeId {

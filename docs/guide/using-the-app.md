@@ -42,6 +42,8 @@ The **theme** picker left of these buttons keeps the dice inside one world: Film
 
 Below the prompt, **Mood**, **Scene** and **Detail** show the building blocks of the prompt. Pick one from the list or roll just that one with its dice; the rest of the prompt stays.
 
+Below the style, three **sliders** (calm ↔ energetic, acoustic ↔ electronic, dark ↔ bright) write a matching word into the style. The middle position writes nothing.
+
 After analyzing a song, **Similar but different** appears under the upload field. Each click keeps tempo, key, length and description of the analyzed song and rolls a new style.
 
 ## Keyboard shortcuts
@@ -70,6 +72,7 @@ They work as long as the cursor is not in a text field (except Ctrl/⌘ + Enter)
 | 5 | **Folder** | move to a folder |
 | 6 | **Plus** | another version with a new seed |
 | 7 | **Arrow** | copy the settings back into the form |
+|   | **Crossed arrows** | cross two songs: click it on the first song, then on a second one. The form gets the style of the first and the scene of the second. Esc cancels. |
 | 8 | **Cross** | delete, or cancel a running song |
 
 Click a title to rename it. The line below shows **BPM · IT** (iterations) **· VAR** (variance) · key · length.

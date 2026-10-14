@@ -31,6 +31,6 @@ export class StyleChips {
     const parts = this.parts();
     const rest = parts.filter((x) => x.toLowerCase() !== tag.toLowerCase());
     this.field.value = (rest.length < parts.length ? rest : [...parts, tag]).join(", ");
-    this.sync();
+    this.field.dispatchEvent(new Event("input"));   // synchronisiert die Karten und die Stil-Regler
   }
 }

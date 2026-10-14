@@ -45,7 +45,7 @@ const playSong = (song: Song) => {
   if (played.mark(song.id)) songList.render();
   player.play(song).catch((e: Error) => alert(`${t("error")}: ${e.message}`));
 };
-songList = new SongList({ store, played, playback: player, drag, t, play: playSong, reuse: (song) => form.fill(song) });
+songList = new SongList({ store, played, playback: player, drag, t, play: playSong, reuse: (song) => form.fill(song), cross: (a, b) => form.cross(a, b) });
 bindKeyboardShortcuts({ form, playback: player, songs: () => store.songs, play: playSong });
 store.onChange(() => {
   folderBar.refresh();

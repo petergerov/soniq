@@ -22,6 +22,8 @@ export interface SongListDeps {
   t: Translate;
   play: (song: Song) => void;
   reuse: (song: Song) => void;
+  /** Stil von a, Szene von b ins Formular */
+  cross: (a: Song, b: Song) => void;
 }
 
 export class SongList {
@@ -32,6 +34,8 @@ export class SongList {
   private readonly openLyrics = new Set<string>();
   /** Song, dessen Titel gerade bearbeitet wird */
   private editingId: string | null = null;
+  /** Kreuzen: zuerst gewählter Song (A) */
+  private crossFrom: string | null = null;
 
   constructor(deps: SongListDeps) {
     this.deps = deps;
@@ -59,7 +63,9 @@ export class SongList {
       editing: s.id === this.editingId,
       hasFolders: store.hasFolders,
       startsGroup: i > 0 && songs[i - 1]!.group_id !== s.group_id,
+      crossing: !this.crossFrom ? null : s.id === this.crossFrom ? "from" : "pick",
     })).join("");
+    this.root.classList.toggle("crossing", !!this.crossFrom);
     labelIconButtons(this.root);
   }
 
@@ -68,6 +74,7 @@ export class SongList {
     switch (action) {
       case "play": return this.deps.play(song);
       case "reuse": return this.deps.reuse(song);
+      case "cross": return this.cross(song);
       case "rename": return this.startRename(song.id);
       case "move": return this.openMoveMenu(button, song);
       case "lyrics":
@@ -82,6 +89,14 @@ export class SongList {
         return store.remove(song.id);
       }
     }
+  }
+
+  /** Erster Klick wählt A, zweiter Klick auf einen anderen Song kreuzt; nochmal A (oder Escape) bricht ab. */
+  private cross(song: Song): void {
+    const a = this.crossFrom ? this.deps.store.find(this.crossFrom) : undefined;
+    this.crossFrom = !a ? song.id : null;
+    if (a && a.id !== song.id) this.deps.cross(a, song);
+    this.render();
   }
 
   private startRename(id: string): void {
@@ -128,6 +143,11 @@ export class SongList {
     root.addEventListener("focusout", (e) => {
       const input = closest<HTMLInputElement>(e.target, ".t-edit");
       if (input) void this.commitRename(input);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape" || !this.crossFrom) return;
+      this.crossFrom = null;
+      this.render();
     });
     root.addEventListener("keydown", (e) => {
       const input = closest<HTMLInputElement>(e.target, ".t-edit");
