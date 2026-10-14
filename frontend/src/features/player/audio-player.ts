@@ -68,8 +68,8 @@ export class AudioPlayer implements PlaybackState {
     const css = getComputedStyle(document.documentElement);
     const ws = WaveSurfer.create({
       container: "#waveform", height: 44, barWidth: 2, barGap: 1, barRadius: 2, cursorWidth: 0,
-      waveColor: css.getPropertyValue("--border").trim() || "#2a2e38",
-      progressColor: css.getPropertyValue("--accent2").trim() || "#d1a75c",
+      waveColor: css.getPropertyValue("--wave").trim() || "#2b2b36",
+      progressColor: css.getPropertyValue("--wave-progress").trim() || "#a78bfa",
     });
     const showTime = () => { this.time.textContent = `${formatDuration(ws.getCurrentTime())} / ${formatDuration(ws.getDuration())}`; };
     ws.on("timeupdate", showTime);
