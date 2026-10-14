@@ -80,6 +80,7 @@ PAGE_JS = r"""
   const logo = R(q('.logo-wrap'));
   const gen = R(q('#genBtn'));
   const gear = R(q('#btnSettings'));
+  const bell = R(q('#notifyBtn'));
   [
     [logo.x + logo.w / 2, logo.y + logo.h + 14],
     left(R(q('#titleDice'))),
@@ -87,10 +88,12 @@ PAGE_JS = r"""
     right(label('style')),
     right(label('length')),
     right(text(bpm)),
-    right(text(q('#lyricsBox summary > span'))),
+    right(label('vocals')),
     right(text(q('summary[data-i18n="advanced"]'))),
     [gen.x + gen.w - 14, gen.y - 16],
     [gear.x + gear.w / 2, gear.y + gear.h + 14],
+    right(R(q('#presetDelete'))),
+    [bell.x + bell.w / 2, bell.y + bell.h + 14],
   ].forEach(([x, y], i) => marker(i + 1, x, y));
 
   // Song row: numbers under its buttons

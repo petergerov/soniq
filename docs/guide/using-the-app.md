@@ -32,10 +32,12 @@ While songs are being generated or waiting, the Library tab shows how many (hove
 | 4 | **Style** | Genre and instruments. Dice: a suggestion. Under “Styles”, cards add terms. |
 | 5 | **Length** | 10 seconds to 5 minutes, default 1:30. |
 | 6 | **BPM** | Tempo. Far left = Auto, the model decides. |
-| 7 | **Vocals** | Right below the upload field: switch between **Instrumental** and **Song**. With Song: pick the language and type your own lyrics, or leave the field empty (dice: “Automatic”) and the model writes its own lyrics when generating. |
+| 7 | **Vocals** | Below the presets: switch between **Instrumental** and **Song**. With Song: pick the language and type your own lyrics, or leave the field empty (dice: “Automatic”) and the model writes its own lyrics when generating. |
 | 8 | **Advanced** | Iterations (quality), variance (variety), key, time signature, seed. |
 | 9 | **Generate** | Pick the number of versions (1 to 10) and go. Several versions are named A, B, C … The bar stays visible while scrolling. |
 | 10 | **Gear** | Settings, see [below](#settings). Next to it: interface language (twelve languages, from German to Chinese). |
+| 11 | **Presets** | Save the current settings under a name and load them again, see below. |
+| 12 | **Bell** | Sound and notification when a song is done, see above. |
 
 Above the prompt sit three more buttons:
 
