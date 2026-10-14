@@ -161,7 +161,7 @@ select.mini { width: auto; padding: 4px 26px 4px 8px; font-size: 12px; }
 textarea.auto::placeholder { color: var(--accent-soft); }
 details > textarea { margin-top: 12px; }
 details > .chips { margin: 12px 0 0; }
-.lyrics-panel { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(255, 255, 255, .015); }
+.lyrics-panel { display: flex; flex-direction: column; gap: 8px; margin: 0 0 18px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(255, 255, 255, .015); }
 .lyrics-panel[hidden] { display: none; }
 .lyrics-panel .field.lang { margin: 0 0 4px; }
 .lyrics-panel > .chips { margin: 4px 0 0; }

@@ -6,8 +6,8 @@
 <meta name="color-scheme" content="dark">
 <title>SONIQ · Music Generator</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <script type="module" crossorigin src="/assets/index-CW8GEURf.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-Bi0pz4rO.css">
+  <script type="module" crossorigin src="/assets/index-DtHp4_EG.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-CdUQWhud.css">
 </head>
 <body>
 <div class="glow" aria-hidden="true"></div>
@@ -72,23 +72,23 @@
           <button type="button" class="sek" data-vocals="instrumental" aria-pressed="true" data-i18n="instrumental">Instrumental</button>
           <button type="button" class="sek" data-vocals="song" aria-pressed="false" data-i18n="song">Song</button>
         </div>
-        <div id="lyricsPanel" class="lyrics-panel" hidden>
-          <div class="lblrow"><span class="lbl" title="Leer lassen: Das Modell schreibt eigene Lyrics. Die Sprache wählst du darunter (Standard: Englisch)." data-i18n-title="lyrics_tip"><span data-i18n="lyrics">Lyrics</span> <span id="lyricsHint" class="sumhint"></span></span>
-            <button type="button" id="lyricsDice" class="dice" title="Lyrics automatisch schreiben lassen (erst beim Generieren)" aria-label="Lyrics automatisch schreiben lassen" data-i18n-title="lyrics_dice" data-i18n-aria="lyrics_dice"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg></button></div>
-          <div class="field lang"><span class="lbl" data-i18n="language">Sprache</span>
-            <select name="vocal_language" aria-label="Sprache der Lyrics" data-i18n-aria="language_aria">
-              <option value="en" selected data-i18n="en">Englisch</option><option value="de" data-i18n="de">Deutsch</option><option value="fr" data-i18n="fr">Französisch</option>
-              <option value="es" data-i18n="es">Spanisch</option><option value="it" data-i18n="it">Italienisch</option><option value="pt" data-i18n="pt">Portugiesisch</option>
-              <option value="ja" data-i18n="ja">Japanisch</option><option value="ko" data-i18n="ko">Koreanisch</option><option value="zh" data-i18n="zh">Chinesisch</option><option value="ru" data-i18n="ru">Russisch</option>
-            </select></div>
-          <textarea name="lyrics" rows="7" aria-label="Lyrics" data-i18n-aria="lyrics" placeholder="[verse]&#10;…&#10;&#10;[chorus]&#10;…"></textarea>
-          <div class="chips" id="sectionChips"></div>
-        </div>
       </div>
 
       <div class="field"><div class="lblrow"><span class="lbl" id="lblTitle" title="Nur zum Wiederfinden, hat keinen Einfluss auf die Musik." data-i18n-title="title_tip" data-i18n="title">Titel</span>
         <button type="button" id="titleDice" class="dice" title="Zufälligen Titel würfeln" aria-label="Zufälligen Titel würfeln" data-i18n-title="title_dice" data-i18n-aria="title_dice"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg></button></div>
         <input name="title" aria-labelledby="lblTitle" placeholder="optional" data-i18n-ph="title_ph">
+      </div>
+      <div id="lyricsPanel" class="lyrics-panel" hidden>
+        <div class="lblrow"><span class="lbl" title="Leer lassen: Das Modell schreibt eigene Lyrics. Die Sprache wählst du darunter (Standard: Englisch)." data-i18n-title="lyrics_tip"><span data-i18n="lyrics">Lyrics</span> <span id="lyricsHint" class="sumhint"></span></span>
+          <button type="button" id="lyricsDice" class="dice" title="Lyrics automatisch schreiben lassen (erst beim Generieren)" aria-label="Lyrics automatisch schreiben lassen" data-i18n-title="lyrics_dice" data-i18n-aria="lyrics_dice"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg></button></div>
+        <div class="field lang"><span class="lbl" data-i18n="language">Sprache</span>
+          <select name="vocal_language" aria-label="Sprache der Lyrics" data-i18n-aria="language_aria">
+            <option value="en" selected data-i18n="en">Englisch</option><option value="de" data-i18n="de">Deutsch</option><option value="fr" data-i18n="fr">Französisch</option>
+            <option value="es" data-i18n="es">Spanisch</option><option value="it" data-i18n="it">Italienisch</option><option value="pt" data-i18n="pt">Portugiesisch</option>
+            <option value="ja" data-i18n="ja">Japanisch</option><option value="ko" data-i18n="ko">Koreanisch</option><option value="zh" data-i18n="zh">Chinesisch</option><option value="ru" data-i18n="ru">Russisch</option>
+          </select></div>
+        <textarea name="lyrics" rows="7" aria-label="Lyrics" data-i18n-aria="lyrics" placeholder="[verse]&#10;…&#10;&#10;[chorus]&#10;…"></textarea>
+        <div class="chips" id="sectionChips"></div>
       </div>
 
       <div class="randrow">
