@@ -1,6 +1,7 @@
 #!/bin/bash
 # Baut SONIQ.app (und mit --dmg zusätzlich SONIQ.dmg) nach dist-mac/. Läuft lokal und in der GitHub Action.
 # Braucht: Apple Silicon, Xcode-Kommandozeilenwerkzeuge (swiftc, codesign), git und cmake für den Modellserver.
+# VERSION=1.2.3 setzt die Versionsnummer (sonst aus package.json).
 #
 #   macos/build-app.sh [--dmg]
 #
@@ -14,18 +15,34 @@ OUT="$ROOT/dist-mac"
 APP="$OUT/SONIQ.app"
 C="$APP/Contents"
 CACHE="$OUT/cache"
-VERSION=$(sed -n 's/^  "version": "\(.*\)",$/\1/p' package.json)
+VERSION="${VERSION:-$(sed -n 's/^  "version": "\(.*\)",$/\1/p' package.json)}"   # VERSION: z. B. aus dem Release-Tag
+MIN_MACOS="13.5"   # Node.js 24 braucht macOS 13.5
+EB="$ENGINE/build-app"   # eigener Build des Modellservers, getrennt vom normalen build/ der Installation
 SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 schritt() { echo ""; echo "▸ $1"; }
 
 [ "$(uname -m)" = "arm64" ] || { echo "Only Apple Silicon is supported."; exit 1; }
 mkdir -p "$CACHE"
 
-schritt "Model server acestep.cpp (${ACESTEP_REV:0:7})"
-if ! "$ENGINE/build/ace-server" --help 2>&1 | head -1 | grep -q "${ACESTEP_REV:0:7}"; then
+schritt "Model server acestep.cpp (${ACESTEP_REV:0:7}, portable build)"
+# Ohne -mcpu=native (GGML_NATIVE=OFF): soll auf jedem Apple-Silicon-Mac laufen, nicht nur auf dem Build-Rechner
+if ! "$EB/ace-server" --help 2>&1 | head -1 | grep -q "${ACESTEP_REV:0:7}"; then
   [ -d "$ENGINE/.git" ] || git clone --quiet "$ACESTEP_REPO" "$ENGINE"
   ( cd "$ENGINE" && { git cat-file -e "$ACESTEP_REV^{commit}" 2>/dev/null || git fetch --quiet origin; } \
-    && git checkout --quiet "$ACESTEP_REV" && git submodule update --init --recursive --quiet && ./buildcpu.sh )
+    && git checkout --quiet "$ACESTEP_REV" && git submodule update --init --recursive --quiet )
+  # acestep.cpp liest Kommazahlen mit std::from_chars, das Apple erst ab macOS 26 mitliefert. Für ältere macOS
+  # den eingebauten Ersatz-Parser erzwingen; nur für diesen Build, die Datei wird danach zurückgesetzt.
+  OPS="src/pipeline-synth-ops.cpp"
+  trap 'git -C "$ENGINE" checkout --quiet -- "$OPS"' EXIT
+  sed -i '' 's/^#if defined(_LIBCPP_VERSION) \&\& _LIBCPP_VERSION < 200000$/#if defined(__APPLE__) || (defined(_LIBCPP_VERSION) \&\& _LIBCPP_VERSION < 200000)/' "$ENGINE/$OPS"
+  grep -q "defined(__APPLE__) ||" "$ENGINE/$OPS" || { echo "acestep.cpp changed: the from_chars patch for macOS < 26 no longer applies."; exit 1; }
+  rm -rf "$EB"
+  cmake -S "$ENGINE" -B "$EB" -DCMAKE_BUILD_TYPE=Release -DGGML_BLAS=ON -DGGML_NATIVE=OFF \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET="$MIN_MACOS" > "$OUT/engine-build.log"
+  cmake --build "$EB" --config Release -j "$(sysctl -n hw.ncpu)" >> "$OUT/engine-build.log" 2>&1 \
+    || { tail -30 "$OUT/engine-build.log"; exit 1; }
+  git -C "$ENGINE" checkout --quiet -- "$OPS"
+  trap - EXIT
 fi
 echo "  ok"
 
@@ -47,12 +64,12 @@ schritt "Interface"
 schritt "Assembling SONIQ.app $VERSION"
 rm -rf "$APP"
 mkdir -p "$C/MacOS" "$C/Frameworks" "$C/Resources/app/scripts" "$C/Resources/app/frontend" "$C/Resources/app/backend"
-swiftc -O -target arm64-apple-macos13 -o "$C/MacOS/SONIQ" macos/SONIQ/main.swift
+swiftc -O -target "arm64-apple-macos$MIN_MACOS" -o "$C/MacOS/SONIQ" macos/SONIQ/main.swift
 cp "$CACHE/node-$NODE_VERSION" "$C/MacOS/node"
-cp "$ENGINE/build/ace-server" "$C/MacOS/ace-server"
+cp "$EB/ace-server" "$C/MacOS/ace-server"
 # Bibliotheken des Modellservers nach Frameworks (unter den Namen, die ace-server erwartet)
-for lib in $(otool -L "$ENGINE/build/ace-server" | sed -n 's|^[[:space:]]*@rpath/\([^ ]*\).*|\1|p'); do
-  cp -L "$ENGINE/build/$lib" "$C/Frameworks/$lib"
+for lib in $(otool -L "$EB/ace-server" | sed -n 's|^[[:space:]]*@rpath/\([^ ]*\).*|\1|p'); do
+  cp -L "$EB/$lib" "$C/Frameworks/$lib"
 done
 # Suchpfade aus dem Build (absolute Pfade dieses Rechners) durch Frameworks ersetzen
 for rp in $(otool -l "$C/MacOS/ace-server" | awk '/LC_RPATH/ {getline; getline; print $2}'); do
@@ -85,7 +102,7 @@ cat > "$C/Info.plist" <<EOF
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>$VERSION</string>
   <key>CFBundleVersion</key><string>$VERSION</string>
-  <key>LSMinimumSystemVersion</key><string>13.0</string>
+  <key>LSMinimumSystemVersion</key><string>$MIN_MACOS</string>
   <key>LSUIElement</key><true/>
   <key>LSArchitecturePriority</key><array><string>arm64</string></array>
   <key>NSHumanReadableCopyright</key><string>SONIQ · ACE-Step 1.5 via acestep.cpp</string>

@@ -1,0 +1,103 @@
+# Baut SONIQ.app und SONIQ.dmg (macos/build-app.sh), signiert und notarisiert sie, wenn die Secrets dafür
+# hinterlegt sind, und hängt die DMG bei einem Versions-Tag (v1.2.3) an ein GitHub-Release.
+#
+# Secrets (Settings › Secrets and variables › Actions), alle optional – ohne sie wird ad hoc signiert:
+#   MACOS_CERTIFICATE_P12       "Developer ID Application"-Zertifikat samt Schlüssel als .p12, base64-kodiert
+#   MACOS_CERTIFICATE_PASSWORD  Passwort der .p12-Datei
+#   APPLE_ID                    Apple-ID des Developer-Kontos (E-Mail)
+#   APPLE_APP_PASSWORD          app-spezifisches Passwort dieser Apple-ID
+#   APPLE_TEAM_ID               Team-ID (10 Zeichen, developer.apple.com › Membership)
+name: Mac app
+
+on:
+  push:
+    tags: ["v*"]
+    branches: [main, develop]
+    paths: ["macos/**", ".github/workflows/mac-app.yml", "scripts/common.sh"]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # Release anlegen
+
+jobs:
+  build:
+    runs-on: macos-15   # Apple Silicon
+    timeout-minutes: 90
+    env:
+      HAS_CERT: ${{ secrets.MACOS_CERTIFICATE_P12 != '' }}
+      HAS_NOTARY: ${{ secrets.APPLE_ID != '' && secrets.APPLE_APP_PASSWORD != '' && secrets.APPLE_TEAM_ID != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Versions
+        id: v
+        run: |
+          echo "acestep=$(sed -n 's/^ACESTEP_REV="\(.*\)"/\1/p' scripts/common.sh)" >> "$GITHUB_OUTPUT"
+          echo "node=$(sed -n 's/^NODE_VERSION="\(.*\)"/\1/p' scripts/common.sh)" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then v="${GITHUB_REF_NAME#v}"; else v="$(sed -n 's/^  "version": "\(.*\)",$/\1/p' package.json)"; fi
+          echo "app=$v" >> "$GITHUB_OUTPUT"
+
+      # Der Modellserver braucht beim ersten Mal einige Minuten; danach kommt er aus dem Cache
+      - uses: actions/cache@v4
+        with:
+          path: engine/acestep.cpp
+          key: acestep-${{ steps.v.outputs.acestep }}-${{ hashFiles('macos/build-app.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: dist-mac/cache
+          key: node-${{ steps.v.outputs.node }}
+
+      - name: Import signing certificate
+        if: env.HAS_CERT == 'true'
+        env:
+          P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          P12_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 16)"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          echo "$P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$P12_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/cert.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          # shellcheck disable=SC2046  # bestehende Schlüsselbunde als einzelne Argumente behalten
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" | sed -n 's/.*"\(Developer ID Application:[^"]*\)".*/\1/p' | head -1)"
+          if [ -z "$IDENTITY" ]; then echo "No 'Developer ID Application' identity in the certificate."; exit 1; fi
+          echo "SIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+
+      - name: Build SONIQ.app and SONIQ.dmg
+        env:
+          VERSION: ${{ steps.v.outputs.app }}
+        run: macos/build-app.sh --dmg
+
+      - name: Notarize
+        if: env.HAS_CERT == 'true' && env.HAS_NOTARY == 'true'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: macos/notarize.sh dist-mac/SONIQ.dmg
+
+      - name: Name the DMG
+        run: mv dist-mac/SONIQ.dmg "dist-mac/SONIQ-${{ steps.v.outputs.app }}.dmg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SONIQ-${{ steps.v.outputs.app }}
+          path: dist-mac/SONIQ-${{ steps.v.outputs.app }}.dmg
+          if-no-files-found: error
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTE=""
+          if [ "$HAS_CERT" != 'true' ] || [ "$HAS_NOTARY" != 'true' ]; then
+            NOTE="Not notarized: on first start, open it via System Settings › Privacy & Security › Open Anyway."
+          fi
+          gh release create "$GITHUB_REF_NAME" "dist-mac/SONIQ-${{ steps.v.outputs.app }}.dmg" \
+            --title "SONIQ ${{ steps.v.outputs.app }}" --generate-notes --notes "$NOTE"

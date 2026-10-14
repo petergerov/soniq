@@ -184,6 +184,12 @@ the web app in `Contents/Resources/app`. Songs, settings and models live in `~/L
 Needs Apple Silicon and the Xcode command line tools; the model server is built from `engine/acestep.cpp` (built if missing).
 Without `SIGN_IDENTITY` the app is signed ad hoc (runs on this Mac). For testing next to a running SONIQ:
 `SONIQ_PORT=8793 SONIQ_HOME=/tmp/soniq-test MG_SYNTH_PORT=8185 MG_LM_PORT=8186 dist-mac/SONIQ.app/Contents/MacOS/SONIQ`.
+The model server in the app is a separate portable build (`engine/acestep.cpp/build-app`, `GGML_NATIVE=OFF`, macOS 13.5+,
+with acestep.cpp's own float parser instead of `std::from_chars`, which Apple only ships from macOS 26).
+
+Releases: the GitHub Action `.github/workflows/mac-app.yml` builds the DMG on every tag `v*` (and on demand), signs it
+with the Developer ID certificate, notarizes it (`macos/notarize.sh`) and attaches `SONIQ-<version>.dmg` to the release.
+Without the signing secrets it builds an ad hoc signed DMG; the secrets are listed at the top of the workflow.
 ## Graphics chip and the two modes
 
 On the Apple M4, the language model produces wrong results under Metal in acestep.cpp `b7ba6d9`
