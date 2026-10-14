@@ -16,7 +16,11 @@ You can also stop the servers from inside the app: **Gear › Stop servers**.
 ## The screen
 
 The app has two pages, switched with the tabs at the top: **Create** (the form) and **Library** (your songs).
-While songs are being generated or waiting, the Library tab shows how many. The player keeps playing when you switch.
+While songs are being generated or waiting, the Library tab shows how many (hover it for when everything will be done). The player keeps playing when you switch.
+
+**Time estimate:** running and waiting songs show “~2:10 left” or “done in ~6:40” in the library. The estimate comes from how long your last songs took per second of music, so it appears after the first finished song and gets better with every one.
+
+**Bell** (top right, next to the gear): turn it on to hear a short sound when a song is done (two notes up) or failed (two notes down). If the tab is in the background, the browser also shows a notification; clicking it opens the library. The browser asks once for permission.
 
 ![The form with numbered elements](images/form.png)
 
@@ -38,6 +42,8 @@ Above the prompt sit three more buttons:
 - **Random** rolls prompt and style together.
 - **Variation** changes them only slightly: one building block of the prompt (mood, scene, detail) or one style term is swapped, or a term is added. Your own text stays.
 - **↶** takes back the last roll, step by step.
+
+**Presets** at the top of the form save the current settings under a name: style, vocals and language, length, BPM, key, time signature, iterations, variance, number of versions and dice theme. Prompt, title, lyrics and seed are not saved. Pick a preset from the list to load it (↶ brings back the previous style), **Save** with the same name overwrites it, **✕** deletes it.
 
 The **lock** next to the prompt and style dice keeps that field as it is: Random and Variation then only change the other one.
 

@@ -64,6 +64,7 @@ export class SongList {
       hasFolders: store.hasFolders,
       startsGroup: i > 0 && songs[i - 1]!.group_id !== s.group_id,
       crossing: !this.crossFrom ? null : s.id === this.crossFrom ? "from" : "pick",
+      eta: store.estimates[s.id],
     })).join("");
     this.root.classList.toggle("crossing", !!this.crossFrom);
     labelIconButtons(this.root);

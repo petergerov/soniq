@@ -2,7 +2,8 @@
 import { extname } from "node:path";
 import type { QueueInfo, Song, SongPatch } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
-import { assignLetters, cleanFileName, downloadName, toSongDto, type FolderFilter } from "../domain/song.ts";
+import { learnRate, estimateQueue } from "../domain/queue-estimate.ts";
+import { assignLetters, cleanFileName, downloadName, nowIso, toSongDto, type FolderFilter } from "../domain/song.ts";
 import type { FolderRepository } from "../infrastructure/folder-repository.ts";
 import type { SongQuery, SongRepository } from "../infrastructure/song-repository.ts";
 import { isFile } from "../infrastructure/files.ts";
@@ -81,10 +82,13 @@ export class LibraryService {
 
   async queue(): Promise<QueueInfo> {
     const active = this.deps.songs.active();
+    const runs = this.deps.songs.runRecords();
+    const rate = learnRate(runs.finished);
     return {
       running: active.filter((r) => r.status === "running"),
       queued: active.filter((r) => r.status === "queued").length,
       library: await this.deps.storage.usage(),
+      estimates: rate ? estimateQueue(runs.active, rate, nowIso()) : {},
     };
   }
 

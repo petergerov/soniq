@@ -177,6 +177,10 @@ summary::before { content: ""; flex: none; width: 6px; height: 6px; margin: 0 6p
 details[open] > summary::before { transform: rotate(45deg); margin-bottom: 4px; }
 @media (prefers-reduced-motion: reduce) { summary::before { transition: none; } }
 summary > :first-child:not(:only-child) { margin-right: auto; }
+.presetrow { display: flex; align-items: center; gap: 8px; margin: 0 0 18px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.presetrow .lbl { margin: 0 4px 0 0; }
+.presetrow select { flex: 1; min-width: 0; max-width: 320px; }
+.presetrow .sek.icon:disabled { opacity: .4; cursor: not-allowed; }
 .randrow { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin: -6px 0 6px; }
 .randrow .dice { height: 32px; }
 .randrow select.theme { margin-right: auto; }
@@ -234,6 +238,8 @@ button { font: inherit; cursor: pointer; }
   padding: 0; display: grid; place-items: center; transition: color .15s, background .15s; }
 .gear:hover { color: var(--text); background: var(--surface-2); }
 .gear:focus-visible { outline: none; box-shadow: var(--focus); }
+.gear.bell[aria-pressed=true] { color: var(--accent-soft); }
+.gear.bell[aria-pressed=true] .strike { display: none; }   /* durchgestrichene Glocke = keine Meldungen */
 .sek { display: inline-block; text-decoration: none; line-height: normal; font-family: inherit; background: var(--surface-2); color: var(--text);
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: .5rem .85rem; font-size: 12px; font-weight: 500;
   transition: color .15s, border-color .15s, background .15s; }
@@ -274,6 +280,7 @@ button { font: inherit; cursor: pointer; }
 .song + .song { margin-top: 2px; }
 .song.playing { background: var(--accent-tint); border-color: rgba(167, 139, 250, .3); }
 .song.cross-from { border-color: var(--accent-soft); }
+.song .eta { color: var(--faint); }
 #library.crossing .song .actions { opacity: 1; }
 #library.crossing .song:not(.cross-from) .sek.cross { color: var(--accent-soft); border-color: rgba(167, 139, 250, .45); }
 .song .t { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: text; letter-spacing: -.005em; }

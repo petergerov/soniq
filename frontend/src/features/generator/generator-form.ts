@@ -1,11 +1,12 @@
 // Formular zum Erzeugen: liest die Eingaben, schickt den Auftrag, übernimmt Werte aus Songs und Analysen.
-import type { AnalyzeResult, GenerateRequest, Song } from "../../../../shared/api.ts";
+import type { AnalyzeResult, GenerateRequest, PresetValues, Song } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { byId, restartAnimation, scrollToTop } from "../../core/dom.ts";
 import { storage } from "../../core/storage.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import { BubbleSlider } from "./bubble-slider.ts";
 import { LyricsEditor } from "./lyrics-editor.ts";
+import { PresetPicker } from "./preset-picker.ts";
 import { PromptBlocks } from "./prompt-blocks.ts";
 import { isThemeId, promptBlock, randomPrompt, randomStyle, randomTitle, setPromptBlock, type DiceOptions, type ThemeId, varyPrompt, varyStyle } from "./random-content.ts";
 import { StyleAxisSliders } from "./style-axis-sliders.ts";
@@ -77,6 +78,7 @@ export class GeneratorForm {
   private readonly themeSelect: HTMLSelectElement;
   private readonly blocks: PromptBlocks;
   private readonly similarButton: HTMLButtonElement;
+  private readonly presets: PresetPicker;
   /** Letzte Analyse, für „Ähnlich, aber anders“ */
   private lastAnalysis: AnalyzeResult | null = null;
 
@@ -104,6 +106,48 @@ export class GeneratorForm {
     };
     this.bindDice();
     this.bindSubmit();
+    this.updateButton();
+    this.presets = new PresetPicker({ api: deps.api, t: deps.t, read: () => this.presetValues(), apply: (v) => this.applyPreset(v) });
+  }
+
+  /** Alles außer Idee, Titel, Lyrics und Seed, für eine Vorlage. */
+  presetValues(): PresetValues {
+    const bpm = this.sliders.bpm;
+    return {
+      style: this.f.style.value,
+      vocals: this.lyrics.instrumental ? "instrumental" : "song",
+      vocal_language: this.f.vocal_language.value,
+      duration: this.sliders.duration.value,
+      bpm: bpm.value <= bpm.min ? 0 : bpm.value,
+      keyscale: this.f.keyscale.value,
+      timesignature: this.f.timesignature.value,
+      inference_steps: this.sliders.steps.value,
+      lm_temperature: this.sliders.temperature.value,
+      variants: this.sliders.variants.value,
+      theme: this.theme,
+    };
+  }
+
+  /** Vorlage laden; Idee, Titel, eigene Lyrics und Seed bleiben. */
+  applyPreset(v: PresetValues): void {
+    this.remember();
+    this.f.style.value = v.style;
+    if (v.vocals === "instrumental") this.lyrics.setInstrumental();
+    else this.lyrics.setSong();
+    if ([...this.f.vocal_language.options].some((o) => o.value === v.vocal_language)) this.f.vocal_language.value = v.vocal_language;
+    this.sliders.duration.value = v.duration;
+    this.sliders.bpm.value = v.bpm || this.sliders.bpm.min;
+    this.sliders.steps.value = v.inference_steps;
+    this.sliders.temperature.value = v.lm_temperature;
+    this.sliders.variants.value = v.variants;
+    setSelect(this.f.keyscale, v.keyscale, true);
+    setSelect(this.f.timesignature, v.timesignature);
+    if (isThemeId(v.theme)) {
+      this.themeSelect.value = v.theme;
+      storage.set(THEME_KEY, v.theme);
+    }
+    this.syncStyle();
+    this.blocks.sync();
     this.updateButton();
   }
 
@@ -150,6 +194,7 @@ export class GeneratorForm {
   /** Texte neu setzen (nach Sprachwechsel). */
   refreshTexts(): void {
     Object.values(this.sliders).forEach((s) => s.update());
+    this.presets.refreshTexts();
     this.lyrics.sync();
     this.updateButton();
   }

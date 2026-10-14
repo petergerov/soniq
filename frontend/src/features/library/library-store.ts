@@ -17,6 +17,10 @@ export class LibraryStore {
   stats: QueueInfo["library"] | null = null;
   /** Songs, die gerade gerechnet werden oder warten */
   activeCount = 0;
+  /** Geschätzte Sekunden bis „fertig“ je laufendem/wartendem Song */
+  estimates: Record<string, number> = {};
+  /** IDs der gerade laufenden Songs */
+  runningIds: string[] = [];
   currentFolder: FolderView = storage.get("folder") ?? "";
   favoritesOnly = false;
   /** Ausgeblendete Songs (Fehlversuche) trotzdem zeigen */
@@ -70,6 +74,8 @@ export class LibraryStore {
       }
       const queue = await this.api.queue();
       this.activeCount = queue.running.length + queue.queued;
+      this.estimates = queue.estimates ?? {};
+      this.runningIds = queue.running.map((r) => r.id);
       busy = this.activeCount > 0;
       this.stats = queue.library;
       this.notify();

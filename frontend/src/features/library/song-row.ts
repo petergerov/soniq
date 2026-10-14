@@ -16,6 +16,8 @@ export interface SongRowContext {
   startsGroup: boolean;
   /** Kreuzen: "from" = dieser Song ist A, "pick" = ein anderer Song ist A, dieser kann B werden */
   crossing: "from" | "pick" | null;
+  /** Geschätzte Sekunden, bis der Song fertig ist (laufend/wartend), sonst undefined */
+  eta: number | undefined;
 }
 
 const ICON_FOLDER = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`;
@@ -68,11 +70,17 @@ function leftSlot(song: Song, ctx: SongRowContext): string {
   }
 }
 
+/** " · noch ~2:10" bzw. " · fertig in ~6:40" (nur mit Schätzung) */
+function eta(ctx: SongRowContext, key: "eta_left" | "eta_done"): string {
+  if (ctx.eta === undefined) return "";
+  return ` · <span class="eta">${ctx.eta < 5 ? ctx.t("eta_soon") : ctx.t(key, formatDuration(ctx.eta))}</span>`;
+}
+
 function stateLine(song: Song, ctx: SongRowContext): string {
   const { t } = ctx;
   switch (song.status) {
-    case "running": return `<div class="s run">${esc(song.message || "0:00")}</div><div class="mini-bar"></div>`;
-    case "queued": return `<div class="s">${t("waiting")}</div>`;
+    case "running": return `<div class="s run">${esc(song.message || "0:00")}${eta(ctx, "eta_left")}</div><div class="mini-bar"></div>`;
+    case "queued": return `<div class="s">${t("waiting")}${eta(ctx, "eta_done")}</div>`;
     case "cancelled": return `<div class="s">${t("cancelled")}</div>`;
     case "error": return `<div class="s err" title="${esc(song.message)}">${t("error")} · ${esc(shortError(song.message, t))}</div>`;
     case "done": {

@@ -37,9 +37,9 @@ Status: ✅ done · 🚧 in progress · 💡 open
 
 | # | Idea | Status | Notes |
 |---|---|---|---|
-| 14 | **Queue with time estimate:** "about 3:20 left" per song, from past run times | 💡 | |
-| 15 | **Notify when done:** browser notification or short sound | 💡 | |
-| 16 | **Presets:** save the current settings (style, length, tempo, vocals) under a name and load them with one click | 💡 | |
+| 14 | **Queue with time estimate:** "about 3:20 left" per song, from past run times | ✅ | Running and waiting songs show "~2:10 left" / "done in ~6:40"; the Library tab tooltip shows when everything is done. Learned as the median of computing seconds per second of music over the last 20 finished songs (`domain/queue-estimate.ts`); songs without a fixed length use the typical length. New column `started_at`; older songs fall back to the end of the previous song. `GET /api/queue` returns `estimates` (song id → seconds). |
+| 15 | **Notify when done:** browser notification or short sound | ✅ | Bell button in the header, remembered per browser (`notify`). Short chime (up = done, down = error, nothing when cancelled); browser notification only while the tab is in the background, click opens the library. Code: `features/status/notifier.ts`. |
+| 16 | **Presets:** save the current settings (style, length, tempo, vocals) under a name and load them with one click | ✅ | Row at the top of the form: picker, Save, ✕. Saves everything except prompt, title, lyrics and seed (incl. dice theme). Stored on the server (`settings` key `presets`, `/api/presets/:name` GET/PUT/DELETE), same name (case-insensitive) overwrites. ↶ after loading restores only the style (undo history holds prompt and style). |
 
 ## Structure
 

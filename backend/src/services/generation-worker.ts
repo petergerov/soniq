@@ -79,7 +79,7 @@ export class GenerationWorker implements JobRunner {
 
   private async process(songId: string, params: SongParams): Promise<void> {
     const { songs, storage } = this.deps;
-    songs.markRunning(songId);
+    songs.markRunning(songId, nowIso());
     const settings = this.deps.settings.get();
     const engine = this.deps.engineFactory(settings);
     const abort = new AbortController();

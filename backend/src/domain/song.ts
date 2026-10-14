@@ -20,6 +20,7 @@ export interface SongRecord {
   favorite: number;
   folder_id: string | null;
   hidden: number;
+  started_at: string | null;
 }
 
 export const ACTIVE_STATUSES: readonly SongStatus[] = ["queued", "running"];

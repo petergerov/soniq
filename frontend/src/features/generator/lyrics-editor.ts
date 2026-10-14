@@ -45,6 +45,12 @@ export class LyricsEditor {
     this.sync();
   }
 
+  /** Auf Gesang schalten; vorher eingegebene eigene Lyrics kommen zurück. */
+  setSong(): void {
+    this.el.instrumental.checked = false;
+    this.sync();
+  }
+
   /** Modell schreibt beim Generieren eigene Lyrics. */
   setAutomatic(): void {
     this.setOwn("");

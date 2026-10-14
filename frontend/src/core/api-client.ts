@@ -1,8 +1,5 @@
 // Typisierter Zugriff auf die HTTP-API des Backends. Einzige Stelle, die fetch() für /api benutzt.
-import type {
-  AnalyzeResult, ErrorBody, FolderOverview, GenerateRequest, GenerateResponse, HealthInfo, QueueInfo,
-  Settings, SettingsView, Song, SongPatch, UpdateCheck, UpdateStatus,
-} from "../../../shared/api.ts";
+import type { AnalyzeResult, ErrorBody, FolderOverview, GenerateRequest, GenerateResponse, HealthInfo, Preset, PresetValues, QueueInfo, Settings, SettingsView, Song, SongPatch, UpdateCheck, UpdateStatus } from "../../../shared/api.ts";
 
 export class ApiError extends Error {
   override name = "ApiError";
@@ -39,9 +36,14 @@ export class ApiClient {
     return this.send("GET", `/api/songs?${params}`);
   }
 
+  song(id: string): Promise<Song> { return this.send("GET", `/api/songs/${id}`); }
   updateSong(id: string, patch: SongPatch): Promise<Song> { return this.send("PATCH", `/api/songs/${id}`, patch); }
   retrySong(id: string): Promise<Song> { return this.send("POST", `/api/songs/${id}/retry`); }
   deleteSong(id: string): Promise<{ cancelled?: true; deleted?: true }> { return this.send("DELETE", `/api/songs/${id}`); }
+
+  presets(): Promise<Preset[]> { return this.send("GET", "/api/presets"); }
+  savePreset(name: string, values: PresetValues): Promise<Preset[]> { return this.send("PUT", `/api/presets/${encodeURIComponent(name)}`, values); }
+  deletePreset(name: string): Promise<Preset[]> { return this.send("DELETE", `/api/presets/${encodeURIComponent(name)}`); }
 
   folders(): Promise<FolderOverview> { return this.send("GET", "/api/folders"); }
   createFolder(name: string): Promise<{ id: string; name: string }> { return this.send("POST", "/api/folders", { name }); }

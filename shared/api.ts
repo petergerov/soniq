@@ -50,6 +50,8 @@ export interface Song {
   folder_id: string | null;
   /** Ausgeblendet (Fehlversuch); erscheint nur, wenn die Bibliothek Ausgeblendete zeigt */
   hidden: boolean;
+  /** Beginn der Rechenzeit (ältere Songs: null) */
+  started_at: string | null;
   /** Versionen desselben Prompts heißen A, B, C … ("" bei Einzelstücken). */
   letter: string;
   url: string | null;
@@ -89,6 +91,29 @@ export interface SongPatch {
   folder_id?: string | null;
 }
 
+/** Einstellungen einer Vorlage: alles außer Idee (Prompt), Titel, Lyrics und Seed. */
+export interface PresetValues {
+  style: string;
+  /** Gesang: "instrumental" oder "song" (Lyrics schreibt dann das Modell, sofern keine eigenen da sind) */
+  vocals: "instrumental" | "song";
+  vocal_language: string;
+  duration: number;
+  /** 0 = Auto */
+  bpm: number;
+  keyscale: string;
+  timesignature: string;
+  inference_steps: number;
+  lm_temperature: number;
+  variants: number;
+  /** Würfel-Thema ("all", "film" …) */
+  theme: string;
+}
+
+export interface Preset {
+  name: string;
+  values: PresetValues;
+}
+
 export interface Folder {
   id: string;
   name: string;
@@ -105,6 +130,8 @@ export interface QueueInfo {
   running: { id: string; status: SongStatus; message: string | null; caption: string }[];
   queued: number;
   library: { count: number; bytes: number };
+  /** Geschätzte Sekunden, bis ein laufender oder wartender Song fertig ist (fehlt, solange es keine Erfahrungswerte gibt) */
+  estimates: Record<string, number>;
 }
 
 export type DitModel = "standard" | "xl";

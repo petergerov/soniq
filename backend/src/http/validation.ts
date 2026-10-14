@@ -1,5 +1,5 @@
 // Prüft und normalisiert JSON-Eingaben, bevor sie an die Services gehen.
-import type { SongPatch } from "../../../shared/api.ts";
+import type { PresetValues, SongPatch } from "../../../shared/api.ts";
 import type { GenerateCommand } from "../services/generation-service.ts";
 import { HttpError } from "./request.ts";
 
@@ -71,6 +71,24 @@ export function parseSongPatch(input: Input): SongPatch {
   if (input.title !== undefined && input.title !== null) patch.title = str(input, "title");
   if ("folder_id" in input) patch.folder_id = optionalId(input, "folder_id");   // null = unsortiert
   return patch;
+}
+
+export function parsePresetValues(input: Input): PresetValues {
+  const vocals = str(input, "vocals", "instrumental");
+  if (vocals !== "instrumental" && vocals !== "song") invalid("vocals", '"instrumental" or "song" expected');
+  return {
+    style: str(input, "style"),
+    vocals,
+    vocal_language: str(input, "vocal_language"),
+    duration: num(input, "duration", 90, { min: 0, max: 600 }),
+    bpm: num(input, "bpm", 0, { min: 0, max: 300 }),
+    keyscale: str(input, "keyscale"),
+    timesignature: String(input.timesignature ?? ""),
+    inference_steps: num(input, "inference_steps", 50, { integer: true, min: 1, max: 200 }),
+    lm_temperature: num(input, "lm_temperature", 0.85, { min: 0, max: 2 }),
+    variants: num(input, "variants", 2, { integer: true, min: 1, max: 50 }),
+    theme: str(input, "theme", "all"),
+  };
 }
 
 export function parseFolderName(input: Input): string {

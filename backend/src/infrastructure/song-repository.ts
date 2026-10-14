@@ -1,6 +1,7 @@
 // Datenzugriff für Songs. Kennt SQL, aber keine Fachregeln darüber hinaus.
 import type { SongStatus } from "../../../shared/api.ts";
 import type { FolderFilter, SongRecord } from "../domain/song.ts";
+import type { RunRecord } from "../domain/queue-estimate.ts";
 import type { Database, SqlParam } from "./database.ts";
 
 export interface NewSong {
@@ -113,8 +114,17 @@ export class SongRepository {
     return new Map(rows.map((r) => [r.folder_id, r.n]));
   }
 
-  markRunning(id: string): void {
-    this.db.run("UPDATE songs SET status='running', message='0:00' WHERE id=?", id);
+  markRunning(id: string, startedAt: string): void {
+    this.db.run("UPDATE songs SET status='running', message='0:00', started_at=? WHERE id=?", startedAt, id);
+  }
+
+  /** Zeiten für die Schätzung: die letzten Songs mit Endzeit (nach Endzeit sortiert) und die aktiven in Abarbeitungsreihenfolge. */
+  runRecords(): { finished: RunRecord[]; active: RunRecord[] } {
+    const cols = "id, status, created_at, started_at, finished_at, COALESCE(json_extract(result_meta,'$.duration'), json_extract(params,'$.duration'), 0) AS duration";
+    const finished = this.db.all<RunRecord>(`SELECT ${cols} FROM songs WHERE finished_at IS NOT NULL ORDER BY finished_at DESC, rowid DESC LIMIT 60`).reverse();
+    const active = this.db.all<RunRecord>(
+      `SELECT ${cols} FROM songs WHERE status IN ('queued','running') ORDER BY status='running' DESC, created_at, rowid`);
+    return { finished, active };
   }
 
   setProgress(id: string, message: string): void {

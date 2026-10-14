@@ -3,6 +3,7 @@ import type { Song } from "../../shared/api.ts";
 import "./styles/style.css";
 import { ApiClient } from "./core/api-client.ts";
 import { byId, enableKeyboardButtons } from "./core/dom.ts";
+import { formatDuration } from "./core/format.ts";
 import { Router } from "./core/router.ts";
 import { Dropzone } from "./features/analyze/dropzone.ts";
 import { GeneratorForm } from "./features/generator/generator-form.ts";
@@ -18,6 +19,7 @@ import { SettingsDialog } from "./features/settings/settings-dialog.ts";
 import { UpdatePanel } from "./features/settings/update-panel.ts";
 import { bindKeyboardShortcuts } from "./features/shortcuts/keyboard-shortcuts.ts";
 import { HealthIndicator } from "./features/status/health-indicator.ts";
+import { Notifier } from "./features/status/notifier.ts";
 import { I18n } from "./i18n/i18n.ts";
 
 const i18n = new I18n();
@@ -64,11 +66,15 @@ bindKeyboardShortcuts({
   form, playback: player, songs: () => store.songs, play: playSong, nextVersion: () => player.nextVersion(),
   formVisible: () => router.current === "generate",
 });
-// Laufende und wartende Songs als Zahl am Reiter „Bibliothek“
+// Laufende und wartende Songs als Zahl am Reiter „Bibliothek“; Meldung, wenn einer fertig ist
 const libBadge = byId("libBadge");
+const notifier = new Notifier(api, t, () => router.go("library"));
 store.onChange(() => {
+  notifier.observe(store.runningIds);
   libBadge.hidden = store.activeCount === 0;
   libBadge.textContent = String(store.activeCount);
+  const last = Math.max(0, ...Object.values(store.estimates));
+  libBadge.title = last ? t("eta_all", formatDuration(last)) : "";
   player.renderVersions();
   folderBar.refresh();
   songList.refresh();
@@ -87,6 +93,7 @@ i18n.onChange(() => {
   folderBar.render();
   header.render();
   player.refreshTexts();
+  notifier.render();
   updates.reset();
   void health.check();
 });

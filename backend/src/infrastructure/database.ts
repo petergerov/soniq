@@ -46,6 +46,8 @@ export class Database {
     if (!columns.includes("folder_id")) this.db.exec("ALTER TABLE songs ADD COLUMN folder_id TEXT");
     // Ausgeblendet: Fehlversuche aus der Liste nehmen, ohne sie zu löschen
     if (!columns.includes("hidden")) this.db.exec("ALTER TABLE songs ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0");
+    // Beginn der Rechenzeit (für die Schätzung der Warteschlange)
+    if (!columns.includes("started_at")) this.db.exec("ALTER TABLE songs ADD COLUMN started_at TEXT");
   }
 
   run(sql: string, ...params: SqlParam[]): number {
