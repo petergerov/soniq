@@ -10,6 +10,7 @@ import { PresetPicker } from "./preset-picker.ts";
 import { PromptBlocks } from "./prompt-blocks.ts";
 import { isThemeId, promptBlock, randomPrompt, randomStyle, randomTitle, setPromptBlock, type DiceOptions, type ThemeId, varyPrompt, varyStyle } from "./random-content.ts";
 import { StyleAxisSliders } from "./style-axis-sliders.ts";
+import { VoicePicker } from "./voice-picker.ts";
 import { StyleChips } from "./style-chips.ts";
 
 interface FormControls extends HTMLFormControlsCollection {
@@ -69,6 +70,7 @@ export class GeneratorForm {
   private readonly button: HTMLButtonElement;
   private readonly styleChips: StyleChips;
   private readonly styleAxes: StyleAxisSliders;
+  private readonly voice: VoicePicker;
   private readonly lyrics: LyricsEditor;
   private readonly sliders: Record<"duration" | "bpm" | "steps" | "temperature" | "variants", BubbleSlider>;
   private readonly locked = new Set<LockableField>(storage.getJson<LockableField[]>(LOCKS_KEY, []));
@@ -95,6 +97,7 @@ export class GeneratorForm {
     this.similarButton = byId<HTMLButtonElement>("similarBtn");
     this.styleChips = new StyleChips(this.f.style, byId("tagChips"));
     this.styleAxes = new StyleAxisSliders(this.f.style, this.form.querySelector(".axes")!, () => this.remember());
+    this.voice = new VoicePicker(this.f.style, byId("voiceBox"), () => this.remember());
     this.lyrics = new LyricsEditor({ instrumental: this.f.instrumental, lyrics: this.f.lyrics }, deps.t);
     const slider = (name: string, onChange?: () => void) => new BubbleSlider(this.form.querySelector(`input[name="${name}"]`)!.closest<HTMLElement>(".slider")!, onChange);
     this.sliders = {
@@ -352,6 +355,7 @@ export class GeneratorForm {
   private syncStyle(): void {
     this.styleChips.sync();
     this.styleAxes.sync();
+    this.voice.sync();
   }
 
   /** Thema und Vorlieben aus den Favoriten für alle Würfel. */

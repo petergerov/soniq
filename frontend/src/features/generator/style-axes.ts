@@ -11,7 +11,8 @@ export const STYLE_AXES = {
 export type StyleAxis = keyof typeof STYLE_AXES;
 export const AXIS_IDS = Object.keys(STYLE_AXES) as StyleAxis[];
 
-function parts(style: string): string[] {
+/** Begriffe des Stil-Felds (durch Komma getrennt). */
+export function styleParts(style: string): string[] {
   return style.split(",").map((x) => x.trim()).filter(Boolean);
 }
 
@@ -22,7 +23,7 @@ function stepOf(axis: StyleAxis, part: string): number {
 
 /** Stufe, die der Stil-Text für einen Regler enthält (0 = keine). */
 export function axisValue(style: string, axis: StyleAxis): number {
-  for (const p of parts(style)) {
+  for (const p of styleParts(style)) {
     const step = stepOf(axis, p);
     if (!Number.isNaN(step)) return step;
   }
@@ -31,7 +32,7 @@ export function axisValue(style: string, axis: StyleAxis): number {
 
 /** Begriff des Reglers im Stil setzen: alte Stufe raus, neue (außer 0) hinten anhängen. */
 export function setAxis(style: string, axis: StyleAxis, step: number): string {
-  const rest = parts(style).filter((p) => Number.isNaN(stepOf(axis, p)));
+  const rest = styleParts(style).filter((p) => Number.isNaN(stepOf(axis, p)));
   const word = STYLE_AXES[axis][Math.max(-2, Math.min(2, Math.round(step))) + 2];
   return (word ? [...rest, word] : rest).join(", ");
 }

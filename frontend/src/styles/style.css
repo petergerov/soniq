@@ -401,7 +401,10 @@ dialog .col-title { margin-bottom: 18px; font-size: 17px; }
 .seg { display: inline-flex; gap: 4px; padding: 4px; background: var(--bg); border: 1px solid var(--line-strong); border-radius: 12px; width: fit-content; }
 .seg .sek { border-color: transparent; background: transparent; }
 .seg button[aria-pressed=true] { background: var(--surface-3); color: var(--text); border-color: var(--line-strong); }
-.vocals .seg button[aria-pressed=true] { color: var(--accent-soft); border-color: rgba(167, 139, 250, .45); background: var(--accent-tint); }
+.voice-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.lyrics-panel .field.voice { flex-direction: row; align-items: center; gap: 12px; margin: 0 0 10px; }
+.lyrics-panel .field.voice > .lbl { margin: 0; }
+.vocals .seg button[aria-pressed=true], .voice .seg button[aria-pressed=true] { color: var(--accent-soft); border-color: rgba(167, 139, 250, .45); background: var(--accent-tint); }
 .upd-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .upd-row .small { font-size: 12px; color: var(--muted); }
 .upd-list { margin: 6px 0 8px; padding-left: 18px; font-size: 12px; color: var(--muted); }

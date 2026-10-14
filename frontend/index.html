@@ -85,6 +85,21 @@
             <option value="es" data-i18n="es">Spanisch</option><option value="it" data-i18n="it">Italienisch</option><option value="pt" data-i18n="pt">Portugiesisch</option>
             <option value="ja" data-i18n="ja">Japanisch</option><option value="ko" data-i18n="ko">Koreanisch</option><option value="zh" data-i18n="zh">Chinesisch</option><option value="ru" data-i18n="ru">Russisch</option>
           </select></div>
+        <div id="voiceBox" class="field voice"><span class="lbl" data-i18n="voice">Stimme</span>
+          <div class="voice-row">
+            <div class="seg" role="group" aria-label="Stimme" data-i18n-aria="voice">
+              <button type="button" class="sek" data-voice="" aria-pressed="true" data-i18n="voice_auto">Auto</button>
+              <button type="button" class="sek" data-voice="female" aria-pressed="false" data-i18n="voice_female">Weiblich</button>
+              <button type="button" class="sek" data-voice="male" aria-pressed="false" data-i18n="voice_male">Männlich</button>
+              <button type="button" class="sek" data-voice="duet" aria-pressed="false" data-i18n="voice_duet">Duett</button>
+            </div>
+            <select class="mini" aria-label="Art der Stimme" data-i18n-aria="voice_type">
+              <option value="" data-i18n="voice_type_auto">Art: Auto</option>
+              <optgroup label="Stimmlage" data-i18n-label="voice_range"><option value="soprano" data-i18n="voice_soprano">soprano</option><option value="alto" data-i18n="voice_alto">alto</option><option value="tenor" data-i18n="voice_tenor">tenor</option><option value="baritone" data-i18n="voice_baritone">baritone</option><option value="bass" data-i18n="voice_bass">bass</option></optgroup>
+              <optgroup label="Charakter" data-i18n-label="voice_character"><option value="soft" data-i18n="voice_soft">soft</option><option value="powerful" data-i18n="voice_powerful">powerful</option><option value="breathy" data-i18n="voice_breathy">breathy</option><option value="raspy" data-i18n="voice_raspy">raspy</option><option value="soulful" data-i18n="voice_soulful">soulful</option><option value="falsetto" data-i18n="voice_falsetto">falsetto</option><option value="whispered" data-i18n="voice_whispered">whispered</option><option value="operatic" data-i18n="voice_operatic">operatic</option><option value="rap" data-i18n="voice_rap">rap</option><option value="choir" data-i18n="voice_choir">choir</option><option value="autotune" data-i18n="voice_autotune">autotune</option></optgroup>
+            </select>
+          </div>
+        </div>
         <textarea name="lyrics" rows="7" aria-label="Lyrics" data-i18n-aria="lyrics" placeholder="[verse]&#10;…&#10;&#10;[chorus]&#10;…"></textarea>
         <div class="chips" id="sectionChips"></div>
       </div>

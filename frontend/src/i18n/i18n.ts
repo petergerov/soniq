@@ -4,7 +4,7 @@ import { storage } from "../core/storage.ts";
 import { LANGUAGES, TRANSLATIONS, type Dictionary, type Lang } from "./translations.ts";
 
 const STORAGE_KEY = "ui_lang";
-const ATTRIBUTES: [dataKey: string, attribute: string][] = [["i18nTitle", "title"], ["i18nPh", "placeholder"], ["i18nAria", "aria-label"]];
+const ATTRIBUTES: [dataKey: string, attribute: string][] = [["i18nTitle", "title"], ["i18nPh", "placeholder"], ["i18nAria", "aria-label"], ["i18nLabel", "label"]];
 
 function isLang(value: string | null | undefined): value is Lang {
   return !!value && value in LANGUAGES;
