@@ -37,6 +37,8 @@ export interface GenerationServiceDeps {
   folders: FolderRepository;
   storage: SongStorage;
   jobs: JobRunner;
+  /** Einzelspuren des Songs samt Dateien löschen */
+  removeStems: (songId: string) => Promise<void>;
 }
 
 export function buildCaption(style: string, prompt: string, fallback: string): string {
@@ -105,6 +107,7 @@ export class GenerationService {
       return { cancelled: true };
     }
     if (song.file) await this.deps.storage.remove(song.file);
+    await this.deps.removeStems(id);
     this.deps.songs.delete(id);
     return { deleted: true };
   }

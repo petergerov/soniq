@@ -91,7 +91,7 @@ fi
 [ "$XL" = 1 ] && echo "  → plus XL sound model"
 
 # Benötigte Dateien (Name:MB:SHA-256 aus common.sh): die drei festen, das gewählte Sprachmodell, auf Wunsch XL
-FILES=$(echo "$MODEL_FILES" | grep -v 'acestep-5Hz-lm-\|xl-sft' ; echo "$MODEL_FILES" | grep "^$LM_FILE:")
+FILES=$(echo "$MODEL_FILES" | grep -v 'acestep-5Hz-lm-\|xl-sft\|v15-base' ; echo "$MODEL_FILES" | grep "^$LM_FILE:")
 [ "$XL" = 1 ] && FILES=$(echo "$FILES"; echo "$MODEL_FILES" | grep 'xl-sft')
 NEED_MB=0
 for e in $FILES; do

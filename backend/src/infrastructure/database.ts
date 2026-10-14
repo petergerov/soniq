@@ -28,6 +28,20 @@ const SCHEMA = `
   CREATE INDEX IF NOT EXISTS idx_songs_group ON songs(group_id);
   CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS folders (id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT NOT NULL);
+  -- Einzelspuren eines Songs (siehe newfeatures.md): erzeugt, herausgelöst, Ersatz oder Begleitung
+  CREATE TABLE IF NOT EXISTS stems (
+    id          TEXT PRIMARY KEY,
+    song_id     TEXT NOT NULL,
+    track       TEXT NOT NULL,          -- vocals | drums | bass | …
+    kind        TEXT NOT NULL,          -- generated | extracted | replacement | accompaniment
+    status      TEXT NOT NULL,          -- queued | running | done | error
+    position    INTEGER NOT NULL,       -- Reihenfolge (Rhythmus zuerst)
+    file        TEXT,
+    message     TEXT,
+    created_at  TEXT NOT NULL,
+    finished_at TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_stems_song ON stems(song_id);
 `;
 
 /** Dünne Hülle um die Datenbank: nur Abfragen, keine Fachlogik (die liegt in den Repositories). */

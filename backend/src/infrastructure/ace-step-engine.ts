@@ -5,9 +5,10 @@
 //   GET  /job?id=X&result=1   -> Ergebnis (/lm: JSON-Array, /synth: multipart/mixed)
 import { setTimeout as sleep } from "node:timers/promises";
 import type { HealthInfo, Settings } from "../../../shared/api.ts";
+import type { SongResultMeta } from "../../../shared/api.ts";
 import {
-  DIT_MODELS, EngineError,
-  type AnalysisResult, type GeneratedAudio, type MusicEngine, type ProgressReporter,
+  DIT_MODELS, EngineError, STEM_MODEL, STEM_STEPS,
+  type AnalysisResult, type GeneratedAudio, type MusicEngine, type ProgressReporter, type StemRequest,
 } from "../domain/music-engine.ts";
 import { DEFAULT_OUTPUT_FORMAT, OUTPUT_FORMATS, type AceOutputFormat } from "../domain/output-format.ts";
 import { parseMultipart } from "./multipart.ts";
@@ -105,6 +106,34 @@ export class AceStepEngine implements MusicEngine {
     const { audio, extension } = await this.extractAudio(synthResult);
     const meta = Object.fromEntries(META_FIELDS.map((k) => [k, enriched[k] ?? null]));
     return { audio, extension, meta };
+  }
+
+  async plan(params: Json, progress: ProgressReporter, signal: AbortSignal): Promise<SongResultMeta> {
+    const req: Json = Object.fromEntries(
+      Object.entries(params).filter(([k, v]) => ACE_FIELDS.has(k) && v !== null && v !== undefined && v !== ""),
+    );
+    req.use_cot_caption ??= false;
+    if (this.lmModel) req.lm_model = this.lmModel;
+    const job = await this.startJob(this.lmBase, "/lm", { body: JSON.stringify(req), headers: { "content-type": "application/json" } }, signal);
+    const enriched = firstItem(await (await this.waitForJob(this.lmBase, job, "Sprachmodell", performance.now(), progress, signal)).json());
+    return Object.fromEntries(META_FIELDS.map((k) => [k, enriched[k] ?? null])) as SongResultMeta;
+  }
+
+  async stem(r: StemRequest, progress: ProgressReporter, signal: AbortSignal): Promise<Uint8Array> {
+    const req: Json = {
+      synth_model: STEM_MODEL, task_type: r.task, track: r.track, caption: r.caption, lyrics: r.lyrics || "[Instrumental]",
+      inference_steps: STEM_STEPS, guidance_scale: 1.0, shift: 1.0,   // Vorgaben für das Base-Modell
+      output_format: "wav32",   // Gleitkomma: Spuren werden danach addiert, ohne Rundung dazwischen
+    };
+    for (const k of ["bpm", "keyscale", "timesignature", "duration", "seed"] as const) if (r[k] !== undefined && r[k] !== null && r[k] !== "") req[k] = r[k];
+    const form = new FormData();
+    form.append("request", new Blob([JSON.stringify(req)], { type: "application/json" }), "request.json");
+    form.append("audio", new Blob([new Uint8Array(r.source)], { type: "audio/wav" }), "source.wav");
+    const job = await this.startJob(this.base, "/synth", { body: form }, signal);
+    const res = await this.waitForJob(this.base, job, r.track, performance.now(), progress, signal);
+    const { audio, extension } = await this.extractAudio(res);
+    if (extension !== "wav") throw new EngineError(`Spur ${r.track}: WAV erwartet`);
+    return audio;
   }
 
   /** Song hochladen, das Modell beschreibt Stil, Tempo, Tonart, Lyrics (/understand, läuft auf dem LM-Server). */

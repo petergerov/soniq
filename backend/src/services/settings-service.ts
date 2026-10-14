@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { DitModel, Settings, SettingsView } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
-import { DIT_MODELS } from "../domain/music-engine.ts";
+import { DIT_MODELS, STEM_MODEL } from "../domain/music-engine.ts";
 import { isOutputFormat } from "../domain/output-format.ts";
 import type { SettingsRepository } from "../infrastructure/settings-repository.ts";
 import type { SongRepository } from "../infrastructure/song-repository.ts";
@@ -27,7 +27,7 @@ export class SettingsService {
   }
 
   view(): SettingsView {
-    return { ...this.deps.settings.get(), songs_dir_default: this.deps.storage.defaultDirectory, dit_xl_available: this.xlAvailable(), packaged: this.deps.packaged };
+    return { ...this.deps.settings.get(), songs_dir_default: this.deps.storage.defaultDirectory, dit_xl_available: this.xlAvailable(), stems_available: existsSync(join(this.deps.modelsDir, STEM_MODEL)), packaged: this.deps.packaged };
   }
 
   async update(input: Record<string, unknown>): Promise<Settings> {

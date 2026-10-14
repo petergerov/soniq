@@ -9,6 +9,7 @@ import { HttpServer } from "./http/http-server.ts";
 import { registerFolderRoutes } from "./http/routes/folder-routes.ts";
 import { registerPresetRoutes } from "./http/routes/preset-routes.ts";
 import { registerSetupRoutes } from "./http/routes/setup-routes.ts";
+import { registerStemRoutes } from "./http/routes/stem-routes.ts";
 import { registerSongRoutes } from "./http/routes/song-routes.ts";
 import { registerSystemRoutes } from "./http/routes/system-routes.ts";
 import { Router } from "./http/router.ts";
@@ -27,10 +28,12 @@ import { createProcessLauncher } from "./infrastructure/process-launcher.ts";
 import { SettingsRepository } from "./infrastructure/settings-repository.ts";
 import { SongRepository } from "./infrastructure/song-repository.ts";
 import { SongStorage } from "./infrastructure/song-storage.ts";
+import { StemRepository } from "./infrastructure/stem-repository.ts";
 import { AnalysisService } from "./services/analysis-service.ts";
 import { FolderService } from "./services/folder-service.ts";
 import { PresetService } from "./services/preset-service.ts";
 import { SetupService } from "./services/setup-service.ts";
+import { StemService } from "./services/stem-service.ts";
 import { GenerationService } from "./services/generation-service.ts";
 import { GenerationWorker } from "./services/generation-worker.ts";
 import { LibraryService } from "./services/library-service.ts";
@@ -76,7 +79,9 @@ async function main(): Promise<void> {
 
   // Services
   const worker = new GenerationWorker({ songs, settings, storage, engineFactory, keepAwake: createKeepAwake(config.platform), log });
-  const generation = new GenerationService({ songs, folders, storage, jobs: worker });
+  const stems = new StemRepository(db);
+  const stemService = new StemService({ stems, songs, storage });
+  const generation = new GenerationService({ songs, folders, storage, jobs: worker, removeStems: (id) => stemService.removeForSong(id) });
   const library = new LibraryService({ songs, folders, storage });
   const folderService = new FolderService(folders, songs);
   const settingsService = new SettingsService({ settings, songs, storage, modelsDir: config.modelsDir, packaged: config.packaged });
@@ -98,6 +103,7 @@ async function main(): Promise<void> {
   registerFolderRoutes(router, folderService, library);
   registerPresetRoutes(router, presets);
   registerSetupRoutes(router, setup);
+  registerStemRoutes(router, stemService);
   registerSystemRoutes(router, { settings: settingsService, analysis, system, updates });
   const server = new HttpServer(router, new StaticFiles(config.frontendDir), log);
 

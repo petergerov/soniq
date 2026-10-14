@@ -114,6 +114,26 @@ export interface Preset {
   values: PresetValues;
 }
 
+/** Spurnamen, die ACE-Step für Einzelspuren kennt (lego, extract, complete), in der Reihenfolge "Rhythmus zuerst". */
+export const STEM_TRACKS = [
+  "drums", "percussion", "bass", "guitar", "keyboard", "synth", "strings", "brass", "woodwinds", "fx", "vocals", "backing_vocals",
+] as const;
+export type StemTrack = (typeof STEM_TRACKS)[number];
+/** generated = Spur für Spur erzeugt, extracted = aus dem Song herausgelöst, replacement / accompaniment = zu einer hochgeladenen Datei */
+export type StemKind = "generated" | "extracted" | "replacement" | "accompaniment";
+export type StemStatus = "queued" | "running" | "done" | "error";
+
+export interface Stem {
+  id: string;
+  song_id: string;
+  track: StemTrack;
+  kind: StemKind;
+  status: StemStatus;
+  position: number;
+  message: string | null;
+  url: string | null;
+}
+
 export interface Folder {
   id: string;
   name: string;
@@ -153,6 +173,8 @@ export interface Settings {
 export interface SettingsView extends Settings {
   songs_dir_default: string;
   dit_xl_available: boolean;
+  /** Spuren-Modell (Base) liegt im Modellordner: Spur für Spur, Herauslösen, Ersetzen möglich */
+  stems_available: boolean;
   /** Fertige App: XL lässt sich über die Einrichtung nachladen statt über den Installer */
   packaged: boolean;
 }

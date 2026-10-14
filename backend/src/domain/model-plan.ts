@@ -6,6 +6,8 @@ export const LM_SIZES: readonly LmSize[] = ["0.6B", "1.7B", "4B"];
 
 const LM_PREFIX = "acestep-5Hz-lm-";
 const XL_MARK = "xl-sft";
+/** Optionales Spuren-Modell (lego, extract, complete); gehört nicht zur Grundausstattung */
+const BASE_MARK = "v15-base";
 
 export function isLmSize(value: unknown): value is LmSize {
   return LM_SIZES.includes(value as LmSize);
@@ -32,9 +34,14 @@ export function xlFile(catalog: ModelCatalog): ModelFile | undefined {
   return catalog.files.find((f) => f.name.includes(XL_MARK));
 }
 
+/** Spuren-Modell (Base) für Einzelspuren. */
+export function baseFile(catalog: ModelCatalog): ModelFile | undefined {
+  return catalog.files.find((f) => f.name.includes(BASE_MARK));
+}
+
 /** Dateien, die jede Einrichtung braucht: VAE, Text-Embedding, Klangmodell. */
 export function fixedFiles(catalog: ModelCatalog): ModelFile[] {
-  return catalog.files.filter((f) => !f.name.startsWith(LM_PREFIX) && !f.name.includes(XL_MARK));
+  return catalog.files.filter((f) => !f.name.startsWith(LM_PREFIX) && !f.name.includes(XL_MARK) && !f.name.includes(BASE_MARK));
 }
 
 /** Die festen Dateien (VAE, Text-Embedding, Klangmodell), das gewählte Sprachmodell und auf Wunsch XL. */

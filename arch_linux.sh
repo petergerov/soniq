@@ -615,7 +615,7 @@ installiere() {
   schritt "7. Downloading models"
   mkdir -p "$MODELS"
   local FILES
-  FILES=$(echo "$MODEL_FILES" | grep -v 'acestep-5Hz-lm-\|xl-sft' ; echo "$MODEL_FILES" | grep "^$LM_FILE:")
+  FILES=$(echo "$MODEL_FILES" | grep -v 'acestep-5Hz-lm-\|xl-sft\|v15-base' ; echo "$MODEL_FILES" | grep "^$LM_FILE:")
   [ "$XL" = 1 ] && FILES=$(echo "$FILES"; echo "$MODEL_FILES" | grep 'xl-sft')
 
   local NEED_MB=0

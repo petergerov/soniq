@@ -179,9 +179,15 @@ the analysis), then:
 
 Each step works on its own, is tested (API, browser, measurements) and committed separately.
 
+Step 1 in the code: `scripts/common.sh` (base model, optional; installers and the app setup skip it by default),
+`backend/src/infrastructure/wav.ts` (read / mix / write WAV), `domain/stem.ts`, `infrastructure/stem-repository.ts`,
+`services/stem-service.ts`, `http/routes/stem-routes.ts` (`GET /api/songs/:id/stems`, `GET /api/songs/:id/stems.zip`,
+`GET /api/stems/:id/audio`), engine methods `plan()` and `stem()` in `ace-step-engine.ts`, `stems_available` in the
+settings. Deleting a song deletes its tracks.
+
 | Step | Content | Depends on |
 |---|---|---|
-| 1 | Base model in the catalog; tracks table, storage, engine methods (`lego`, `extract`, mixing), API | – |
+| 1 | ✅ Base model in the catalog; tracks table, storage, engine methods (`lego`, `extract`, mixing), API | – |
 | 2 | **B** backend: track-by-track generation in the worker, time estimate | 1 |
 | 3 | **B** interface: switch, track choice, track list on the song (play, download, ZIP) | 2 |
 | 4 | **A**: extract in the worker + "Extract tracks …" in the track list | 1, 3 |
