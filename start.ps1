@@ -37,7 +37,7 @@ function Fehler([string]$text, [string]$log) {
 
 # Zeitstempel der neusten Quelldatei - daran erkennt man veralteten Code.
 function Neuste-Quelle {
-    $f = Get-ChildItem -Recurse -File -Path (Join-Path $ROOT "backend\src"), (Join-Path $ROOT "shared"), (Join-Path $ROOT "frontend\dist") -Include *.ts, *.js, *.html, *.css |
+    $f = Get-ChildItem -Recurse -File -Path (Join-Path $ROOT "backend\src"), (Join-Path $ROOT "shared"), (Join-Path $ROOT "frontend\src"), (Join-Path $ROOT "frontend\index.html") -Include *.ts, *.js, *.html, *.css |
          Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if ($f) { return $f.LastWriteTime } else { return $null }
 }

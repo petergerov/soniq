@@ -487,15 +487,18 @@ installiere() {
     echo "  ✓ All required system packages are present."
   fi
 
-  # Node.js (Laufzeit der Web-App): installiertes nodejs ab 22.18, sonst portable Version in runtime/node
+  # Node.js (Laufzeit der Web-App): installiertes nodejs ab 22.18 samt npm (bei Arch ein eigenes Paket),
+  # sonst portable Version in runtime/node (bringt npm mit)
   schritt "4. Setting up Node.js for the web app"
-  if node_bin >/dev/null; then
+  if node_bin >/dev/null && { [ -x "$NODE_DIR/bin/node" ] || command -v npm >/dev/null 2>&1; }; then
     echo "  ✓ Node.js $("$(node_bin)" --version) ($(node_bin))"
   else
-    echo "  No suitable Node.js (22.18 or newer) found. Downloading the portable version..."
+    echo "  No suitable Node.js (22.18 or newer, with npm) found. Downloading the portable version..."
     case "$(uname -m)" in aarch64|arm64) NODE_PLAT="linux-arm64" ;; *) NODE_PLAT="linux-x64" ;; esac
     installiere_node "$NODE_PLAT" || abbruch "Node.js could not be installed."
   fi
+  echo "  Building the app ..."
+  "$(node_bin)" "$ROOT/scripts/build-frontend.mjs" || abbruch "The app could not be built. Check the internet connection and run the installation again."
 
   # 5. Modellserver (acestep.cpp) bauen
   schritt "5. Building model server acestep.cpp ($CHOSEN_BACKEND)"

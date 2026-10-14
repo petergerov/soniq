@@ -167,6 +167,10 @@ if ((Test-Path $nodeExe) -and ((& $nodeExe --version) -eq "v$NODE_VERSION")) {
     Write-Host "  installed (v$NODE_VERSION)"
 }
 
+Schritt "Building the app"
+& (Node-Exe) (Join-Path $ROOT "scripts\build-frontend.mjs")
+if ($LASTEXITCODE -ne 0) { Abbruch "The app could not be built. Check the internet connection and run install again." }
+
 # --- 4. Modellserver (acestep.cpp) ----------------------------------------------
 Schritt "Model server acestep.cpp"
 $ACE = Ace-Server

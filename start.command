@@ -22,7 +22,7 @@ fehler() {
 
 # Zeitstempel der neusten Quelldatei — daran erkennt man veralteten Code.
 neuste_quelle() {
-  find backend/src shared frontend/dist -type f \( -name '*.ts' -o -name '*.js' -o -name '*.html' -o -name '*.css' \) \
+  find backend/src shared frontend/src frontend/index.html -type f \( -name '*.ts' -o -name '*.js' -o -name '*.html' -o -name '*.css' \) \
     -exec stat -f '%m' {} \; 2>/dev/null | sort -rn | head -1
 }
 

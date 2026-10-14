@@ -4,9 +4,8 @@ models/
 runtime/
 *.lnk
 
-# Entwicklerwerkzeuge (npm install). frontend/dist/ gehört dagegen ins Repo: Endnutzer bauen nichts.
+# Pakete (npm ci) und die gebaute Oberfläche: baut jeder Rechner selbst (Installer und App-Start, scripts/build-frontend.mjs)
 node_modules/
-
 frontend/dist/
 
 # Persönliche Daten: Songs, Datenbank, Logs, Installationsergebnis

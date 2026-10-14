@@ -39,6 +39,20 @@ export function sendJson(res: ServerResponse, status: number, body: unknown): vo
   res.end(data);
 }
 
+/** Kleine HTML-Seite aus dem Speicher, nie zwischengespeichert. */
+export class HtmlResponse implements HttpResponse {
+  private readonly html: string;
+
+  constructor(html: string) {
+    this.html = html;
+  }
+
+  async send(res: ServerResponse): Promise<void> {
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "content-length": Buffer.byteLength(this.html) });
+    res.end(this.html);
+  }
+}
+
 /** Datei mit Unterstützung für Range-Anfragen (Safari spielt Audio sonst nicht ab). */
 export class FileResponse implements HttpResponse {
   private readonly path: string;

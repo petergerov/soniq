@@ -115,6 +115,9 @@ schritt "Node.js (runs the web app)"
 case "$ARCH" in arm64) NODE_PLAT="darwin-arm64" ;; *) NODE_PLAT="darwin-x64" ;; esac
 installiere_node "$NODE_PLAT" || abbruch "Node.js could not be installed. Running install again resumes the download."
 
+schritt "Building the app"
+"$(node_bin)" "$ROOT/scripts/build-frontend.mjs" || abbruch "The app could not be built. Check the internet connection and run install again."
+
 schritt "cmake (to build the model server)"
 if ! command -v cmake >/dev/null 2>&1; then
   CMAKE_URL=${CMAKE_MAC%:*}; CMAKE_SHA=${CMAKE_MAC##*:}

@@ -14,6 +14,7 @@ import { Router } from "./http/router.ts";
 import { StaticFiles } from "./http/static-files.ts";
 import { AceStepEngine } from "./infrastructure/ace-step-engine.ts";
 import { Database } from "./infrastructure/database.ts";
+import { buildFrontendIfStale } from "./infrastructure/frontend-build.ts";
 import { FolderRepository } from "./infrastructure/folder-repository.ts";
 import { PresetRepository } from "./infrastructure/preset-repository.ts";
 import { Git } from "./infrastructure/git.ts";
@@ -95,6 +96,7 @@ async function main(): Promise<void> {
   migrateWindowsShortcuts(config);
   await server.listen(config.port, config.host);
   log(`SONIQ läuft auf http://localhost:${config.port}`);
+  buildFrontendIfStale(config.root, config.dataDir, log);
   const working = worker.run();
   worker.wake();
 

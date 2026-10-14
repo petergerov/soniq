@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Oberfläche (TypeScript + Vite). Das gebaute dist/ wird mitgeliefert, Endnutzer brauchen keinen Build.",
+  "description": "Oberfläche (TypeScript + Vite). dist/ ist nicht im Repo, jeder Rechner baut es (scripts/build-frontend.mjs).",
   "scripts": {
     "dev": "vite",
     "build": "tsc -p . && vite build",

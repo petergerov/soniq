@@ -91,7 +91,7 @@ The script:
 
 The script requires `pacman`. On Ubuntu, Debian, Fedora and others you can set it up by hand. **Untested**, feedback welcome.
 
-Requirements: git, cmake, a C++ compiler, [Node.js](https://nodejs.org) 22.18 or newer (recommended: 24 LTS), for NVIDIA the CUDA Toolkit (AMD/Intel: Vulkan SDK).
+Requirements: git, cmake, a C++ compiler, [Node.js](https://nodejs.org) 22.18 or newer with npm (recommended: 24 LTS), for NVIDIA the CUDA Toolkit (AMD/Intel: Vulkan SDK).
 
 ```bash
 git clone https://github.com/petergerov/soniq.git ~/soniq
@@ -103,6 +103,8 @@ git clone --recurse-submodules https://github.com/ServeurpersoCom/acestep.cpp en
 (cd engine/acestep.cpp && ./models.sh --lm 1.7B --sft) && mkdir -p models && mv engine/acestep.cpp/models/*.gguf models/
 # Operating mode: one server for everything
 mkdir -p data && printf 'MODE=single\nLM_FILE=acestep-5Hz-lm-1.7B-Q8_0.gguf\n' > data/engine.conf
+# Build the interface (the app also does this by itself on start if it is missing)
+node scripts/build-frontend.mjs
 ```
 
 After that, starting and stopping work with `./arch_linux.sh --start` and `--stop`, even without `pacman` (not tested). Alternatively, start both servers by hand:
@@ -126,7 +128,7 @@ node --disable-warning=ExperimentalWarning backend/src/main.ts --port 8765
 | `scripts/common.sh` | Shared paths, ports, acestep.cpp version, model checksums |
 | `scripts/common.ps1` | Windows counterpart, reads its values from `common.sh` |
 | `backend/` | Server in TypeScript (Node.js, no runtime dependencies, runs without a build step), see below |
-| `frontend/` | Interface in TypeScript (Vite); `frontend/dist/` is the built version and is committed to the repo |
+| `frontend/` | Interface in TypeScript (Vite); `frontend/dist/` is the built version, not in the repo: every installation builds it (`scripts/build-frontend.mjs`) |
 | `shared/api.ts` | HTTP API types, shared by backend and frontend |
 | `runtime/` | Portable Node.js runtime (and on the Mac possibly cmake), from the installer, not in the repo |
 | `docs/guide/` | Guide with pictures (Markdown). `capture.py` takes the screenshots in `images/` from the running app (`uv run --with websockets python docs/guide/capture.py`) |
@@ -136,14 +138,16 @@ node --disable-warning=ExperimentalWarning backend/src/main.ts --port 8765
 
 ## Development
 
-Backend and frontend are TypeScript. End users don't need a build: Node.js runs `backend/src` directly
-(type stripping, Node 22.18 or newer), and the interface ships pre-built in `frontend/dist`.
+Backend and frontend are TypeScript. Node.js runs `backend/src` directly (type stripping, Node 22.18 or newer).
+The interface is built on each computer into `frontend/dist` (not in the repo): the installer runs `scripts/build-frontend.mjs`
+(`npm ci` if needed, then `vite build`), and the app runs it on every start when the build is missing or older than its sources,
+for example after an update. Until it is done the app shows a short "getting ready" page; the output goes to `data/build.log`.
 
 ```bash
 npm install            # developer tools (TypeScript, Vite, wavesurfer.js)
 npm run dev            # backend with --watch on :8765 and Vite with hot reload on :5173 (proxies /api)
 npm run typecheck      # type-check both parts
-npm run build          # build the interface into frontend/dist – run before committing, dist/ belongs in the repo
+npm run build          # type-check and build the interface into frontend/dist (not committed)
 ```
 
 `MG_DATA_DIR=/path` makes the backend use a different data folder (e.g. for testing with a copy of the library).
@@ -182,4 +186,4 @@ Check the license and training data situation yourself before any commercial use
 ## License
 
 The code in this repository is licensed under the [MIT License](LICENSE).
-The player uses [wavesurfer.js](https://github.com/katspaugh/wavesurfer.js) (BSD-3-Clause), bundled in `frontend/dist`.
+The player uses [wavesurfer.js](https://github.com/katspaugh/wavesurfer.js) (BSD-3-Clause), bundled into the built interface.
