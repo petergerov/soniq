@@ -1,0 +1,101 @@
+// Arbeitet die Warteschlange strikt nacheinander ab (eine GPU, ein Job).
+import type { SongParams } from "../../../shared/api.ts";
+import { EngineError, type MusicEngineFactory } from "../domain/music-engine.ts";
+import { nowIso } from "../domain/song.ts";
+import type { KeepAwake } from "../infrastructure/keep-awake.ts";
+import type { SettingsRepository } from "../infrastructure/settings-repository.ts";
+import type { SongRepository } from "../infrastructure/song-repository.ts";
+import type { SongStorage } from "../infrastructure/song-storage.ts";
+
+/** Was andere Services vom Worker brauchen: anstoßen und einen laufenden Auftrag abbrechen. */
+export interface JobRunner {
+  wake(): void;
+  cancel(songId: string): void;
+}
+
+export interface GenerationWorkerDeps {
+  songs: SongRepository;
+  settings: SettingsRepository;
+  storage: SongStorage;
+  engineFactory: MusicEngineFactory;
+  keepAwake: KeepAwake;
+  log?: (message: string) => void;
+}
+
+export class GenerationWorker implements JobRunner {
+  private readonly deps: GenerationWorkerDeps;
+  private wakeUp: (() => void) | undefined;
+  private pendingWake = false;
+  private running: { songId: string; abort: AbortController } | undefined;
+  private stopped = false;
+
+  constructor(deps: GenerationWorkerDeps) {
+    this.deps = deps;
+  }
+
+  wake(): void {
+    this.pendingWake = true;
+    this.wakeUp?.();
+  }
+
+  cancel(songId: string): void {
+    if (this.running?.songId === songId) this.running.abort.abort();
+  }
+
+  stop(): void {
+    this.stopped = true;
+    this.running?.abort.abort();
+    this.wake();
+  }
+
+  /** Läuft, bis stop() aufgerufen wird. */
+  async run(): Promise<void> {
+    while (!this.stopped) {
+      const job = this.deps.songs.nextQueued();
+      if (!job) {
+        this.deps.keepAwake.disable();
+        await this.sleepUntilWoken();
+        continue;
+      }
+      this.deps.keepAwake.enable();
+      await this.process(job.id, JSON.parse(job.params) as SongParams);
+    }
+    this.deps.keepAwake.disable();
+  }
+
+  private sleepUntilWoken(): Promise<void> {
+    if (this.pendingWake) {
+      this.pendingWake = false;
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      this.wakeUp = () => {
+        this.wakeUp = undefined;
+        this.pendingWake = false;
+        resolve();
+      };
+    });
+  }
+
+  private async process(songId: string, params: SongParams): Promise<void> {
+    const { songs, storage } = this.deps;
+    songs.markRunning(songId);
+    const settings = this.deps.settings.get();
+    const engine = this.deps.engineFactory(settings);
+    const abort = new AbortController();
+    this.running = { songId, abort };
+    try {
+      const result = await engine.generate({ ...params }, (msg) => songs.setProgress(songId, msg), abort.signal);
+      const file = `${songId}.${result.extension}`;
+      if (songs.status(songId) !== "running") return;   // inzwischen abgebrochen
+      await storage.save(file, result.audio);
+      songs.markDone(songId, { file, engine: engine.name, resultMeta: JSON.stringify(result.meta), finishedAt: nowIso() });
+    } catch (e) {
+      if (abort.signal.aborted) return;                   // vom Nutzer abgebrochen: Status steht schon auf "cancelled"
+      songs.markError(songId, e instanceof Error ? e.message || e.name : String(e), nowIso());
+      if (!(e instanceof EngineError)) this.deps.log?.(`Song ${songId}: ${(e as Error).stack ?? String(e)}`);
+    } finally {
+      this.running = undefined;
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "music-generator",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Lokaler Musik-Generator (Web-UI für ACE-Step 1.5 / acestep.cpp)",
+  "type": "module",
+  "workspaces": ["backend", "frontend"],
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "start": "npm run start -w backend",
+    "dev": "npm run dev -w backend & npm run dev -w frontend",
+    "build": "npm run build -w frontend",
+    "typecheck": "npm run typecheck -w backend && npm run typecheck -w frontend"
+  }
+}

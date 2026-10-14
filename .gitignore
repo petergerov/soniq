@@ -1,0 +1,22 @@
+# Vom Installer erzeugt oder heruntergeladen
+engine/
+runtime/
+*.lnk
+
+# Entwicklerwerkzeuge (npm install). frontend/dist/ gehört dagegen ins Repo: Endnutzer bauen nichts.
+node_modules/
+
+# Alte Python-Umgebung (bis Version 0.1)
+.venv/
+
+# Persönliche Daten: Songs, Datenbank, Logs, Installationsergebnis
+data/
+
+# Python (Werkzeuge in docs/anleitung) / macOS
+__pycache__/
+*.pyc
+.DS_Store
+
+# Quelldatei des Logos (die App nutzt frontend/public/alphatester.png)
+274_Alphatester_Schrift.png
+.gstack/

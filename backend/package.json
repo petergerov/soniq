@@ -1,0 +1,17 @@
+{
+  "name": "@music-generator/backend",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "HTTP-Server: Job-Queue, Bibliothek, Einstellungen, Updates. Läuft ohne Build direkt mit Node (Type Stripping) und ohne Laufzeit-Abhängigkeiten.",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/main.ts",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/main.ts",
+    "selftest": "node --disable-warning=ExperimentalWarning src/cli/selftest.ts",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "5.9.3"
+  }
+}

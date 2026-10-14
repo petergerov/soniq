@@ -1,0 +1,118 @@
+// HTML einer Songzeile. Reine Darstellung: kennt weder API noch Ereignisse.
+import type { Song } from "../../../../shared/api.ts";
+import { escapeHtml as esc } from "../../core/dom.ts";
+import { formatDuration, generationTime } from "../../core/format.ts";
+import type { Translate } from "../../i18n/i18n.ts";
+
+export interface SongRowContext {
+  t: Translate;
+  isCurrent: boolean;
+  isPlaying: boolean;
+  wasPlayed: boolean;
+  lyricsOpen: boolean;
+  editing: boolean;
+  hasFolders: boolean;
+  /** Erster Song einer neuen Prompt-Gruppe (Trennlinie) */
+  startsGroup: boolean;
+}
+
+const ICON_FOLDER = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`;
+const ICON_REUSE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M12 3l7 7h-4v10h-6V10H5l7-7z"/></svg>`;
+
+export function shortCaption(song: Song): string {
+  return song.caption.split(",").slice(0, 3).join(",");
+}
+
+export function displayTitle(song: Song): string {
+  return (song.title || shortCaption(song)) + (song.letter ? ` ${song.letter}` : "");
+}
+
+/** Kurze, übersetzte Fehlerursache (der Server liefert deutsche Rohtexte). */
+export function shortError(message: string | null, t: Translate): string {
+  const msg = message ?? "";
+  if (/nicht erreichbar/i.test(msg)) return t("err_offline");
+  if (/Codes/i.test(msg)) return t("err_codes");
+  if (/Zeitüberschreitung/i.test(msg)) return t("err_timeout");
+  return t("err_details");
+}
+
+/** Vom Modell geschriebener Text (nur bei Songs mit Gesang), sonst "". */
+export function generatedLyrics(song: Song): string {
+  const lyrics = song.result_meta?.lyrics || "";
+  const hasText = /[^\s[\]]/.test(lyrics.replace(/\[[^\]]*\]/g, ""));
+  return song.status === "done" && song.lyrics !== "[Instrumental]" && hasText ? lyrics.trim() : "";
+}
+
+function metaLine(song: Song): string {
+  const m = song.result_meta ?? {}, p = song.params;
+  return [
+    m.bpm && `${m.bpm}BPM`,
+    p.inference_steps ? `${p.inference_steps}IT` : null,
+    p.lm_temperature != null ? `${Number(p.lm_temperature).toFixed(1)}VAR` : null,
+    m.keyscale,
+    m.duration && formatDuration(m.duration),
+  ].filter(Boolean).join(" · ");
+}
+
+function leftSlot(song: Song, ctx: SongRowContext): string {
+  switch (song.status) {
+    case "done": return `<button class="aktion round" data-a="play" aria-label="${ctx.t("play")}">${ctx.isPlaying ? "❚❚" : "▶"}</button>`;
+    case "error": return `<div class="slot err" title="${esc(song.message)}">!</div>`;
+    case "running": return `<div class="slot run">♪</div>`;
+    case "cancelled": return `<div class="slot">✕</div>`;
+    default: return `<div class="slot">…</div>`;
+  }
+}
+
+function stateLine(song: Song, ctx: SongRowContext): string {
+  const { t } = ctx;
+  switch (song.status) {
+    case "running": return `<div class="s run">${esc(song.message || "0:00")}</div><div class="mini-bar"></div>`;
+    case "queued": return `<div class="s">${t("waiting")}</div>`;
+    case "cancelled": return `<div class="s">${t("cancelled")}</div>`;
+    case "error": return `<div class="s err" title="${esc(song.message)}">${t("error")} · ${esc(shortError(song.message, t))}</div>`;
+    case "done": {
+      const took = ctx.wasPlayed ? null : generationTime(song.created_at, song.finished_at);
+      return took ? `<div class="s took">${t("created_in")} ${took}</div>` : "";
+    }
+  }
+}
+
+function actionButtons(song: Song, lyrics: string, ctx: SongRowContext): string {
+  const { t } = ctx;
+  const done = song.status === "done";
+  const active = song.status === "queued" || song.status === "running";
+  return [
+    done && `<button class="sek icon ${song.favorite ? "on" : ""}" data-a="fav" title="${t("fav")}">${song.favorite ? "★" : "☆"}</button>`,
+    done && `<a class="download icon fmt" href="${song.url}?download=1" title="${t("download")}">${song.file?.endsWith(".wav") ? "WAV" : "MP3"}</a>`,
+    lyrics && `<button class="sek icon txt ${ctx.lyricsOpen ? "on" : ""}" data-a="lyrics" title="${t("show_lyrics")}">TXT</button>`,
+    ctx.hasFolders && `<button class="sek icon" data-a="move" title="${t("move")}">${ICON_FOLDER}</button>`,
+    `<button class="sek icon" data-a="more" title="${t("more")}">＋</button>`,
+    `<button class="sek icon" data-a="reuse" title="${t("reuse")}">${ICON_REUSE}</button>`,
+    (song.status === "error" || song.status === "cancelled") && `<button class="sek icon" data-a="retry" title="${t("retry")}">↻</button>`,
+    `<button class="sek icon del" data-a="del" title="${active ? t("cancel") : t("del")}">✕</button>`,
+  ].filter(Boolean).join("");
+}
+
+function titleBlock(song: Song, ctx: SongRowContext): string {
+  if (ctx.editing) {
+    return `<input class="t-edit" data-id="${song.id}" value="${esc(song.title || "")}" placeholder="${esc(shortCaption(song))}">`;
+  }
+  return `<div class="t" data-a="rename" title="${ctx.t("rename")}">${esc(displayTitle(song))}</div>`;
+}
+
+function lyricsBlock(song: Song, lyrics: string, ctx: SongRowContext): string {
+  if (!lyrics || !ctx.lyricsOpen) return "";
+  const fileName = (displayTitle(song) || song.id).replace(/[\\/:*?"<>|]+/g, "_");
+  return `<div class="lyr-wrap"><pre class="lyr">${esc(lyrics)}</pre><a class="download mini lyr-dl" download="${esc(fileName)}.txt" ` +
+    `href="data:text/plain;charset=utf-8,${encodeURIComponent(lyrics)}" title="${ctx.t("lyrics_dl")}">TXT ↓</a></div>`;
+}
+
+export function renderSongRow(song: Song, ctx: SongRowContext): string {
+  const lyrics = generatedLyrics(song);
+  const classes = ["song", ctx.isCurrent && "playing", ctx.startsGroup && "new-group"].filter(Boolean).join(" ");
+  return `<div class="${classes}" data-id="${song.id}" draggable="${ctx.hasFolders && !ctx.editing}">
+      ${leftSlot(song, ctx)}
+      <div style="min-width:0">${titleBlock(song, ctx)}<div class="m" title="${ctx.t("meta_tip")}">${esc(metaLine(song))}</div>${stateLine(song, ctx)}</div>
+      <div class="actions">${actionButtons(song, lyrics, ctx)}</div>${lyricsBlock(song, lyrics, ctx)}</div>`;
+}

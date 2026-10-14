@@ -1,0 +1,19 @@
+{
+  "name": "@music-generator/frontend",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Oberfläche (TypeScript + Vite). Das gebaute dist/ wird mitgeliefert, Endnutzer brauchen keinen Build.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p . && vite build",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "wavesurfer.js": "7.12.12"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vite": "7.3.7"
+  }
+}
