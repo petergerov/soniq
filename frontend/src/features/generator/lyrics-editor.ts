@@ -1,5 +1,5 @@
-// Lyrics-Bereich: eingeklappt = instrumental ("[Instrumental]" im Feld), leer = Modell schreibt selbst ("automatisch"),
-// sonst eigene Lyrics. Ein Klick ins Feld schaltet Instrumental aus.
+// Gesang: Schalter Instrumental | Song. Bei Song zeigt der Bereich Sprache und Lyrics;
+// leeres Feld = Modell schreibt selbst ("automatisch"), sonst eigene Lyrics.
 import { byId, restartAnimation } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import { renderChips } from "./chips.ts";
@@ -11,13 +11,14 @@ const PLACEHOLDER = "[verse]\n…\n\n[chorus]\n…";
 export interface LyricsElements {
   instrumental: HTMLInputElement;
   lyrics: HTMLTextAreaElement;
-  box: HTMLDetailsElement;
 }
 
 export class LyricsEditor {
   private readonly el: LyricsElements;
   private readonly t: Translate;
   private readonly hint: HTMLElement;
+  private readonly panel = byId("lyricsPanel");
+  private readonly switches = document.querySelectorAll<HTMLButtonElement>("[data-vocals]");
   /** Eigene Lyrics, solange auf Instrumental umgeschaltet ist */
   private stash = "";
 
@@ -63,11 +64,6 @@ export class LyricsEditor {
     this.el.lyrics.value = instrumental ? "" : lyrics;
     this.el.instrumental.checked = instrumental;
     this.sync();
-    this.open(!instrumental && !!lyrics.trim());
-  }
-
-  open(open: boolean): void {
-    this.el.box.open = open;
   }
 
   /** Feld, Platzhalter und Hinweis an den Zustand anpassen (auch nach Sprachwechsel). */
@@ -80,7 +76,8 @@ export class LyricsEditor {
     } else if (lyrics.value === INSTRUMENTAL) {
       lyrics.value = this.stash;
     }
-    lyrics.classList.toggle("dim", on);
+    this.panel.hidden = on;
+    this.switches.forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.vocals === "instrumental") === on)));
     const auto = !on && !lyrics.value.trim();
     lyrics.classList.toggle("auto", auto);
     lyrics.placeholder = auto ? this.t("auto_ph") : PLACEHOLDER;
@@ -88,7 +85,6 @@ export class LyricsEditor {
   }
 
   private insertSection(section: string): void {
-    if (section === "[instrumental]") return this.setInstrumental();   // zurück zu ohne Gesang
     const f = this.el.lyrics, pos = f.selectionStart ?? f.value.length;
     const before = f.value.slice(0, pos);
     const insert = (before && !before.endsWith("\n") ? "\n\n" : "") + section + "\n";
@@ -98,28 +94,16 @@ export class LyricsEditor {
   }
 
   private bindEvents(): void {
-    const { instrumental, lyrics, box } = this.el;
+    const { instrumental, lyrics } = this.el;
     // Lyrics-Würfel: das Modell schreibt bei der Generierung eigene Lyrics (hier erscheint kein Text)
     byId("lyricsDice").addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();   // <summary> soll dabei nicht auf-/zuklappen
       this.setAutomatic();
       restartAnimation(e.currentTarget as HTMLElement, "roll");
     });
-    // Einklappen (Klick auf die Kopfzeile) heißt: Instrumental
-    box.querySelector("summary")!.addEventListener("click", () => {
-      if (box.open && !this.instrumental) this.setInstrumental();
-    });
-    instrumental.addEventListener("change", () => {
+    this.switches.forEach((b) => b.addEventListener("click", () => {
+      instrumental.checked = b.dataset.vocals === "instrumental";
       this.sync();
-      if (!this.instrumental) box.open = true;
-    });
-    lyrics.addEventListener("focus", () => {
-      if (this.instrumental) {
-        instrumental.checked = false;
-        this.sync();
-      }
-    });
+    }));
     lyrics.addEventListener("input", () => this.sync());
   }
 }

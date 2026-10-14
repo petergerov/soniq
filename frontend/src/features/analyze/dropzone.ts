@@ -1,4 +1,4 @@
-// Geheime Dropzone: das Logo. Unauffällig, bis man draufzeigt, etwas darauf zieht oder es gerade arbeitet.
+// Bereich „Audio analysieren“: Song hineinziehen oder anklicken, das Ergebnis füllt das Formular.
 import type { AnalyzeResult } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { byId } from "../../core/dom.ts";
@@ -13,7 +13,7 @@ export class Dropzone {
   private readonly t: Translate;
   private readonly onResult: (result: AnalyzeResult) => void;
   private readonly zone = byId("dropzone");
-  private readonly bubble = byId("dzBubble");
+  private readonly status = byId("dzStatus");
   private readonly fileInput = byId<HTMLInputElement>("fileInput");
   private hideTimer: number | undefined;
 
@@ -57,9 +57,8 @@ export class Dropzone {
 
   private show(state: State, text: string): void {
     clearTimeout(this.hideTimer);
-    this.zone.className = "logo-wrap" + (state ? ` ${state}` : "");
-    this.bubble.textContent = text;
-    this.bubble.classList.toggle("show", !!text);
+    this.zone.className = "dropzone" + (state ? ` ${state}` : "");
+    this.status.textContent = text;
     if (state === "ok") this.hideTimer = window.setTimeout(() => this.show("", ""), OK_VISIBLE_MS);
   }
 }

@@ -19,13 +19,13 @@ You can also stop the servers from inside the app: **Gear › Stop servers**.
 
 | # | Element | What it does |
 |---|---|---|
-| 1 | **Logo** | Hidden upload field: drop a song on it or click it. The app analyzes it and fills in prompt, tempo and length. Works with WAV, MP3, M4A, FLAC and OGG. |
+| 1 | **Analyze audio file** | Upload field at the top of the form: drop a song on it or click it. The app analyzes it and fills in prompt, tempo and length. Works with WAV, MP3, M4A, FLAC and OGG. |
 | 2 | **Title** | Only for finding the song again. The dice suggests a name. |
 | 3 | **Prompt** | Your idea: mood, scene, sound. The dice rolls an idea. |
 | 4 | **Style** | Genre and instruments. Dice: a suggestion. Under “Styles”, cards add terms. |
 | 5 | **Length** | 10 seconds to 5 minutes, default 1:30. |
 | 6 | **BPM** | Tempo. Far left = Auto, the model decides. |
-| 7 | **Lyrics** | Collapsed = instrumental. Dice: “Automatic”, the model writes its own lyrics when generating. Expanded: language and your own lyrics. |
+| 7 | **Vocals** | Right below the upload field: switch between **Instrumental** and **Song**. With Song: pick the language and type your own lyrics, or leave the field empty (dice: “Automatic”) and the model writes its own lyrics when generating. |
 | 8 | **Advanced** | Iterations (quality), variance (variety), key, time signature, seed. |
 | 9 | **Generate** | Pick the number of versions (1 to 10) and go. Several versions are named A, B, C … The bar stays visible while scrolling. |
 | 10 | **Gear** | Settings, see [below](#settings). Next to it: interface language (twelve languages, from German to Chinese). |

@@ -62,7 +62,7 @@ export class GeneratorForm {
     this.f = this.form.elements as FormControls;
     this.button = byId<HTMLButtonElement>("genBtn");
     this.styleChips = new StyleChips(this.f.style, byId("tagChips"));
-    this.lyrics = new LyricsEditor({ instrumental: this.f.instrumental, lyrics: this.f.lyrics, box: byId<HTMLDetailsElement>("lyricsBox") }, deps.t);
+    this.lyrics = new LyricsEditor({ instrumental: this.f.instrumental, lyrics: this.f.lyrics }, deps.t);
     const slider = (name: string, onChange?: () => void) => new BubbleSlider(this.form.querySelector(`input[name="${name}"]`)!.closest<HTMLElement>(".slider")!, onChange);
     this.sliders = {
       duration: slider("duration"),
@@ -115,7 +115,6 @@ export class GeneratorForm {
     if (hasVocals(r.lyrics || "")) {
       // Nicht den transkribierten Text übernehmen, sondern wie beim Lyrics-Würfel das Modell selbst schreiben lassen
       this.lyrics.setAutomatic();
-      this.lyrics.open(true);
       const lang = (r.vocal_language || "").toLowerCase();
       if ([...this.f.vocal_language.options].some((o) => o.value === lang)) this.f.vocal_language.value = lang;
     } else {

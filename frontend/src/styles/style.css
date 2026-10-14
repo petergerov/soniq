@@ -57,29 +57,7 @@ body {
 .logo { width: 48px; height: 48px; display: block; border-radius: 14px;
   box-shadow: 0 8px 24px -8px rgba(124, 58, 237, .7); transition: transform .2s ease, box-shadow .2s ease; }
 
-/* Logo = geheime Dropzone: unauffällig, erst bei Hover/Drag/Aktivität sichtbar */
-.logo-wrap { position: relative; flex: none; cursor: pointer; border-radius: 14px; }
-.logo-wrap:hover .logo, .logo-wrap:focus-visible .logo { transform: translateY(-1px) scale(1.03); box-shadow: 0 12px 28px -8px rgba(124, 58, 237, .9); }
-.logo-wrap:focus-visible { outline: none; box-shadow: var(--focus); }
-.logo-wrap.drag .logo { transform: scale(1.08); }
-.logo-wrap::after {   /* Ring, der bei Drag/Aktivität um das Logo erscheint */
-  content: ""; position: absolute; inset: -5px; border-radius: 18px; border: 2px solid transparent;
-  opacity: 0; transition: opacity .15s, border-color .15s; pointer-events: none;
-}
-.logo-wrap.drag::after { opacity: 1; border-color: var(--accent-soft); }
-.logo-wrap.busy::after { opacity: 1; border-color: var(--accent-soft); animation: pulse 1.1s ease-in-out infinite; }
-.logo-wrap.ok::after { opacity: 1; border-color: var(--success); }
-.logo-wrap.err::after { opacity: 1; border-color: var(--error); }
-@keyframes pulse { 50% { opacity: .35; } }
-@media (prefers-reduced-motion: reduce) { .logo-wrap.busy::after { animation: none; } .logo { transition: none; } }
-.dz-bubble { position: absolute; top: calc(100% + 12px); left: 0; z-index: 5; width: max-content; max-width: 280px;
-  background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 8px 12px;
-  font-size: 12px; color: var(--muted); box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
-  opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity .15s, transform .15s; }
-.dz-bubble.show { opacity: 1; transform: translateY(0); }
-.logo-wrap.busy .dz-bubble { color: var(--accent-soft); }
-.logo-wrap.ok .dz-bubble { color: var(--success); }
-.logo-wrap.err .dz-bubble { color: var(--error); }
+.logo-wrap { flex: none; }
 
 .brand { margin: 0; font-size: inherit; font-weight: inherit; }
 .brand-link { display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: inherit; border-radius: 8px; }
@@ -94,6 +72,28 @@ body {
 .card { background: linear-gradient(180deg, var(--surface), #0e0e13); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 22px; min-width: 0; box-shadow: var(--shadow); }
 .col-title { margin: 0; font-size: 15px; font-weight: 650; color: var(--text); letter-spacing: -.01em; }
+
+/* ------------------------------------------------------------ Audio analysieren */
+.field.analyze { padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.dropzone { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer;
+  border: 1.5px dashed var(--line-strong); border-radius: var(--radius-sm); background: var(--bg); color: var(--muted);
+  transition: border-color .15s, background .15s, color .15s; }
+.dropzone:hover, .dropzone.drag { border-color: var(--accent-soft); background: var(--accent-tint); color: var(--text); }
+.dropzone:focus-visible { outline: none; box-shadow: var(--focus); }
+.dropzone > * { pointer-events: none; }   /* sonst flackert "drag" beim Überfahren der Kinder */
+.dz-icon { flex: none; color: var(--accent-soft); }
+.dz-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dz-status { font-size: 12px; overflow-wrap: anywhere; }
+.dz-status:empty { display: none; }
+.dropzone.busy { border-color: var(--accent-soft); }
+.dropzone.busy .dz-icon { animation: pulse 1.1s ease-in-out infinite; }
+.dropzone.busy .dz-status { color: var(--accent-soft); }
+.dropzone.ok { border-color: var(--success); }
+.dropzone.ok .dz-status { color: var(--success); }
+.dropzone.err { border-color: var(--error); }
+.dropzone.err .dz-status { color: var(--error); }
+@keyframes pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .dropzone.busy .dz-icon { animation: none; } }
 
 /* ------------------------------------------------------------ Formular */
 .field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
@@ -146,10 +146,13 @@ select.mini { width: auto; padding: 4px 26px 4px 8px; font-size: 12px; }
 .dice.roll svg { animation: roll .35s ease; }
 @keyframes roll { from { transform: rotate(0); } to { transform: rotate(180deg); } }
 @media (prefers-reduced-motion: reduce) { .dice.roll svg { animation: none; } }
-textarea.dim { opacity: .45; cursor: pointer; }
 textarea.auto::placeholder { color: var(--accent-soft); }
 details > textarea { margin-top: 12px; }
 details > .chips { margin: 12px 0 0; }
+.lyrics-panel { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(255, 255, 255, .015); }
+.lyrics-panel[hidden] { display: none; }
+.lyrics-panel .field.lang { margin: 0 0 4px; }
+.lyrics-panel > .chips { margin: 4px 0 0; }
 .sumhint { margin-left: 10px; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--faint); font-size: 12px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0 12px; margin-top: 14px; }
 details { margin-bottom: 18px; }
@@ -335,10 +338,11 @@ dialog .col-title { margin-bottom: 18px; font-size: 17px; }
 .field.lang .lbl { margin: 0; }
 .field.lang select { width: auto; min-width: 170px; }
 
-/* Einstellungen */
+/* Umschalter (Gesang, Einstellungen) */
 .seg { display: inline-flex; gap: 4px; padding: 4px; background: var(--bg); border: 1px solid var(--line-strong); border-radius: 12px; width: fit-content; }
 .seg .sek { border-color: transparent; background: transparent; }
 .seg button[aria-pressed=true] { background: var(--surface-3); color: var(--text); border-color: var(--line-strong); }
+.vocals .seg button[aria-pressed=true] { color: var(--accent-soft); border-color: rgba(167, 139, 250, .45); background: var(--accent-tint); }
 .upd-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .upd-row .small { font-size: 12px; color: var(--muted); }
 .upd-list { margin: 6px 0 8px; padding-left: 18px; font-size: 12px; color: var(--muted); }

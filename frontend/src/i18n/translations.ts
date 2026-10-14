@@ -13,6 +13,8 @@ export type Dictionary = Record<string, Translation>;
 
 export const TRANSLATIONS = {
   de: {
+    vocals: "Gesang", instrumental: "Instrumental", song: "Song",
+    analyze: "Audio analysieren",
     drop_aria: "Song hochladen und analysieren",
     drop_title: "Song hierher ziehen oder klicken — Stil und Tempo werden übernommen",
     brand_title: "Zur SONIQ-Webseite",
@@ -78,6 +80,8 @@ export const TRANSLATIONS = {
     upd_slow: "Neustart dauert ungewöhnlich lang. Bitte Music Generator ON starten.",
   },
   en: {
+    vocals: "Vocals", instrumental: "Instrumental", song: "Song",
+    analyze: "Analyze audio file",
     drop_aria: "Upload and analyze a song",
     drop_title: "Drop a song here or click — style and tempo are picked up",
     brand_title: "Go to the SONIQ website",
@@ -138,6 +142,8 @@ export const TRANSLATIONS = {
     upd_slow: "Restart is taking unusually long. Please start Music Generator ON.",
   },
   es: {
+    vocals: "Voz", instrumental: "Instrumental", song: "Canción",
+    analyze: "Analizar archivo de audio",
     drop_aria: "Subir y analizar una canción",
     drop_title: "Arrastra una canción aquí o haz clic: se toman el estilo y el tempo",
     brand_title: "Ir a la web de SONIQ",
@@ -198,6 +204,8 @@ export const TRANSLATIONS = {
     upd_slow: "El reinicio tarda más de lo normal. Inicia Music Generator ON.",
   },
   fr: {
+    vocals: "Voix", instrumental: "Instrumental", song: "Chanson",
+    analyze: "Analyser un fichier audio",
     drop_aria: "Importer et analyser un morceau",
     drop_title: "Dépose un morceau ici ou clique : le style et le tempo sont repris",
     brand_title: "Aller sur le site SONIQ",
@@ -258,6 +266,8 @@ export const TRANSLATIONS = {
     upd_slow: "Le redémarrage prend anormalement longtemps. Lance Music Generator ON.",
   },
   it: {
+    vocals: "Voce", instrumental: "Strumentale", song: "Canzone",
+    analyze: "Analizza file audio",
     drop_aria: "Carica e analizza un brano",
     drop_title: "Trascina qui un brano o fai clic: stile e tempo vengono ripresi",
     brand_title: "Vai al sito SONIQ",
@@ -318,6 +328,8 @@ export const TRANSLATIONS = {
     upd_slow: "Il riavvio sta durando più del solito. Avvia Music Generator ON.",
   },
   pt: {
+    vocals: "Voz", instrumental: "Instrumental", song: "Canção",
+    analyze: "Analisar arquivo de áudio",
     drop_aria: "Enviar e analisar uma música",
     drop_title: "Arraste uma música aqui ou clique: o estilo e o andamento são aproveitados",
     brand_title: "Ir ao site da SONIQ",
@@ -378,6 +390,8 @@ export const TRANSLATIONS = {
     upd_slow: "A reinicialização está demorando mais que o normal. Inicie o Music Generator ON.",
   },
   tr: {
+    vocals: "Vokal", instrumental: "Enstrümantal", song: "Şarkı",
+    analyze: "Ses dosyasını analiz et",
     drop_aria: "Şarkı yükle ve analiz et",
     drop_title: "Bir şarkıyı buraya sürükle veya tıkla: tarz ve tempo alınır",
     brand_title: "SONIQ web sitesine git",
@@ -438,6 +452,8 @@ export const TRANSLATIONS = {
     upd_slow: "Yeniden başlatma alışılmadık derecede uzun sürüyor. Lütfen Music Generator ON'u başlat.",
   },
   pl: {
+    vocals: "Wokal", instrumental: "Instrumentalny", song: "Piosenka",
+    analyze: "Analizuj plik audio",
     drop_aria: "Prześlij i przeanalizuj utwór",
     drop_title: "Przeciągnij tu utwór lub kliknij: styl i tempo zostaną przejęte",
     brand_title: "Przejdź na stronę SONIQ",
@@ -498,6 +514,8 @@ export const TRANSLATIONS = {
     upd_slow: "Ponowne uruchomienie trwa nietypowo długo. Uruchom Music Generator ON.",
   },
   ru: {
+    vocals: "Вокал", instrumental: "Инструментал", song: "Песня",
+    analyze: "Анализ аудиофайла",
     drop_aria: "Загрузить и проанализировать песню",
     drop_title: "Перетащи песню сюда или нажми: стиль и темп будут взяты из неё",
     brand_title: "На сайт SONIQ",
@@ -558,6 +576,8 @@ export const TRANSLATIONS = {
     upd_slow: "Перезапуск длится необычно долго. Запусти Music Generator ON.",
   },
   uk: {
+    vocals: "Вокал", instrumental: "Інструментал", song: "Пісня",
+    analyze: "Аналіз аудіофайлу",
     drop_aria: "Завантажити й проаналізувати пісню",
     drop_title: "Перетягни пісню сюди або натисни: стиль і темп буде взято з неї",
     brand_title: "На сайт SONIQ",
@@ -618,6 +638,8 @@ export const TRANSLATIONS = {
     upd_slow: "Перезапуск триває незвично довго. Запусти Music Generator ON.",
   },
   ja: {
+    vocals: "ボーカル", instrumental: "インスト", song: "歌あり",
+    analyze: "音声ファイルを解析",
     drop_aria: "曲をアップロードして解析",
     drop_title: "ここに曲をドロップまたはクリック: スタイルとテンポを取り込みます",
     brand_title: "SONIQ のサイトへ",
@@ -678,6 +700,8 @@ export const TRANSLATIONS = {
     upd_slow: "再起動に通常より時間がかかっています。Music Generator ON を起動してください。",
   },
   zh: {
+    vocals: "人声", instrumental: "纯音乐", song: "歌曲",
+    analyze: "分析音频文件",
     drop_aria: "上传并分析歌曲",
     drop_title: "把歌曲拖到这里或点击: 自动提取风格和速度",
     brand_title: "前往 SONIQ 网站",
