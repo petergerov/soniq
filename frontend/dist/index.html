@@ -6,8 +6,8 @@
 <meta name="color-scheme" content="dark">
 <title>SONIQ · Music Generator</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <script type="module" crossorigin src="/assets/index-hgFEtZ9F.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-DuuHJCye.css">
+  <script type="module" crossorigin src="/assets/index-BjlenaHf.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-Bzdm5cqe.css">
 </head>
 <body>
 <div class="glow" aria-hidden="true"></div>
@@ -80,8 +80,9 @@
       </div>
 
       <div class="randrow">
-        <button type="button" id="randomBtn" class="sek rand" title="Prompt und Stil zufällig erzeugen" data-i18n-title="random_tip"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg><span data-i18n="random">Zufall</span></button>
-        <button type="button" id="varyBtn" class="sek rand" title="Prompt und Stil leicht abwandeln" data-i18n-title="vary_tip"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/></svg><span data-i18n="vary">Variation</span></button>
+        <button type="button" id="undoBtn" class="dice" title="Letzten Würfelschritt zurücknehmen (U)" aria-label="Letzten Würfelschritt zurücknehmen" data-i18n-title="undo_tip" data-i18n-aria="undo_tip" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+        <button type="button" id="randomBtn" class="sek rand" title="Prompt und Stil zufällig erzeugen (R)" data-i18n-title="random_tip"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg><span data-i18n="random">Zufall</span></button>
+        <button type="button" id="varyBtn" class="sek rand" title="Prompt und Stil leicht abwandeln (V)" data-i18n-title="vary_tip"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/></svg><span data-i18n="vary">Variation</span></button>
       </div>
 
       <div class="field"><div class="lblrow"><span class="lbl" id="lblPrompt" title="Deine Idee für den Song: Stimmung, Szene, Klang. Wird zusammen mit dem Stil ans Modell geschickt." data-i18n-title="prompt_tip" data-i18n="prompt">Prompt</span>
@@ -169,7 +170,7 @@
               <div class="fill"></div><div class="knob"><span></span></div>
               <input name="variants" type="range" min="1" max="10" step="1" value="2" aria-label="Versionen" data-i18n-aria="versions">
             </div>
-            <button type="submit" id="genBtn" class="aktion big">2× GENERIEREN</button>
+            <button type="submit" id="genBtn" class="aktion big" title="Strg/⌘ + Enter" data-i18n-title="generate_tip">2× GENERIEREN</button>
           </div>
         </div>
       </div>

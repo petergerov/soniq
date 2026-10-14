@@ -30,6 +30,27 @@ You can also stop the servers from inside the app: **Gear › Stop servers**.
 | 9 | **Generate** | Pick the number of versions (1 to 10) and go. Several versions are named A, B, C … The bar stays visible while scrolling. |
 | 10 | **Gear** | Settings, see [below](#settings). Next to it: interface language (twelve languages, from German to Chinese). |
 
+Above the prompt sit three more buttons:
+
+- **Random** rolls prompt and style together.
+- **Variation** changes them only slightly: one building block of the prompt (mood, scene, detail) or one style term is swapped, or a term is added. Your own text stays.
+- **↶** takes back the last roll, step by step.
+
+The **lock** next to the prompt and style dice keeps that field as it is: Random and Variation then only change the other one.
+
+## Keyboard shortcuts
+
+They work as long as the cursor is not in a text field (except Ctrl/⌘ + Enter).
+
+| Key | Action |
+|---|---|
+| **R** | Random: roll prompt and style |
+| **V** | Variation |
+| **U** | Undo the last roll |
+| **Ctrl/⌘ + Enter** | Generate, also while typing |
+| **Space** | Play / pause (starts the first song if nothing is playing) |
+| **J / K** | Next / previous song |
+
 ## A song in the library
 
 ![A song row with numbered buttons](images/song-row.png)

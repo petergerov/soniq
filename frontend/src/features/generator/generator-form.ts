@@ -36,6 +36,10 @@ const DEFAULTS = { duration: 90, inferenceSteps: 50, lmTemperature: 0.85, langua
 /** Felder, die Zufall und Variation unverändert lassen (pro Browser gemerkt). */
 type LockableField = "prompt" | "style";
 const LOCKS_KEY = "lockedFields";
+/** So viele Würfelschritte lassen sich mit ↶ zurücknehmen. */
+const HISTORY_LIMIT = 30;
+
+interface DiceSnapshot { prompt: string; style: string }
 
 /** Auswahlfeld setzen; unbekannte Werte werden ergänzt (Tonart aus der Analyse) oder fallen auf Auto zurück. */
 function setSelect(select: HTMLSelectElement, value: string | null | undefined, addUnknown = false): void {
@@ -61,12 +65,16 @@ export class GeneratorForm {
   private readonly lyrics: LyricsEditor;
   private readonly sliders: Record<"duration" | "bpm" | "steps" | "temperature" | "variants", BubbleSlider>;
   private readonly locked = new Set<LockableField>(storage.getJson<LockableField[]>(LOCKS_KEY, []));
+  /** Prompt und Stil vor jedem Würfeln, für ↶ */
+  private readonly history: DiceSnapshot[] = [];
+  private readonly undoButton: HTMLButtonElement;
 
   constructor(deps: GeneratorFormDeps) {
     this.deps = deps;
     this.form = byId<HTMLFormElement>("genForm");
     this.f = this.form.elements as FormControls;
     this.button = byId<HTMLButtonElement>("genBtn");
+    this.undoButton = byId<HTMLButtonElement>("undoBtn");
     this.styleChips = new StyleChips(this.f.style, byId("tagChips"));
     this.lyrics = new LyricsEditor({ instrumental: this.f.instrumental, lyrics: this.f.lyrics }, deps.t);
     const slider = (name: string, onChange?: () => void) => new BubbleSlider(this.form.querySelector(`input[name="${name}"]`)!.closest<HTMLElement>(".slider")!, onChange);
@@ -80,6 +88,31 @@ export class GeneratorForm {
     this.bindDice();
     this.bindSubmit();
     this.updateButton();
+  }
+
+  /** Zufall: Prompt und Stil neu würfeln, gesperrte Felder bleiben. */
+  random(): void {
+    this.rollBoth(() => randomPrompt(), (_, withVocals) => randomStyle(withVocals), byId("randomBtn"));
+  }
+
+  /** Variation: Prompt und Stil leicht abwandeln, gesperrte Felder bleiben. */
+  vary(): void {
+    this.rollBoth((text) => varyPrompt(text), (text, withVocals) => varyStyle(text, withVocals), byId("varyBtn"));
+  }
+
+  /** Letzten Würfelschritt zurücknehmen. */
+  undo(): void {
+    const last = this.history.pop();
+    if (!last) return;
+    this.f.prompt.value = last.prompt;
+    this.f.style.value = last.style;
+    this.styleChips.sync();
+    this.updateUndo();
+  }
+
+  /** Wie ein Klick auf Generieren (Tastenkürzel). */
+  submit(): void {
+    this.form.requestSubmit();
   }
 
   /** Texte neu setzen (nach Sprachwechsel). */
@@ -168,6 +201,7 @@ export class GeneratorForm {
   private bindDice(): void {
     const roll = (buttonId: string, field: HTMLInputElement | HTMLTextAreaElement, generate: () => string, after?: () => void) =>
       byId(buttonId).addEventListener("click", (e) => {
+        if (field !== this.f.title) this.remember();
         field.value = generate();
         restartAnimation(e.currentTarget as HTMLElement, "roll");
         after?.();
@@ -175,16 +209,10 @@ export class GeneratorForm {
     roll("diceBtn", this.f.prompt, () => randomPrompt());
     roll("titleDice", this.f.title, () => randomTitle());
     roll("styleDice", this.f.style, () => randomStyle(!this.lyrics.instrumental), () => this.styleChips.sync());
-    // Zufall würfelt Prompt und Stil neu, Variation wandelt sie leicht ab; gesperrte Felder bleiben
-    const both = (buttonId: string, prompt: (text: string) => string, style: (text: string, withVocals: boolean) => string) =>
-      byId(buttonId).addEventListener("click", (e) => {
-        if (!this.locked.has("prompt")) this.f.prompt.value = prompt(this.f.prompt.value);
-        if (!this.locked.has("style")) this.f.style.value = style(this.f.style.value, !this.lyrics.instrumental);
-        this.styleChips.sync();
-        restartAnimation(e.currentTarget as HTMLElement, "roll");
-      });
-    both("randomBtn", () => randomPrompt(), (_, withVocals) => randomStyle(withVocals));
-    both("varyBtn", (text) => varyPrompt(text), (text, withVocals) => varyStyle(text, withVocals));
+    byId("randomBtn").addEventListener("click", () => this.random());
+    byId("varyBtn").addEventListener("click", () => this.vary());
+    this.undoButton.addEventListener("click", () => this.undo());
+    this.updateUndo();
     this.form.querySelectorAll<HTMLButtonElement>("button[data-lock]").forEach((button) => {
       const field = button.dataset.lock as LockableField;
       button.setAttribute("aria-pressed", String(this.locked.has(field)));
@@ -194,6 +222,29 @@ export class GeneratorForm {
         storage.setJson(LOCKS_KEY, [...this.locked]);
       });
     });
+  }
+
+  private rollBoth(prompt: (text: string) => string, style: (text: string, withVocals: boolean) => string, button: HTMLElement): void {
+    if (this.locked.has("prompt") && this.locked.has("style")) return;
+    this.remember();
+    if (!this.locked.has("prompt")) this.f.prompt.value = prompt(this.f.prompt.value);
+    if (!this.locked.has("style")) this.f.style.value = style(this.f.style.value, !this.lyrics.instrumental);
+    this.styleChips.sync();
+    restartAnimation(button, "roll");
+  }
+
+  /** Stand vor dem Würfeln merken; gleiche Stände hintereinander nur einmal. */
+  private remember(): void {
+    const snap = { prompt: this.f.prompt.value, style: this.f.style.value };
+    const last = this.history.at(-1);
+    if (last && last.prompt === snap.prompt && last.style === snap.style) return;
+    this.history.push(snap);
+    if (this.history.length > HISTORY_LIMIT) this.history.shift();
+    this.updateUndo();
+  }
+
+  private updateUndo(): void {
+    this.undoButton.disabled = this.history.length === 0;
   }
 
   private bindSubmit(): void {
@@ -215,7 +266,7 @@ export class GeneratorForm {
     });
     // Enter in einem Eingabefeld soll nicht versehentlich generieren
     this.form.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") e.preventDefault();
+      if (e.key === "Enter" && !e.ctrlKey && !e.metaKey && (e.target as HTMLElement).tagName === "INPUT") e.preventDefault();
     });
   }
 }

@@ -9,11 +9,11 @@ Status: ✅ done · 🚧 in progress · 💡 open
 
 | # | Idea | Status | Notes |
 |---|---|---|---|
-| 1 | **Dice history (undo):** a ↶ next to "Random" to get the previous prompt/style back | 💡 | |
+| 1 | **Dice history (undo):** a ↶ next to "Random" to get the previous prompt/style back | ✅ | ↶ button left of "Random", key `U`. Remembers prompt and style before every Random, Variation and prompt/style dice roll (up to 30 steps, per page load). Disabled when there is nothing to undo. |
 | 2 | **Lock fields:** a lock on Prompt and Style; "Random" and "Variation" only change unlocked fields | ✅ | Lock buttons next to the dice. Remembered per browser (`localStorage` key `lockedFields`). The single dice still work on locked fields. |
 | 3 | **"More like this" on every song:** new versions with the same settings and a new seed | ✅ | Already existed as the ＋ button on each song row (`library-store.ts` → `generateAnother`): one more version in the same group (next letter). Possible follow-up: make it easier to spot, or let it use the versions slider. |
 | 4 | **Themed random:** dice packs like "Film score", "Club", "Lo-fi study", "80s" | 💡 | |
-| 5 | **Keyboard shortcuts:** `R` random, `Ctrl+Enter` generate, space play/pause, `J`/`K` next/previous | 💡 | |
+| 5 | **Keyboard shortcuts:** `R` random, `Ctrl+Enter` generate, space play/pause, `J`/`K` next/previous | ✅ | Plus `V` variation and `U` undo. Single keys are ignored while typing or with a dialog open; `Ctrl/⌘+Enter` also works in text fields. Space starts the first song when nothing is playing. Code: `features/shortcuts/keyboard-shortcuts.ts`; listed in `docs/guide/using-the-app.md`, hints in the tooltips. |
 
 ## Creativity
 
