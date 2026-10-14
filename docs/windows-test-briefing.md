@@ -40,7 +40,7 @@ Danach: `Music Generator ON.bat` startet alles und öffnet http://localhost:8765
 | `README-WINDOWS.md` | Anleitung |
 
 Vom Installer erzeugt (nicht im Repo): `engine/acestep.cpp/build/Release/*.exe|dll`,
-`engine/acestep.cpp/models/*.gguf`, `data/engine.conf`, `data/*.log`, `data/*.err.log`, `.venv/`.
+`models/*.gguf`, `data/engine.conf`, `data/*.log`, `data/*.err.log`, `.venv/`.
 
 ## Was der Installer tut
 

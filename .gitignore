@@ -1,5 +1,6 @@
 # Vom Installer erzeugt oder heruntergeladen
 engine/
+models/
 runtime/
 *.lnk
 

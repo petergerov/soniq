@@ -2,7 +2,7 @@
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENGINE="$ROOT/engine/acestep.cpp"
-MODELS="$ENGINE/models"
+MODELS="$ROOT/models"             # GGUF-Modelle, getrennt vom Modellserver
 DATA="$ROOT/data"
 CONF="$DATA/engine.conf"          # vom Installer geschrieben: MODE, LM_FILE
 
@@ -36,6 +36,12 @@ node-v24.21.0-linux-arm64.tar.xz:6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d34
 CMAKE_MAC="https://github.com/Kitware/CMake/releases/download/v3.31.9/cmake-3.31.9-macos-universal.tar.gz:eb9d0b2b6a5b900e2f5811326a86ea393a146e4cb2384d15512c226e9c98f8bf"
 SERVER_ENTRY="$ROOT/backend/src/main.ts"
 NODE_FLAGS="--disable-warning=ExperimentalWarning"
+
+# Ältere Installationen hatten die Modelle in engine/acestep.cpp/models: einmalig umziehen statt neu laden.
+if [ -d "$ENGINE/models" ] && ls "$ENGINE/models"/*.gguf >/dev/null 2>&1; then
+  mkdir -p "$MODELS"
+  for f in "$ENGINE/models"/*.gguf; do [ -e "$MODELS/${f##*/}" ] || mv "$f" "$MODELS/"; done
+fi
 
 export PATH="$ROOT/runtime/cmake/CMake.app/Contents/bin:$HOME/.local/bin:/opt/rocm/bin:/opt/cuda/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 [ -d "/opt/rocm/lib" ] && export LD_LIBRARY_PATH="/opt/rocm/lib:${LD_LIBRARY_PATH:-}"

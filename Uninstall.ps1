@@ -37,7 +37,8 @@ Write-Host "  This removes, inside $ROOT :"
 $venv = Join-Path $ROOT ".venv"
 $runtime = Join-Path $ROOT "runtime"
 $modules = Join-Path $ROOT "node_modules"
-if (Test-Path $ENGINE) { Write-Host "    engine\   model server and models   ($(Groesse (Join-Path $ROOT 'engine')))" }
+if (Test-Path $ENGINE) { Write-Host "    engine\   model server              ($(Groesse (Join-Path $ROOT 'engine')))" }
+if (Test-Path $MODELS) { Write-Host "    models\   models                    ($(Groesse $MODELS))" }
 if (Test-Path $runtime) { Write-Host "    runtime\  Node.js                   ($(Groesse $runtime))" }
 if (Test-Path $modules) { Write-Host "    node_modules\  developer tools      ($(Groesse $modules))" }
 if (Test-Path $venv)   { Write-Host "    .venv\    old Python environment    ($(Groesse $venv))" }
@@ -67,6 +68,7 @@ if ((Test-Path $songs) -and (Get-ChildItem $songs -Force -ErrorAction SilentlyCo
 # 3. Entfernen
 Write-Host ""
 if (Test-Path (Join-Path $ROOT "engine")) { Write-Host "  - removing engine\ ..."; Remove-Item (Join-Path $ROOT "engine") -Recurse -Force -ErrorAction SilentlyContinue }
+if (Test-Path $MODELS) { Write-Host "  - removing models\ ..."; Remove-Item $MODELS -Recurse -Force -ErrorAction SilentlyContinue }
 if (Test-Path $runtime) { Write-Host "  - removing runtime\ ..."; Remove-Item $runtime -Recurse -Force -ErrorAction SilentlyContinue }
 foreach ($m in @($modules, (Join-Path $ROOT "backend\node_modules"), (Join-Path $ROOT "frontend\node_modules"))) {
     if (Test-Path $m) { Write-Host "  - removing $(Split-Path -Leaf (Split-Path -Parent $m))\node_modules ..."; Remove-Item $m -Recurse -Force -ErrorAction SilentlyContinue }

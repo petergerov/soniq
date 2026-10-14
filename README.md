@@ -100,7 +100,7 @@ cd ~/soniq
 git clone --recurse-submodules https://github.com/ServeurpersoCom/acestep.cpp engine/acestep.cpp
 (cd engine/acestep.cpp && git checkout b7ba6d9 && ./buildcuda.sh)     # or ./buildvulkan.sh, ./buildcpu.sh
 # Download models: the three fixed ones plus one language model (URL and SHA-256 in scripts/common.sh)
-(cd engine/acestep.cpp && ./models.sh --lm 1.7B --sft)
+(cd engine/acestep.cpp && ./models.sh --lm 1.7B --sft) && mkdir -p models && mv engine/acestep.cpp/models/*.gguf models/
 # Operating mode: one server for everything
 mkdir -p data && printf 'MODE=single\nLM_FILE=acestep-5Hz-lm-1.7B-Q8_0.gguf\n' > data/engine.conf
 ```
@@ -108,7 +108,7 @@ mkdir -p data && printf 'MODE=single\nLM_FILE=acestep-5Hz-lm-1.7B-Q8_0.gguf\n' >
 After that, starting and stopping work with `./arch_linux.sh --start` and `--stop`, even without `pacman` (not tested). Alternatively, start both servers by hand:
 
 ```bash
-engine/acestep.cpp/build/ace-server --host 127.0.0.1 --port 8085 --models engine/acestep.cpp/models --max-batch 1
+engine/acestep.cpp/build/ace-server --host 127.0.0.1 --port 8085 --models models --max-batch 1
 node --disable-warning=ExperimentalWarning backend/src/main.ts --port 8765
 ```
 
@@ -130,7 +130,8 @@ node --disable-warning=ExperimentalWarning backend/src/main.ts --port 8765
 | `shared/api.ts` | HTTP API types, shared by backend and frontend |
 | `runtime/` | Portable Node.js runtime (and on the Mac possibly cmake), from the installer, not in the repo |
 | `docs/guide/` | Guide with pictures (Markdown). `capture.py` takes the screenshots in `images/` from the running app (`uv run --with websockets python docs/guide/capture.py`) |
-| `engine/` | acestep.cpp and models (from the installer, not in the repo) |
+| `engine/` | acestep.cpp model server (from the installer, not in the repo) |
+| `models/` | GGUF models (from the installer, not in the repo) |
 | `data/` | Songs, database, logs, `engine.conf` (not in the repo) |
 
 ## Development

@@ -3,7 +3,7 @@
 
 $ROOT   = Split-Path -Parent $PSScriptRoot
 $ENGINE = Join-Path $ROOT "engine\acestep.cpp"
-$MODELS = Join-Path $ENGINE "models"
+$MODELS = Join-Path $ROOT "models"         # GGUF-Modelle, getrennt vom Modellserver
 $DATA   = Join-Path $ROOT "data"
 $CONF   = Join-Path $DATA "engine.conf"      # vom Installer geschrieben: MODE, LM_FILE
 
@@ -29,6 +29,13 @@ $SERVER_ENTRY = Join-Path $ROOT "backend\src\main.ts"
 $NODE_SHA = @{
     "win-x64"   = "158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541"
     "win-arm64" = "8779b1bde1d39f8d420e3b57aa657b39891af434d3de44a919044cec06785921"
+}
+
+# Aeltere Installationen hatten die Modelle in engine\acestep.cpp\models: einmalig umziehen statt neu laden.
+$alteModelle = Get-ChildItem (Join-Path $ENGINE "models") -Filter *.gguf -File -ErrorAction SilentlyContinue
+if ($alteModelle) {
+    New-Item -ItemType Directory -Force -Path $MODELS | Out-Null
+    foreach ($f in $alteModelle) { if (-not (Test-Path (Join-Path $MODELS $f.Name))) { Move-Item $f.FullName $MODELS } }
 }
 
 # Werkzeuge im Benutzerordner (z. B. cmake) und Git

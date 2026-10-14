@@ -56,7 +56,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
     root,
     dataDir,
     defaultSongsDir: join(dataDir, "songs"),
-    modelsDir: join(root, "engine", "acestep.cpp", "models"),
+    modelsDir: join(root, "models"),
     dbPath: join(dataDir, "music.db"),
     frontendDir: join(root, "frontend", "dist"),
     entryFile: join(root, "backend", "src", "main.ts"),

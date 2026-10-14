@@ -30,7 +30,8 @@ echo "  MUSIC GENERATOR · Uninstall"
 echo "═══════════════════════════════════════════"
 echo ""
 echo "  This removes, inside $ROOT :"
-[ -d "$ENGINE" ]        && echo "    engine/   model server and models   ($(groesse "$ENGINE"))"
+[ -d "$ENGINE" ]        && echo "    engine/   model server              ($(groesse "$ENGINE"))"
+[ -d "$MODELS" ]        && echo "    models/   models                    ($(groesse "$MODELS"))"
 [ -d "$ROOT/runtime" ]  && echo "    runtime/  Node.js (and cmake)       ($(groesse "$ROOT/runtime"))"
 [ -d "$ROOT/node_modules" ] && echo "    node_modules/  developer tools      ($(groesse "$ROOT/node_modules"))"
 [ -d "$ROOT/.venv" ]    && echo "    .venv/    old Python environment    ($(groesse "$ROOT/.venv"))"
@@ -58,6 +59,7 @@ fi
 # 3. Entfernen
 echo ""
 [ -d "$ENGINE" ]     && { echo "  - removing engine/ ..."; rm -rf "$ROOT/engine"; }
+[ -d "$MODELS" ]     && { echo "  - removing models/ ..."; rm -rf "$MODELS"; }
 [ -d "$ROOT/runtime" ] && { echo "  - removing runtime/ ..."; rm -rf "$ROOT/runtime"; }
 [ -d "$ROOT/node_modules" ] && { echo "  - removing node_modules/ ..."; rm -rf "$ROOT/node_modules" "$ROOT/backend/node_modules" "$ROOT/frontend/node_modules"; }
 [ -d "$ROOT/.venv" ] && { echo "  - removing .venv/ ..."; rm -rf "$ROOT/.venv"; }
