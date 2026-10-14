@@ -1,4 +1,5 @@
-// Zustand des Modellservers und "Server stoppen" (führt das Skript "stop" aus).
+// Zustand des Modellservers und "Server stoppen" (führt das Skript "stop" aus; als fertige App beendet sich der
+// Server selbst, die App stoppt dann den Modellserver).
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { HealthInfo } from "../../../shared/api.ts";
@@ -10,6 +11,7 @@ import type { SettingsRepository } from "../infrastructure/settings-repository.t
 export interface SystemServiceDeps {
   root: string;
   platform: NodeJS.Platform;
+  packaged: boolean;
   settings: SettingsRepository;
   engineFactory: MusicEngineFactory;
   launcher: ProcessLauncher;
@@ -22,6 +24,11 @@ export class SystemService {
     this.deps = deps;
   }
 
+  /** Fertige App: Starten und Stoppen übernimmt die App */
+  get packaged(): boolean {
+    return this.deps.packaged;
+  }
+
   async health(): Promise<HealthInfo> {
     try {
       return await this.deps.engineFactory(this.deps.settings.get()).health();
@@ -32,6 +39,10 @@ export class SystemService {
 
   /** Abgekoppelt und leicht verzögert, damit die HTTP-Antwort noch ankommt, bevor die App beendet wird. */
   shutdown(): void {
+    if (this.deps.packaged) {
+      setTimeout(() => process.kill(process.pid, "SIGTERM"), 500);
+      return;
+    }
     const name = this.stopScriptName();
     const script = join(this.deps.root, name);
     if (!existsSync(script)) throw new AppError("not_found", "script_missing", { name });

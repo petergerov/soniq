@@ -75,9 +75,9 @@ async function main(): Promise<void> {
   const folderService = new FolderService(folders, songs);
   const settingsService = new SettingsService({ settings, songs, storage, modelsDir: config.modelsDir });
   const analysis = new AnalysisService(settings, engineFactory);
-  const system = new SystemService({ root: config.root, platform: config.platform, settings, engineFactory, launcher });
+  const system = new SystemService({ root: config.root, platform: config.platform, packaged: config.packaged, settings, engineFactory, launcher });
   const updates = new UpdateService({
-    root: config.root, platform: config.platform, git: new Git(config.root), songs, launcher, port: config.port,
+    root: config.root, platform: config.platform, packaged: config.packaged, git: new Git(config.root), songs, launcher, port: config.port,
     serverCommand: [process.execPath, ...process.execArgv, config.entryFile, "--port", String(config.port)],
   });
 
@@ -92,11 +92,14 @@ async function main(): Promise<void> {
   // Start
   songs.requeueInterrupted();
   await removeLeftovers(config.dataDir);
-  refreshMacIcons(config);
-  migrateWindowsShortcuts(config);
+  if (!config.packaged) {
+    refreshMacIcons(config);
+    migrateWindowsShortcuts(config);
+  }
   await server.listen(config.port, config.host);
   log(`SONIQ läuft auf http://localhost:${config.port}`);
-  buildFrontendIfStale(config.root, config.dataDir, log);
+  // Die fertige App bringt Oberfläche, Symbole und Verknüpfungen selbst mit
+  if (!config.packaged) buildFrontendIfStale(config.root, config.dataDir, log);
   const working = worker.run();
   worker.wake();
 

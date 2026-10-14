@@ -16,6 +16,8 @@ const INSTALLER_FILES = ["scripts/common.sh", "scripts/common.ps1"];
 export interface UpdateServiceDeps {
   root: string;
   platform: NodeJS.Platform;
+  /** Fertige App: kommt als neue App-Version, nicht per Git */
+  packaged: boolean;
   git: Git;
   songs: SongRepository;
   launcher: ProcessLauncher;
@@ -32,6 +34,7 @@ export class UpdateService {
   }
 
   async status(t: Translate): Promise<UpdateStatus> {
+    if (this.deps.packaged) throw new AppError("bad_request", "upd_packaged");
     const { git } = this.deps;
     if (!(await this.hasHead())) {
       // Ohne Git installiert (z. B. als ZIP geladen): Version unbekannt, das Update stellt auf Git um

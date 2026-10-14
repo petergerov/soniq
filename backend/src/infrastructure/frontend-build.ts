@@ -5,8 +5,8 @@ import { openSync } from "node:fs";
 import { join } from "node:path";
 
 export function buildFrontendIfStale(root: string, dataDir: string, log: (message: string) => void): void {
-  const out = openSync(join(dataDir, "build.log"), "w");
+  const out = openSync(join(dataDir, "frontend-build.log"), "w");
   spawn(process.execPath, [join(root, "scripts", "build-frontend.mjs"), "--if-stale"], { cwd: root, stdio: ["ignore", out, out] })
     .on("error", (e) => log(`Building the interface failed: ${e.message}`))
-    .on("exit", (code) => { if (code) log("Building the interface failed, see data/build.log"); });
+    .on("exit", (code) => { if (code) log("Building the interface failed, see data/frontend-build.log"); });
 }

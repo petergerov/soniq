@@ -1,4 +1,5 @@
 // Pfade, Ports und vom Installer geschriebene Werte (data/engine.conf). Eine Quelle für die ganze App.
+// Als Mac-App (MG_PACKAGED=1) liegen Daten und Modelle außerhalb des Programmordners (MG_DATA_DIR, MG_MODELS_DIR).
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,6 +23,8 @@ export interface AppConfig {
   engineMode: EngineMode | undefined;
   lmFile: string;
   platform: NodeJS.Platform;
+  /** Läuft als fertige App (z. B. SONIQ.app): Oberfläche liegt gebaut bei, keine Git-Updates, Start/Stopp macht die App */
+  packaged: boolean;
 }
 
 /** engine.conf als key=value lesen (nicht ausführen). Fehlt die Datei, ist das Ergebnis leer. */
@@ -49,6 +52,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
   const srcDir = dirname(fileURLToPath(import.meta.url));      // backend/src/config
   const root = resolve(srcDir, "..", "..", "..");
   const dataDir = env.MG_DATA_DIR ? resolve(env.MG_DATA_DIR) : join(root, "data");   // MG_DATA_DIR: z. B. für Tests
+  const modelsDir = env.MG_MODELS_DIR ? resolve(env.MG_MODELS_DIR) : join(root, "models");
   const conf = readKeyValueFile(join(dataDir, "engine.conf"));
   const portArg = argv.indexOf("--port");
   const mode = conf.MODE === "single" || conf.MODE === "split" ? conf.MODE : undefined;
@@ -56,7 +60,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
     root,
     dataDir,
     defaultSongsDir: join(dataDir, "songs"),
-    modelsDir: join(root, "models"),
+    modelsDir,
     dbPath: join(dataDir, "music.db"),
     frontendDir: join(root, "frontend", "dist"),
     entryFile: join(root, "backend", "src", "main.ts"),
@@ -65,5 +69,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
     engineMode: mode,
     lmFile: conf.LM_FILE ?? "",
     platform: process.platform,
+    packaged: env.MG_PACKAGED === "1",
   };
 }

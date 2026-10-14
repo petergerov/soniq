@@ -55,7 +55,7 @@ export class ApiClient {
   health(): Promise<HealthInfo> { return this.send("GET", "/api/health"); }
   settings(): Promise<SettingsView> { return this.send("GET", "/api/settings"); }
   saveSettings(values: Partial<Settings>): Promise<Settings> { return this.send("PUT", "/api/settings", values); }
-  shutdown(): Promise<{ ok: true }> { return this.send("POST", "/api/shutdown"); }
+  shutdown(): Promise<{ ok: true; packaged?: boolean }> { return this.send("POST", "/api/shutdown"); }
   checkUpdate(): Promise<UpdateCheck> { return this.send("GET", "/api/update/check"); }
   applyUpdate(): Promise<{ ok: true } & UpdateStatus> { return this.send("POST", "/api/update/apply"); }
 

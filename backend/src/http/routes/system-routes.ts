@@ -28,7 +28,7 @@ export function registerSystemRoutes(router: Router, s: SystemRouteServices): vo
     .post("/api/shutdown", (ctx) => {
       requireLangHeader(ctx);
       s.system.shutdown();
-      return { ok: true };
+      return { ok: true, packaged: s.system.packaged };
     })
     .get("/api/update/check", async ({ t }) => {
       try {

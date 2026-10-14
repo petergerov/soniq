@@ -1,4 +1,4 @@
-// "Server stoppen" = Skript "stop" ausführen lassen.
+// "Server stoppen" = Skript "stop" ausführen lassen (als fertige App: die App beendet sich).
 import type { ApiClient } from "../../core/api-client.ts";
 import { byId } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";
@@ -29,9 +29,9 @@ export class ServerControl {
     if (!confirm(this.t(busy ? "stop_q_busy" : "stop_q"))) return;
     this.beforeStop();
     try {
-      await this.api.shutdown();
+      const { packaged } = await this.api.shutdown();
       this.button.disabled = true;
-      this.info.textContent = this.t("stopped");
+      this.info.textContent = this.t(packaged ? "stopped_app" : "stopped");
     } catch (e) {
       this.info.className = "small err-t";
       this.info.textContent = (e as Error).message;

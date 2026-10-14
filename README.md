@@ -141,7 +141,7 @@ node --disable-warning=ExperimentalWarning backend/src/main.ts --port 8765
 Backend and frontend are TypeScript. Node.js runs `backend/src` directly (type stripping, Node 22.18 or newer).
 The interface is built on each computer into `frontend/dist` (not in the repo): the installer runs `scripts/build-frontend.mjs`
 (`npm ci` if needed, then `vite build`), and the app runs it on every start when the build is missing or older than its sources,
-for example after an update. Until it is done the app shows a short "getting ready" page; the output goes to `data/build.log`.
+for example after an update. Until it is done the app shows a short "getting ready" page; the output goes to `data/frontend-build.log`.
 
 ```bash
 npm install            # developer tools (TypeScript, Vite, wavesurfer.js)
@@ -151,6 +151,9 @@ npm run build          # type-check and build the interface into frontend/dist (
 ```
 
 `MG_DATA_DIR=/path` makes the backend use a different data folder (e.g. for testing with a copy of the library).
+`MG_MODELS_DIR=/path` does the same for the models. `MG_PACKAGED=1` is set by a packaged app (e.g. `SONIQ.app`):
+the interface ships pre-built, updates come as new app versions instead of `git pull`, and “Stop servers” only ends the
+web server (the app stops the model server).
 
 **Backend** (`backend/src`), layers from the outside in; dependencies only point inwards and are passed in via
 constructors in `main.ts` (composition root):
