@@ -38,6 +38,12 @@ Above the prompt sit three more buttons:
 
 The **lock** next to the prompt and style dice keeps that field as it is: Random and Variation then only change the other one.
 
+The **theme** picker left of these buttons keeps the dice inside one world: Film score, Club, Lo-fi, 80s, Acoustic, Ambient or Hip-hop (or All).
+
+Below the prompt, **Mood**, **Scene** and **Detail** show the building blocks of the prompt. Pick one from the list or roll just that one with its dice; the rest of the prompt stays.
+
+After analyzing a song, **Similar but different** appears under the upload field. Each click keeps tempo, key, length and description of the analyzed song and rolls a new style.
+
 ## Keyboard shortcuts
 
 They work as long as the cursor is not in a text field (except Ctrl/⌘ + Enter).

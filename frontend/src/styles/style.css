@@ -167,6 +167,15 @@ details[open] > summary::before { transform: rotate(45deg); margin-bottom: 4px; 
 summary > :first-child:not(:only-child) { margin-right: auto; }
 .randrow { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin: -6px 0 6px; }
 .randrow .dice { height: 32px; }
+.randrow select.theme { margin-right: auto; }
+.blocks { display: grid; grid-template-columns: 1fr 2fr 1.5fr; gap: 8px; margin-top: 8px; }
+.block { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.block-lbl { flex: none; font-size: 11px; color: var(--faint); }
+.block select { flex: 1; min-width: 0; width: auto; padding: 4px 22px 4px 8px; font-size: 12px; text-overflow: ellipsis; }
+.block .dice { flex: none; width: 28px; height: 26px; }
+@media (max-width: 720px) { .blocks { grid-template-columns: 1fr; } }
+.sek.similar { margin-top: 10px; align-self: flex-start; width: auto; }
+.sek.similar[hidden] { display: none; }
 .lblrow .dice-wrap { gap: 2px; }
 .dice.lock .shackle-closed, .dice.lock[aria-pressed="true"] .shackle-open { display: none; }
 .dice.lock[aria-pressed="true"] .shackle-closed { display: inline; }
