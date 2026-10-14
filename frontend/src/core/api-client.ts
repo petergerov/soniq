@@ -18,6 +18,8 @@ export interface SongListQuery {
   search: string;
   favoritesOnly: boolean;
   folder: string;
+  /** Ausgeblendete Songs mitliefern */
+  showHidden: boolean;
 }
 
 type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -33,7 +35,7 @@ export class ApiClient {
   generate(req: GenerateRequest): Promise<GenerateResponse> { return this.send("POST", "/api/generate", req); }
 
   songs(q: SongListQuery): Promise<Song[]> {
-    const params = new URLSearchParams({ q: q.search, favorites: String(q.favoritesOnly), folder: q.folder });
+    const params = new URLSearchParams({ q: q.search, favorites: String(q.favoritesOnly), folder: q.folder, hidden: String(q.showHidden) });
     return this.send("GET", `/api/songs?${params}`);
   }
 

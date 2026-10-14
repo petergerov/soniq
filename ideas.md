@@ -29,8 +29,8 @@ Status: ✅ done · 🚧 in progress · 💡 open
 
 | # | Idea | Status | Notes |
 |---|---|---|---|
-| 11 | **A/B comparison:** switch between versions of one prompt at the same playback position | 💡 | |
-| 12 | **Quick rating:** 👎 / hide to sort out misses without deleting; the dice could learn from favorites | 💡 | |
+| 11 | **A/B comparison:** switch between versions of one prompt at the same playback position | ✅ | Letter buttons A, B, C … in the player bar while a song with several finished versions plays; key `C` cycles. The new version continues at the same position (and stays paused if paused). Versions come from the current library view. |
+| 12 | **Quick rating:** 👎 / hide to sort out misses without deleting; the dice could learn from favorites | ✅ | Thumb-down button on finished songs sets `hidden` (new DB column, `PATCH /api/songs/:id {hidden}`); the library leaves them out unless the eye button next to the search is on (`GET /api/songs?hidden=true`). Learning: terms from style and prompt of all favorites are picked more often by every dice (20 % chance per pick when a list contains one, `PREFER_CHANCE` in `random-content.ts`). |
 | 13 | **Waveform in the player:** see build-ups, drops and quiet parts, jump directly | ✅ | Already existed: the player bar uses WaveSurfer (`audio-player.ts`). |
 
 ## Workflow
@@ -40,3 +40,9 @@ Status: ✅ done · 🚧 in progress · 💡 open
 | 14 | **Queue with time estimate:** "about 3:20 left" per song, from past run times | 💡 | |
 | 15 | **Notify when done:** browser notification or short sound | 💡 | |
 | 16 | **Presets:** save the current settings (style, length, tempo, vocals) under a name and load them with one click | 💡 | |
+
+## Structure
+
+| # | Idea | Status | Notes |
+|---|---|---|---|
+| 17 | **Library on its own page:** form and library were too much for one screen | ✅ | Two pages with tabs in the header: Create (`#/`) and Library (`#/library`), see `core/router.ts`. The library tab shows the number of running and waiting songs. Reuse and Cross switch to Create. Replaces the former Layout setting (stacked / side by side). |

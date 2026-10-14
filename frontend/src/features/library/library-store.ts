@@ -3,6 +3,7 @@
 import type { FolderOverview, QueueInfo, Song } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { storage } from "../../core/storage.ts";
+import { termsOf } from "../generator/random-content.ts";
 
 const POLL_BUSY_MS = 1500;
 const POLL_IDLE_MS = 8000;
@@ -14,14 +15,22 @@ export class LibraryStore {
   songs: Song[] = [];
   folders: FolderOverview = { folders: [], all: 0, none: 0 };
   stats: QueueInfo["library"] | null = null;
+  /** Songs, die gerade gerechnet werden oder warten */
+  activeCount = 0;
   currentFolder: FolderView = storage.get("folder") ?? "";
   favoritesOnly = false;
+  /** Ausgeblendete Songs (Fehlversuche) trotzdem zeigen */
+  showHidden = false;
+  /** Begriffe aus Stil und Prompt aller Favoriten; die Würfel greifen öfter zu ihnen */
+  favoriteTerms: ReadonlySet<string> = new Set();
   search = "";
 
   private readonly api: ApiClient;
   private readonly listeners: (() => void)[] = [];
   private pollTimer: number | undefined;
   private searchTimer: number | undefined;
+  /** Favoriten neu einlesen (beim Start und nach jedem Stern) */
+  private favoritesStale = true;
 
   constructor(api: ApiClient) {
     this.api = api;
@@ -53,9 +62,15 @@ export class LibraryStore {
     try {
       this.folders = await this.api.folders();
       if (this.currentFolder && this.currentFolder !== "none" && !this.currentFolderInfo) this.setFolder("", false);
-      this.songs = await this.api.songs({ search: this.search, favoritesOnly: this.favoritesOnly, folder: this.currentFolder });
+      this.songs = await this.api.songs({ search: this.search, favoritesOnly: this.favoritesOnly, folder: this.currentFolder, showHidden: this.showHidden });
+      if (this.favoritesStale) {
+        const favorites = await this.api.songs({ search: "", favoritesOnly: true, folder: "", showHidden: true });
+        this.favoriteTerms = termsOf(favorites.flatMap((s) => [s.params.style ?? "", s.params.prompt ?? ""]));
+        this.favoritesStale = false;
+      }
       const queue = await this.api.queue();
-      busy = queue.running.length > 0 || queue.queued > 0;
+      this.activeCount = queue.running.length + queue.queued;
+      busy = this.activeCount > 0;
       this.stats = queue.library;
       this.notify();
     } catch {
@@ -80,6 +95,11 @@ export class LibraryStore {
     this.searchTimer = window.setTimeout(() => void this.refresh(), SEARCH_DEBOUNCE_MS);
   }
 
+  toggleShowHidden(): void {
+    this.showHidden = !this.showHidden;
+    void this.refresh();
+  }
+
   toggleFavoritesOnly(): void {
     this.favoritesOnly = !this.favoritesOnly;
     void this.refresh();
@@ -89,6 +109,13 @@ export class LibraryStore {
 
   async toggleFavorite(song: Song): Promise<void> {
     await this.api.updateSong(song.id, { favorite: !song.favorite });
+    this.favoritesStale = true;
+    await this.refresh();
+  }
+
+  /** Fehlversuch ausblenden (bleibt erhalten) oder wieder einblenden. */
+  async toggleHidden(song: Song): Promise<void> {
+    await this.api.updateSong(song.id, { hidden: !song.hidden });
     await this.refresh();
   }
 

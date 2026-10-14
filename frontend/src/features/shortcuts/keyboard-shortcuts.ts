@@ -1,5 +1,5 @@
 // Tastenkürzel: R Zufall, V Variation, U Würfeln zurücknehmen, Strg/⌘+Enter Generieren,
-// J/K nächster/vorheriger Song, Leertaste startet den ersten Song (danach übernimmt der Player sie).
+// J/K nächster/vorheriger Song, C nächste Version (A/B-Vergleich), Leertaste startet den ersten Song (danach übernimmt der Player sie).
 import type { Song } from "../../../../shared/api.ts";
 import { closest } from "../../core/dom.ts";
 import type { PlaybackState } from "../library/song-list.ts";
@@ -10,6 +10,10 @@ export interface ShortcutDeps {
   /** Songs in der angezeigten Reihenfolge */
   songs: () => readonly Song[];
   play: (song: Song) => void;
+  /** A/B-Vergleich: zur nächsten Version desselben Prompts an derselben Stelle */
+  nextVersion: () => void;
+  /** Formular-Kürzel (R, V, U, Strg/⌘+Enter) nur auf der Seite „Erzeugen“ */
+  formVisible: () => boolean;
 }
 
 export function bindKeyboardShortcuts(deps: ShortcutDeps): void {
@@ -17,7 +21,7 @@ export function bindKeyboardShortcuts(deps: ShortcutDeps): void {
     if (e.defaultPrevented || e.isComposing) return;
     // Generieren geht auch beim Tippen im Formular
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey) {
-      if (document.querySelector("dialog[open]")) return;
+      if (document.querySelector("dialog[open]") || !deps.formVisible()) return;
       e.preventDefault();
       deps.form.submit();
       return;
@@ -33,12 +37,15 @@ export function bindKeyboardShortcuts(deps: ShortcutDeps): void {
 }
 
 function actionFor(e: KeyboardEvent, deps: ShortcutDeps): (() => void) | null {
-  switch (e.key.toLowerCase()) {
+  const key = e.key.toLowerCase();
+  if (["r", "v", "u"].includes(key) && !deps.formVisible()) return null;
+  switch (key) {
     case "r": return () => deps.form.random();
     case "v": return () => deps.form.vary();
     case "u": return () => deps.form.undo();
     case "j": return () => step(deps, 1);
     case "k": return () => step(deps, -1);
+    case "c": return () => deps.nextVersion();
   }
   // Leertaste: Läuft schon ein Song, kümmert sich der Player darum
   if (e.code === "Space" && !deps.playback.currentId && !closest(e.target, 'button, a, [role="button"]')) return () => step(deps, 1);

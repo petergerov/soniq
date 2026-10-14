@@ -12,6 +12,7 @@ export function registerSongRoutes(router: Router, generation: GenerationService
     .get("/api/songs", ({ url }) => library.list({
       search: url.searchParams.get("q") ?? "",
       favoritesOnly: queryBool(url, "favorites"),
+      showHidden: url.searchParams.has("hidden") ? queryBool(url, "hidden") : undefined,
       groupId: url.searchParams.get("group") ?? "",
       folder: (url.searchParams.get("folder") ?? "") as FolderFilter,
     }))

@@ -30,6 +30,10 @@
         <span class="wordmark">SONIQ</span><span class="tagline">Music Generator</span>
       </a>
     </h1>
+    <nav class="tabs" aria-label="Seiten" data-i18n-aria="pages">
+      <a href="#/" class="tab" data-route-link="generate" aria-current="page" data-i18n="tab_generate">Erzeugen</a>
+      <a href="#/library" class="tab" data-route-link="library"><span data-i18n="library">Bibliothek</span><span id="libBadge" class="badge" hidden></span></a>
+    </nav>
     <div class="top-right">
       <select id="uiLang" class="langsw" aria-label="Language / Sprache" title="Language / Sprache"></select>
       <div id="status" class="box small" title="Modellserver">…</div>
@@ -39,7 +43,7 @@
     </div>
   </header>
 
-  <section class="card">
+  <section class="card" data-route="generate">
     <div class="field analyze">
       <span class="lbl" data-i18n="analyze">Audio analysieren</span>
       <div id="dropzone" class="dropzone" tabindex="0" role="button"
@@ -179,11 +183,12 @@
     </form>
   </section>
 
-  <section class="card">
+  <section class="card" data-route="library" hidden>
     <div class="libhead">
       <div class="libtitle"><h2 class="col-title" data-i18n="library">Bibliothek</h2><span id="libStats" class="sumhint"></span></div>
       <input id="search" type="search" placeholder="Suchen" data-i18n-ph="search">
       <button type="button" id="onlyFav" class="sek icon" aria-pressed="false" title="Nur Favoriten zeigen" aria-label="Nur Favoriten zeigen" data-i18n-title="only_fav" data-i18n-aria="only_fav">☆</button>
+      <button type="button" id="showHidden" class="sek icon" aria-pressed="false" title="Ausgeblendete Songs zeigen" aria-label="Ausgeblendete Songs zeigen" data-i18n-title="show_hidden" data-i18n-aria="show_hidden"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="strike" d="M3 3l18 18"/></svg></button>
     </div>
     <div id="folderBar" class="folderbar"></div>
     <div id="library"></div>
@@ -194,7 +199,7 @@
   <div class="player-in">
     <button id="playBtn" class="aktion round" aria-label="Abspielen" data-i18n-aria="play">▶</button>
     <div class="pmeta">
-      <div id="pTitle"></div>
+      <div class="ptop"><div id="pTitle"></div><div id="pVersions" class="pversions" role="group" hidden></div></div>
       <div id="waveform"></div>
     </div>
     <span id="pTime" class="time"></span>
@@ -238,11 +243,6 @@
     <label class="field"><span class="lbl" title="Leer = data/songs im Programmordner. Beim Ändern werden die vorhandenen Songs dorthin verschoben." data-i18n-title="songs_dir_tip" data-i18n="songs_dir">Song-Ordner</span>
       <input name="songs_dir" placeholder="">
     </label>
-    <div class="field"><span class="lbl" data-i18n="layout">Anordnung</span>
-      <div class="seg" role="group" aria-label="Anordnung" data-i18n-aria="layout">
-        <button type="button" class="sek" data-layout="stack" aria-pressed="true" data-i18n="stacked">Untereinander</button>
-        <button type="button" class="sek" data-layout="side" aria-pressed="false" title="Generator links, Bibliothek rechts (ab ca. 1000 px Breite)" data-i18n-title="side_tip" data-i18n="side">Nebeneinander</button>
-      </div></div>
     <div class="field"><span class="lbl" data-i18n="version">Version</span>
       <div class="upd-row"><button type="button" id="updCheck" class="sek" data-i18n="upd_check">Nach Updates suchen</button><span id="updInfo" class="small"></span></div>
       <ul id="updList" class="upd-list" hidden></ul>

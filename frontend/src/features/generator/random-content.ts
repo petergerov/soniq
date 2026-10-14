@@ -3,6 +3,16 @@
 
 export type Random = () => number;
 
+/** Einstellungen der Würfel: Thema, bevorzugte Begriffe (aus den Favoriten, klein geschrieben) und der Zufall selbst. */
+export interface DiceOptions {
+  theme?: ThemeId;
+  prefer?: ReadonlySet<string>;
+  random?: Random;
+}
+
+/** So oft greift der Würfel zu einem bevorzugten Begriff, wenn die Liste einen enthält. */
+const PREFER_CHANCE = 0.2;
+
 /** Stil-Karten, nach Art gruppiert; der Würfel mischt daraus einen Stil. */
 export const STYLE_GROUPS = {
   genre: ["trip hop", "downtempo", "dub", "deep house", "techno", "drum and bass", "post-rock", "neo-soul", "dark ambient", "boom bap", "orchestral",
@@ -160,14 +170,26 @@ export function pick<T>(items: readonly T[], random: Random = Math.random): T {
   return items[Math.floor(random() * items.length)]!;
 }
 
+/** Wie pick, aber bevorzugte Begriffe kommen öfter dran. */
+function pickPreferred(items: readonly string[], o: DiceOptions): string {
+  const random = o.random ?? Math.random;
+  const liked = o.prefer?.size ? items.filter((i) => o.prefer!.has(i.toLowerCase())) : [];
+  return liked.length && random() < PREFER_CHANCE ? pick(liked, random) : pick(items, random);
+}
+
+/** Begriffe aus Stil und Prompt (für die Vorlieben aus den Favoriten). */
+export function termsOf(texts: readonly string[]): Set<string> {
+  return new Set(texts.flatMap((t) => splitParts(t)).map((t) => t.toLowerCase()));
+}
+
 function splitParts(text: string): string[] {
   return text.split(",").map((x) => x.trim()).filter(Boolean);
 }
 
 /** Stimmung, Szene, Detail; der Stil bleibt die Wahl des Nutzers. */
-export function randomPrompt(theme: ThemeId = "all", random: Random = Math.random): string {
-  const p = THEMES[theme].prompt;
-  return PROMPT_BLOCKS.map((b) => pick(p[b], random)).join(", ");
+export function randomPrompt(o: DiceOptions = {}): string {
+  const p = THEMES[o.theme ?? "all"].prompt;
+  return PROMPT_BLOCKS.map((b) => pickPreferred(p[b], o)).join(", ");
 }
 
 export function randomTitle(random: Random = Math.random): string {
@@ -175,15 +197,16 @@ export function randomTitle(random: Random = Math.random): string {
 }
 
 /** Ein bis zwei Genres, ein Instrument, eine Stimmung; Gesang nur, wenn der Song nicht instrumental ist. */
-export function randomStyle(withVocals: boolean, theme: ThemeId = "all", random: Random = Math.random): string {
-  const s = THEMES[theme].style;
-  const parts: string[] = [pick(s.genre, random)];
+export function randomStyle(withVocals: boolean, o: DiceOptions = {}): string {
+  const random = o.random ?? Math.random;
+  const s = THEMES[o.theme ?? "all"].style;
+  const parts: string[] = [pickPreferred(s.genre, o)];
   if (random() < 0.6) {
     let second: string;
-    do second = pick(s.genre, random); while (second === parts[0]);
+    do second = pickPreferred(s.genre, o); while (second === parts[0]);
     parts.push(second);
   }
-  parts.push(pick(s.instr, random), pick(s.mood, random));
+  parts.push(pickPreferred(s.instr, o), pickPreferred(s.mood, o));
   if (withVocals) parts.push(pick(STYLE_GROUPS.vocals, random));
   return parts.join(", ");
 }
@@ -221,26 +244,28 @@ export function blockOptions(block: PromptBlock, theme: ThemeId, current = ""): 
 }
 
 /** Ein Baustein neu gewürfelt (anderer Wert als bisher, wenn möglich). */
-export function rollPromptBlock(prompt: string, block: PromptBlock, theme: ThemeId = "all", random: Random = Math.random): string {
+export function rollPromptBlock(prompt: string, block: PromptBlock, o: DiceOptions = {}): string {
   const current = promptBlock(prompt, block);
-  const list = THEMES[theme].prompt[block].filter((v) => v !== current);
-  return setPromptBlock(prompt, block, pick(list, random));
+  const list = THEMES[o.theme ?? "all"].prompt[block].filter((v) => v !== current);
+  return setPromptBlock(prompt, block, pickPreferred(list, o));
 }
 
 /** Leicht abgewandelter Prompt: ein bekannter Baustein (Stimmung, Szene, Detail) wird getauscht.
  *  Eigener Text bleibt stehen; kennt der Würfel keinen Baustein, hängt er ein Detail an. */
-export function varyPrompt(prompt: string, theme: ThemeId = "all", random: Random = Math.random): string {
-  if (!splitParts(prompt).length) return randomPrompt(theme, random);
+export function varyPrompt(prompt: string, o: DiceOptions = {}): string {
+  if (!splitParts(prompt).length) return randomPrompt(o);
   const present = PROMPT_BLOCKS.filter((b) => promptBlock(prompt, b));
-  if (!present.length) return setPromptBlock(prompt, "detail", pick(THEMES[theme].prompt.detail, random));
-  return rollPromptBlock(prompt, pick(present, random), theme, random);
+  if (!present.length) return setPromptBlock(prompt, "detail", pickPreferred(THEMES[o.theme ?? "all"].prompt.detail, o));
+  return rollPromptBlock(prompt, pick(present, o.random), o);
 }
 
 /** Leicht abgewandelter Stil: meist wird ein bekannter Tag gegen einen derselben Art getauscht,
  *  manchmal kommt ein Instrument oder eine Stimmung dazu. Gesang nur, wenn der Song nicht instrumental ist. */
-export function varyStyle(style: string, withVocals: boolean, theme: ThemeId = "all", random: Random = Math.random): string {
+export function varyStyle(style: string, withVocals: boolean, o: DiceOptions = {}): string {
+  const random = o.random ?? Math.random;
+  const theme = o.theme ?? "all";
   const parts = splitParts(style);
-  if (!parts.length) return randomStyle(withVocals, theme, random);
+  if (!parts.length) return randomStyle(withVocals, o);
   const has = new Set(parts.map((p) => p.toLowerCase()));
   const pools: Record<StyleKind | "vocals", readonly string[]> = { ...THEMES[theme].style, vocals: STYLE_GROUPS.vocals };
   const kinds = (withVocals ? ["genre", "instr", "mood", "vocals"] : ["genre", "instr", "mood"]) as (StyleKind | "vocals")[];
@@ -252,10 +277,10 @@ export function varyStyle(style: string, withVocals: boolean, theme: ThemeId = "
   });
   if (known.length && (parts.length >= 5 || random() < 0.7)) {
     const { i, free } = pick(known, random);
-    parts[i] = pick(free, random);
+    parts[i] = pickPreferred(free, o);
   } else {
     const free = [...pools.instr, ...pools.mood].filter((t) => !has.has(t.toLowerCase()));
-    if (free.length) parts.push(pick(free, random));
+    if (free.length) parts.push(pickPreferred(free, o));
   }
   return parts.join(", ");
 }

@@ -42,6 +42,7 @@ export class LibraryService {
   update(id: string, patch: SongPatch): Song {
     const { songs } = this.deps;
     if (patch.favorite !== undefined) songs.setFavorite(id, patch.favorite);
+    if (patch.hidden !== undefined) songs.setHidden(id, patch.hidden);
     if (patch.title !== undefined) songs.setTitle(id, patch.title.trim() || null);
     if (patch.folder_id !== undefined) songs.setFolder(id, patch.folder_id || null);
     return this.get(id);

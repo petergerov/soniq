@@ -19,6 +19,7 @@ export interface SongRecord {
   file: string | null;
   favorite: number;
   folder_id: string | null;
+  hidden: number;
 }
 
 export const ACTIVE_STATUSES: readonly SongStatus[] = ["queued", "running"];
@@ -52,6 +53,7 @@ export function toSongDto(r: SongRecord, letters?: Map<string, string>): Song {
     params: JSON.parse(r.params) as SongParams,
     result_meta: r.result_meta ? (JSON.parse(r.result_meta) as SongResultMeta) : null,
     favorite: Boolean(r.favorite),
+    hidden: Boolean(r.hidden),
     url: r.file ? `/api/songs/${r.id}/audio` : null,
   };
 }

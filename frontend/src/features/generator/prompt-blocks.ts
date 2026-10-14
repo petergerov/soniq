@@ -1,11 +1,11 @@
 // Bausteine unter dem Prompt: Stimmung, Szene, Detail als Auswahl, jeder einzeln würfelbar.
 // Sie lesen den Prompt-Text und schreiben nur ihren eigenen Teil zurück; eigener Text bleibt stehen.
-import { blockOptions, PROMPT_BLOCKS, promptBlock, rollPromptBlock, setPromptBlock, type PromptBlock, type ThemeId } from "./random-content.ts";
+import { blockOptions, PROMPT_BLOCKS, promptBlock, rollPromptBlock, setPromptBlock, type DiceOptions, type PromptBlock } from "./random-content.ts";
 
 export interface PromptBlocksDeps {
   field: HTMLTextAreaElement;
   root: HTMLElement;
-  theme: () => ThemeId;
+  dice: () => DiceOptions;
   /** Vor jeder Änderung durch einen Baustein (für ↶) */
   beforeChange: () => void;
 }
@@ -24,7 +24,7 @@ export class PromptBlocks {
     deps.root.addEventListener("click", (e) => {
       const button = (e.target as Element).closest<HTMLElement>("[data-block-dice]");
       if (!button) return;
-      this.write(rollPromptBlock(deps.field.value, button.dataset.blockDice as PromptBlock, deps.theme()));
+      this.write(rollPromptBlock(deps.field.value, button.dataset.blockDice as PromptBlock, deps.dice()));
       button.classList.remove("roll");
       void button.offsetWidth;
       button.classList.add("roll");
@@ -38,7 +38,7 @@ export class PromptBlocks {
     for (const block of PROMPT_BLOCKS) {
       const select = this.deps.root.querySelector<HTMLSelectElement>(`select[data-block="${block}"]`)!;
       const current = promptBlock(prompt, block);
-      const options = ["", ...blockOptions(block, this.deps.theme(), current)];
+      const options = ["", ...blockOptions(block, this.deps.dice().theme ?? "all", current)];
       if ([...select.options].map((o) => o.value).join("\n") !== options.join("\n")) {
         select.replaceChildren(...options.map((v) => new Option(v || "—", v)));
       }

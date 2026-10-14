@@ -67,6 +67,7 @@ export function parseGenerateCommand(input: Input): GenerateCommand {
 export function parseSongPatch(input: Input): SongPatch {
   const patch: SongPatch = {};
   if (input.favorite !== undefined && input.favorite !== null) patch.favorite = bool(input, "favorite", false);
+  if (input.hidden !== undefined && input.hidden !== null) patch.hidden = bool(input, "hidden", false);
   if (input.title !== undefined && input.title !== null) patch.title = str(input, "title");
   if ("folder_id" in input) patch.folder_id = optionalId(input, "folder_id");   // null = unsortiert
   return patch;

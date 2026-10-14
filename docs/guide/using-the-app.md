@@ -15,6 +15,9 @@ You can also stop the servers from inside the app: **Gear › Stop servers**.
 
 ## The screen
 
+The app has two pages, switched with the tabs at the top: **Create** (the form) and **Library** (your songs).
+While songs are being generated or waiting, the Library tab shows how many. The player keeps playing when you switch.
+
 ![The form with numbered elements](images/form.png)
 
 | # | Element | What it does |
@@ -58,6 +61,9 @@ They work as long as the cursor is not in a text field (except Ctrl/⌘ + Enter)
 | **Ctrl/⌘ + Enter** | Generate, also while typing |
 | **Space** | Play / pause (starts the first song if nothing is playing) |
 | **J / K** | Next / previous song |
+| **C** | Next version of the same prompt (A → B → …) at the same position |
+
+R, V, U and Ctrl/⌘ + Enter work on the Create page only.
 
 ## A song in the library
 
@@ -72,8 +78,13 @@ They work as long as the cursor is not in a text field (except Ctrl/⌘ + Enter)
 | 5 | **Folder** | move to a folder |
 | 6 | **Plus** | another version with a new seed |
 | 7 | **Arrow** | copy the settings back into the form |
+|   | **Thumb down** | hide a miss: it disappears from the list but is kept. The crossed-out eye next to the search shows hidden songs again; there the same button brings a song back. |
 |   | **Crossed arrows** | cross two songs: click it on the first song, then on a second one. The form gets the style of the first and the scene of the second. Esc cancels. |
 | 8 | **Cross** | delete, or cancel a running song |
+
+**Comparing versions:** while a song with several versions (A, B, C …) is playing, the player shows their letters. Click one (or press **C**) and that version continues at the same position, so you hear the difference directly.
+
+**The dice learn from your favorites:** terms that appear in the style or prompt of songs with a star come up more often when rolling.
 
 Click a title to rename it. The line below shows **BPM · IT** (iterations) **· VAR** (variance) · key · length.
 “Created in …” disappears once you play the song for the first time.
@@ -98,7 +109,6 @@ Open them with the **gear** at the top right.
 | **Sound model** | Standard or, if installed, XL (better sound, about twice as slow). |
 | **Output format** | File format of new songs: **WAV 16 bit** (default, lossless, plays everywhere), **WAV 24 bit** or **WAV 32 bit float** for further editing (larger files), **MP3** with 320, 192 or 128 kbit/s to save space. |
 | **Song folder** | Where finished songs are stored, see below. |
-| **Layout** | Generator and library stacked, or side by side (from about 1000 px window width). |
 | **Version** | Check for updates and install them. |
 | **Servers** | Stop the app and the model servers. |
 

@@ -18,6 +18,8 @@ export interface NewSong {
 export interface SongQuery {
   search?: string;
   favoritesOnly?: boolean;
+  /** false = ausgeblendete Songs weglassen; nicht angegeben = alle */
+  showHidden?: boolean;
   groupId?: string;
   folder?: FolderFilter;
   limit?: number;
@@ -68,6 +70,7 @@ export class SongRepository {
       params.push(like, like, like);
     }
     if (q.favoritesOnly) sql += " AND favorite=1";
+    if (q.showHidden === false) sql += " AND hidden=0";
     if (q.groupId) {
       sql += " AND group_id=?";
       params.push(q.groupId);
@@ -141,6 +144,10 @@ export class SongRepository {
 
   setFavorite(id: string, favorite: boolean): void {
     this.db.run("UPDATE songs SET favorite=? WHERE id=?", favorite ? 1 : 0, id);
+  }
+
+  setHidden(id: string, hidden: boolean): void {
+    this.db.run("UPDATE songs SET hidden=? WHERE id=?", hidden ? 1 : 0, id);
   }
 
   setTitle(id: string, title: string | null): void {

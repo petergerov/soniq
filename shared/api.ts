@@ -48,6 +48,8 @@ export interface Song {
   file: string | null;
   favorite: boolean;
   folder_id: string | null;
+  /** Ausgeblendet (Fehlversuch); erscheint nur, wenn die Bibliothek Ausgeblendete zeigt */
+  hidden: boolean;
   /** Versionen desselben Prompts heißen A, B, C … ("" bei Einzelstücken). */
   letter: string;
   url: string | null;
@@ -81,6 +83,7 @@ export interface GenerateResponse {
 
 export interface SongPatch {
   favorite?: boolean;
+  hidden?: boolean;
   title?: string;
   /** null/"" = unsortiert. Nur ausgewertet, wenn mitgeschickt. */
   folder_id?: string | null;

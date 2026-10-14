@@ -7,7 +7,7 @@ import type { Translate } from "../../i18n/i18n.ts";
 import { BubbleSlider } from "./bubble-slider.ts";
 import { LyricsEditor } from "./lyrics-editor.ts";
 import { PromptBlocks } from "./prompt-blocks.ts";
-import { isThemeId, promptBlock, randomPrompt, randomStyle, randomTitle, setPromptBlock, type ThemeId, varyPrompt, varyStyle } from "./random-content.ts";
+import { isThemeId, promptBlock, randomPrompt, randomStyle, randomTitle, setPromptBlock, type DiceOptions, type ThemeId, varyPrompt, varyStyle } from "./random-content.ts";
 import { StyleAxisSliders } from "./style-axis-sliders.ts";
 import { StyleChips } from "./style-chips.ts";
 
@@ -31,6 +31,8 @@ export interface GeneratorFormDeps {
   targetFolder: () => string | null;
   /** Nach erfolgreichem Auftrag */
   onQueued: () => void;
+  /** Begriffe aus den Favoriten; die Würfel greifen öfter zu ihnen */
+  preferredTerms: () => ReadonlySet<string>;
 }
 
 const DEFAULTS = { duration: 90, inferenceSteps: 50, lmTemperature: 0.85, language: "en" };
@@ -87,7 +89,7 @@ export class GeneratorForm {
     this.themeSelect = byId<HTMLSelectElement>("themeSelect");
     const savedTheme = storage.get(THEME_KEY);
     this.themeSelect.value = isThemeId(savedTheme) ? savedTheme : "all";
-    this.blocks = new PromptBlocks({ field: this.f.prompt, root: this.form.querySelector(".blocks")!, theme: () => this.theme, beforeChange: () => this.remember() });
+    this.blocks = new PromptBlocks({ field: this.f.prompt, root: this.form.querySelector(".blocks")!, dice: () => this.dice, beforeChange: () => this.remember() });
     this.similarButton = byId<HTMLButtonElement>("similarBtn");
     this.styleChips = new StyleChips(this.f.style, byId("tagChips"));
     this.styleAxes = new StyleAxisSliders(this.f.style, this.form.querySelector(".axes")!, () => this.remember());
@@ -107,12 +109,12 @@ export class GeneratorForm {
 
   /** Zufall: Prompt und Stil neu würfeln, gesperrte Felder bleiben. */
   random(): void {
-    this.rollBoth(() => randomPrompt(this.theme), (_, withVocals) => randomStyle(withVocals, this.theme), byId("randomBtn"));
+    this.rollBoth(() => randomPrompt(this.dice), (_, withVocals) => randomStyle(withVocals, this.dice), byId("randomBtn"));
   }
 
   /** Variation: Prompt und Stil leicht abwandeln, gesperrte Felder bleiben. */
   vary(): void {
-    this.rollBoth((text) => varyPrompt(text, this.theme), (text, withVocals) => varyStyle(text, withVocals, this.theme), byId("varyBtn"));
+    this.rollBoth((text) => varyPrompt(text, this.dice), (text, withVocals) => varyStyle(text, withVocals, this.dice), byId("varyBtn"));
   }
 
   /** Letzten Würfelschritt zurücknehmen. */
@@ -194,7 +196,7 @@ export class GeneratorForm {
     this.remember();
     if (!this.locked.has("prompt")) this.f.prompt.value = r.caption || "";
     this.applyAnalysisMusic(r);
-    if (!this.locked.has("style")) this.f.style.value = randomStyle(!this.lyrics.instrumental, this.theme);
+    if (!this.locked.has("style")) this.f.style.value = randomStyle(!this.lyrics.instrumental, this.dice);
     this.syncStyle();
     restartAnimation(this.similarButton, "roll");
   }
@@ -258,9 +260,9 @@ export class GeneratorForm {
         restartAnimation(e.currentTarget as HTMLElement, "roll");
         after?.();
       });
-    roll("diceBtn", this.f.prompt, () => randomPrompt(this.theme), () => this.blocks.sync());
+    roll("diceBtn", this.f.prompt, () => randomPrompt(this.dice), () => this.blocks.sync());
     roll("titleDice", this.f.title, () => randomTitle());
-    roll("styleDice", this.f.style, () => randomStyle(!this.lyrics.instrumental, this.theme), () => this.syncStyle());
+    roll("styleDice", this.f.style, () => randomStyle(!this.lyrics.instrumental, this.dice), () => this.syncStyle());
     this.themeSelect.addEventListener("change", () => {
       storage.set(THEME_KEY, this.theme);
       this.blocks.sync();
@@ -305,6 +307,11 @@ export class GeneratorForm {
   private syncStyle(): void {
     this.styleChips.sync();
     this.styleAxes.sync();
+  }
+
+  /** Thema und Vorlieben aus den Favoriten für alle Würfel. */
+  private get dice(): DiceOptions {
+    return { theme: this.theme, prefer: this.deps.preferredTerms() };
   }
 
   private get theme(): ThemeId {

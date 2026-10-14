@@ -44,6 +44,8 @@ export class Database {
     // Ordner der Bibliothek (nur in der App; die Dateien bleiben, wo sie sind). NULL = unsortiert
     const columns = this.all<{ name: string }>("PRAGMA table_info(songs)").map((c) => c.name);
     if (!columns.includes("folder_id")) this.db.exec("ALTER TABLE songs ADD COLUMN folder_id TEXT");
+    // Ausgeblendet: Fehlversuche aus der Liste nehmen, ohne sie zu löschen
+    if (!columns.includes("hidden")) this.db.exec("ALTER TABLE songs ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0");
   }
 
   run(sql: string, ...params: SqlParam[]): number {

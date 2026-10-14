@@ -68,6 +68,18 @@ body {
 .tagline { font-size: 11px; font-weight: 500; letter-spacing: .22em; text-transform: uppercase; color: var(--faint); }
 .top-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 
+/* Seiten-Reiter: Erzeugen / Bibliothek */
+.tabs { display: flex; gap: 4px; margin-left: 18px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.tab { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  color: var(--muted); text-decoration: none; transition: color .15s, background .15s; }
+.tab:hover { color: var(--text); }
+.tab:focus-visible { outline: none; box-shadow: var(--focus); }
+.tab[aria-current=page] { color: var(--text); background: var(--accent-tint); }
+.badge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--gradient); color: #fff;
+  font-size: 11px; font-weight: 700; display: inline-grid; place-items: center; }
+.badge[hidden] { display: none; }
+[data-route][hidden] { display: none; }
+
 /* ------------------------------------------------------------ Karten */
 .card { background: linear-gradient(180deg, var(--surface), #0e0e13); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 22px; min-width: 0; box-shadow: var(--shadow); }
@@ -304,6 +316,12 @@ button { font: inherit; cursor: pointer; }
 /* Favoriten-Filter */
 #onlyFav { font-size: 15px; border-radius: 999px; }
 #onlyFav[aria-pressed=true] { color: #fbbf24; border-color: rgba(251, 191, 36, .45); background: rgba(251, 191, 36, .1); }
+#showHidden { border-radius: 999px; }
+#showHidden[aria-pressed=true] { color: var(--accent-soft); border-color: rgba(167, 139, 250, .45); background: var(--accent-tint); }
+#showHidden[aria-pressed=true] .strike { display: none; }   /* durchgestrichenes Auge = Ausgeblendete sind versteckt */
+.song.is-hidden { opacity: .5; }
+.song.is-hidden:hover { opacity: .8; }
+.song .actions .on[data-a=hide] { color: var(--error); border-color: rgba(248, 113, 113, .45); }
 .song .actions .on[data-a=fav] { color: #fbbf24; border-color: rgba(251, 191, 36, .45); background: rgba(251, 191, 36, .1); }
 
 /* Ordner der Bibliothek */
@@ -329,6 +347,11 @@ footer#player { position: fixed; left: 50%; transform: translateX(-50%); width: 
 .player-in { padding: 10px 16px 10px 12px; display: flex; align-items: center; gap: 14px; }
 #playBtn { background: var(--gradient); color: #fff; box-shadow: 0 6px 18px -6px rgba(124, 58, 237, .9); }
 .pmeta { flex: 1; min-width: 0; }
+.ptop { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ptop #pTitle { flex: 1; min-width: 0; }
+.pversions { display: flex; gap: 4px; flex: none; margin-bottom: 2px; }
+.pversions[hidden] { display: none; }
+.sek.ver { padding: 1px 8px; font-size: 11px; font-weight: 600; border-radius: 6px; }
 #pTitle { font-size: 12px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; }
 .time { font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; flex: none; }
 
@@ -384,18 +407,11 @@ dialog .col-title { margin-bottom: 18px; font-size: 17px; }
   background-color: var(--surface-2); color: var(--muted); background-position: right 15px center, right 10px center; }
 .langsw:hover { color: var(--text); }
 
-/* ------------------------------------------------------------ Anordnung nebeneinander */
-@media (min-width: 1000px) {
-  .wrap.side { max-width: 1480px; display: grid; grid-template-columns: minmax(400px, 480px) minmax(0, 1fr); align-items: start; }
-  .wrap.side > .top { grid-column: 1 / -1; }
-  .side footer#player { width: min(1480px, calc(100vw - 24px)); }
-  .wrap.side > section:first-of-type { position: sticky; top: 16px; max-height: calc(100vh - 32px - var(--player-h, 0px)); overflow-y: auto; }
-  .wrap.side .genbar { bottom: -22px; }
-}
-
 @media (max-width: 700px) {
   .wrap { padding: 20px 14px; }
   .top { flex-wrap: wrap; }
+  .tabs { order: 3; width: 100%; margin-left: 0; }
+  .tab { flex: 1; justify-content: center; }
   .wordmark { font-size: 22px; }
   .card { padding: 18px; }
   .genbar { margin: 18px -18px -18px; padding: 12px 18px 16px; }

@@ -35,7 +35,6 @@ ROW_LEGEND_SPACE = 34                 # room below the song row for its markers
 INIT_JS = r"""
 localStorage.setItem('ui_lang', 'en');
 localStorage.setItem('folder', '');
-localStorage.setItem('layout', 'stack');
 const realFetch = window.fetch.bind(window);
 window.fetch = async (input, init) => {
   const res = await realFetch(input, init);
@@ -50,6 +49,7 @@ window.fetch = async (input, init) => {
 # Runs on the loaded page: tidies it up, draws the markers and returns the areas to capture (CSS pixels).
 PAGE_JS = r"""
 (() => {
+  document.querySelectorAll('[data-route]').forEach(s => { s.hidden = false; });   // both pages at once: form and library
   document.querySelectorAll('details').forEach(d => d.open = false);
   document.activeElement && document.activeElement.blur();
   window.scrollTo(0, 0);

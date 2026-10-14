@@ -81,6 +81,7 @@ export class SongList {
         if (!this.openLyrics.delete(song.id)) this.openLyrics.add(song.id);
         return this.render();
       case "fav": return store.toggleFavorite(song);
+      case "hide": return store.toggleHidden(song);
       case "retry": return store.retry(song.id);
       case "more": return store.generateAnother(song);
       case "del": {
