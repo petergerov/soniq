@@ -6,8 +6,8 @@
 
 | | |
 |---|---|
-| <img src="../../assets/icon-on.png" width="48" alt=""> **Music Generator ON** | starts everything and opens the app in the browser |
-| <img src="../../assets/icon-off.png" width="48" alt=""> **Music Generator OFF** | stops everything and closes the browser tabs |
+| <img src="../../assets/icon-on.png" width="48" alt=""> **start** | starts everything and opens the app in the browser |
+| <img src="../../assets/icon-off.png" width="48" alt=""> **stop** | stops everything and closes the browser tabs |
 
 Both are in the project folder, on Windows also on the desktop. Mac tip: drag them to the Dock.
 The app runs at **http://localhost:8765**, the windows close by themselves after starting.
@@ -32,7 +32,7 @@ While songs are being generated or waiting, the Library tab shows how many (hove
 | 4 | **Style** | Genre and instruments. Dice: a suggestion. Under “Styles”, cards add terms. |
 | 5 | **Length** | 10 seconds to 5 minutes, default 1:30. |
 | 6 | **BPM** | Tempo. Far left = Auto, the model decides. |
-| 7 | **Vocals** | Below the presets: switch between **Instrumental** and **Song**. With Song: pick the language and type your own lyrics, or leave the field empty (dice: “Automatic”) and the model writes its own lyrics when generating. |
+| 7 | **Composition** | Below the presets: switch between **Instrumental** and **Song**. With Song: pick the language and type your own lyrics, or leave the field empty (dice: “Automatic”) and the model writes its own lyrics when generating. |
 | 8 | **Advanced** | Iterations (quality), variance (variety), key, time signature, seed. |
 | 9 | **Generate** | Pick the number of versions (1 to 10) and go. Several versions are named A, B, C … The bar stays visible while scrolling. |
 | 10 | **Gear** | Settings, see [below](#settings). Next to it: interface language (twelve languages, from German to Chinese). |
@@ -45,7 +45,7 @@ Above the prompt sit three more buttons:
 - **Variation** changes them only slightly: one building block of the prompt (mood, scene, detail) or one style term is swapped, or a term is added. Your own text stays.
 - **↶** takes back the last roll, step by step.
 
-**Presets** at the top of the form save the current settings under a name: style, vocals and language, length, BPM, key, time signature, iterations, variance, number of versions and dice theme. Prompt, title, lyrics and seed are not saved. Pick a preset from the list to load it (↶ brings back the previous style), **Save** with the same name overwrites it, **✕** deletes it.
+**Presets** at the top of the form save the current settings under a name: style, composition (instrumental or song) and vocal language, length, BPM, key, time signature, iterations, variance, number of versions and dice theme. Prompt, title, lyrics and seed are not saved. Pick a preset from the list to load it (↶ brings back the previous style), **Save** with the same name overwrites it, **✕** deletes it.
 
 The **lock** next to the prompt and style dice keeps that field as it is: Random and Variation then only change the other one.
 
@@ -131,7 +131,7 @@ moves the existing songs there. Leaving the field empty means back to default.
 ## Updating
 
 In the app: **Gear › Check for updates › Update now**. The app fetches the new version from GitHub and restarts;
-your songs are kept. If it reports a new installer version, run **Install** once afterwards.
+your songs are kept. If it reports a new installer version, run **install** once afterwards.
 
 ---
 

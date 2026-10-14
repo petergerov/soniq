@@ -66,7 +66,7 @@ export class LibraryService {
     }
     if (!rows.length) throw new AppError("not_found", "no_done_songs");
     const named = folder && folder !== "none" ? this.deps.folders.find(folder) : undefined;
-    const archiveName = cleanFileName(named?.name ?? "Music Generator") || "Music Generator";
+    const archiveName = cleanFileName(named?.name ?? "SONIQ") || "SONIQ";
     const letters = this.letters();
     const used = new Set<string>();
     const entries = rows.map(({ r, path }) => {

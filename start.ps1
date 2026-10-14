@@ -21,7 +21,7 @@ if ($VAE_CHUNK) { $SERVER_ARGS += @("--vae-chunk", $VAE_CHUNK) }
 $ACE = Ace-Server
 $NODE = Node-Exe
 if (-not $ACE -or -not $NODE) {
-    Write-Host "Not installed yet. Please run 'Install' first."
+    Write-Host "Not installed yet. Please run 'install' first."
     Taste-Zum-Schliessen
     exit 1
 }
@@ -92,7 +92,7 @@ Write-Host "All servers are running."
 
 Start-Process "http://localhost:$PORT"
 Write-Host ""
-Write-Host "Music Generator is open at http://localhost:$PORT"
-Write-Host "To stop: use 'Music Generator OFF'."
+Write-Host "SONIQ is open at http://localhost:$PORT"
+Write-Host "To stop: use 'SONIQ Stop'."
 Start-Sleep -Seconds 2
 exit 0

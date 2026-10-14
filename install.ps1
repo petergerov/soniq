@@ -1,4 +1,4 @@
-﻿# Music Generator – Installer für Windows (NVIDIA-Grafikkarte empfohlen).
+﻿# SONIQ – Installer für Windows (NVIDIA-Grafikkarte empfohlen).
 # Prüft den PC, installiert was fehlt, lädt Modellserver und Modelle und startet die App.
 # Kann jederzeit erneut gestartet werden (z. B. nach "git pull"): Erledigtes wird übersprungen.
 #
@@ -36,7 +36,7 @@ function Download([string]$url, [string]$ziel) {   # fortsetzbar, mit Fortschrit
 
 New-Item -ItemType Directory -Force -Path $DATA | Out-Null
 Write-Host "==========================================="
-Write-Host "  MUSIC GENERATOR · Installation (Windows)"
+Write-Host "  SONIQ · Installation (Windows)"
 Write-Host "==========================================="
 
 # --- 1. PC prüfen ---------------------------------------------------------------
@@ -134,7 +134,7 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Host "  installing (winget) ..."
     & winget install --id Git.Git -e --silent --accept-package-agreements --accept-source-agreements
     $env:PATH = "$env:ProgramFiles\Git\cmd;$env:LOCALAPPDATA\Programs\Git\cmd;$env:PATH"
-    if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Abbruch "git could not be installed. Please download it from https://git-scm.com and run 'Install' again." }
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Abbruch "git could not be installed. Please download it from https://git-scm.com and run 'install' again." }
 }
 Write-Host "  $(& git --version)"
 
@@ -148,10 +148,10 @@ if ((Test-Path $nodeExe) -and ((& $nodeExe --version) -eq "v$NODE_VERSION")) {
     $name = "node-v$NODE_VERSION-$plat"
     $zip = Join-Path $ROOT "runtime\$name.zip"
     New-Item -ItemType Directory -Force -Path (Join-Path $ROOT "runtime") | Out-Null
-    if (-not (Download "https://nodejs.org/dist/v$NODE_VERSION/$name.zip" $zip)) { Abbruch "Downloading Node.js failed. Running Install again resumes." }
+    if (-not (Download "https://nodejs.org/dist/v$NODE_VERSION/$name.zip" $zip)) { Abbruch "Downloading Node.js failed. Running install again resumes." }
     if ((Get-FileHash -Algorithm SHA256 $zip).Hash.ToLower() -ne $NODE_SHA[$plat]) {
         Remove-Item -Force $zip
-        Abbruch "Checksum of Node.js does not match. The file was deleted; running Install again downloads it anew."
+        Abbruch "Checksum of Node.js does not match. The file was deleted; running install again downloads it anew."
     }
     if (Test-Path $NODE_DIR) { Remove-Item $NODE_DIR -Recurse -Force }
     # tar (ab Windows 10 1803) entpackt deutlich schneller als Expand-Archive
@@ -179,10 +179,10 @@ if ($ACE -and -not $Build) {
     New-Item -ItemType Directory -Force -Path $rel | Out-Null
     $index = (Invoke-WebRequest -UseBasicParsing $PREBUILT_URL).Content
     $names = [regex]::Matches($index, 'href="([^"/?]+\.(exe|dll))"') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
-    if (-not $names) { Abbruch "Could not read the binaries file list ($PREBUILT_URL). Alternative: 'Install -Build' compiles it yourself." }
+    if (-not $names) { Abbruch "Could not read the binaries file list ($PREBUILT_URL). Alternative: 'install -Build' compiles it yourself." }
     foreach ($n in $names) {
         Write-Host "  v $n"
-        if (-not (Download "$PREBUILT_URL$n" (Join-Path $rel $n))) { Abbruch "Downloading $n failed. Running Install again resumes." }
+        if (-not (Download "$PREBUILT_URL$n" (Join-Path $rel $n))) { Abbruch "Downloading $n failed. Running install again resumes." }
     }
     "PREBUILT=$(Get-Date -Format s)" | Set-Content (Join-Path $rel "VERSION.txt")
     Write-Host "  done"
@@ -213,13 +213,13 @@ if ($ACE -and -not $Build) {
         if (-not $vs) {
             Write-Host "  Visual Studio Build Tools are missing. Installation (about 7 GB, admin rights):"
             Write-Host '    winget install Microsoft.VisualStudio.2022.BuildTools --override "--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"'
-            Abbruch "Then run 'Install -Build' again."
+            Abbruch "Then run 'install -Build' again."
         }
         $cuda = $env:CUDA_PATH
         if (-not $cuda) { $cuda = [Environment]::GetEnvironmentVariable("CUDA_PATH", "Machine") }
         if ($NVIDIA -and -not $cuda) {
             Write-Host "  CUDA Toolkit is missing. Installation (about 3 GB, admin rights):  winget install Nvidia.CUDA"
-            Abbruch "Then run 'Install -Build' again (without CUDA 'Install -Build' still works, but CPU/Vulkan only)."
+            Abbruch "Then run 'install -Build' again (without CUDA 'install -Build' still works, but CPU/Vulkan only)."
         }
         $flags = @("-DGGML_CPU_ALL_VARIANTS=ON", "-DGGML_BACKEND_DL=ON")
         if ($cuda) { $flags += @("-DGGML_CUDA=ON", "-DCMAKE_CUDA_ARCHITECTURES=native") }
@@ -245,11 +245,11 @@ foreach ($f in $FILES.Keys) {
     $ziel = Join-Path $MODELS $f
     if (Test-Path $ziel) { Write-Host "  ok $f"; continue }
     Write-Host "  v $f"
-    if (-not (Download "$HF_BASE/$f" "$ziel.neu")) { Abbruch "Downloading $f failed. Running Install again resumes the download." }
+    if (-not (Download "$HF_BASE/$f" "$ziel.neu")) { Abbruch "Downloading $f failed. Running install again resumes the download." }
     Write-Host "    verifying checksum ..."
     if ((Get-FileHash -Algorithm SHA256 "$ziel.neu").Hash.ToLower() -ne $MODEL_SHA[$f]) {
         Remove-Item -Force "$ziel.neu"
-        Abbruch "Checksum of $f does not match. The file was deleted; running Install again downloads it anew."
+        Abbruch "Checksum of $f does not match. The file was deleted; running install again downloads it anew."
     }
     Move-Item -Force "$ziel.neu" $ziel
     Write-Host "    checksum ok"
@@ -301,25 +301,15 @@ if ($OLD.MODE -and $OLD.LM_FILE -eq $LM_FILE -and $OLD.TESTED_REV -eq $STAMP) {
 
 # --- 7. Verknüpfungen -----------------------------------------------------------
 Schritt "Shortcuts (program folder and desktop)"
-$shell = New-Object -ComObject WScript.Shell
-foreach ($e in @(@("Music Generator ON", "icon-on.ico"), @("Music Generator OFF", "icon-off.ico"))) {
-    foreach ($dir in @($ROOT, [Environment]::GetFolderPath("Desktop"))) {
-        $lnk = $shell.CreateShortcut((Join-Path $dir "$($e[0]).lnk"))
-        $lnk.TargetPath = "powershell.exe"
-        $lnk.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $ROOT "$($e[0]).ps1")`""
-        $lnk.WorkingDirectory = $ROOT
-        $lnk.IconLocation = (Join-Path $ROOT "assets\$($e[1])")
-        $lnk.Save()
-    }
-}
+& (Join-Path $PSScriptRoot "scripts\shortcuts.ps1")
 Write-Host "  ok"
 
 # --- Fertig ---------------------------------------------------------------------
 Write-Host ""
 Write-Host "==========================================="
-Write-Host "  Done. Start with 'Music Generator ON',"
-Write-Host "  stop with 'Music Generator OFF'."
+Write-Host "  Done. Start with 'SONIQ Start',"
+Write-Host "  stop with 'SONIQ Stop'."
 Write-Host "==========================================="
 if (-not $NoStart) {
-    & (Join-Path $ROOT "Music Generator ON.ps1")
+    & (Join-Path $ROOT "start.ps1")
 }

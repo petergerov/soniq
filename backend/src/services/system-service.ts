@@ -1,4 +1,4 @@
-// Zustand des Modellservers und "Server stoppen" (führt das Skript "Music Generator OFF" aus).
+// Zustand des Modellservers und "Server stoppen" (führt das Skript "stop" aus).
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { HealthInfo } from "../../../shared/api.ts";
@@ -42,8 +42,8 @@ export class SystemService {
   }
 
   private stopScriptName(): string {
-    if (this.deps.platform === "win32") return "Music Generator OFF.ps1";
-    if (this.deps.platform !== "darwin" && existsSync(join(this.deps.root, "Music Generator OFF.sh"))) return "Music Generator OFF.sh";
-    return "Music Generator OFF.command";
+    if (this.deps.platform === "win32") return "stop.ps1";
+    if (this.deps.platform !== "darwin" && existsSync(join(this.deps.root, "stop.sh"))) return "stop.sh";
+    return "stop.command";
   }
 }

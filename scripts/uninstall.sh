@@ -1,5 +1,5 @@
 #!/bin/bash
-# Music Generator – Deinstallation für macOS und Linux.
+# SONIQ – Deinstallation für macOS und Linux.
 # Ursprung: Uninstall-Funktion von ZeroDot1 (Arch Linux), hier für Mac und Linux gemeinsam umgesetzt.
 # Entfernt Modellserver, Modelle, Node.js-Laufzeit und Einstellungen. Songs und Bibliothek bleiben auf Wunsch.
 # Optionen:  --yes  keine Rückfragen: alles entfernen, Songs und Bibliothek behalten
@@ -17,16 +17,16 @@ frage() {   # frage "Text" standard(j|n): Enter nimmt den Standard
   if [ -z "$a" ]; then [ "$2" != "n" ]; else [[ "$a" =~ ^[jJyY] ]]; fi
 }
 
-# Sicherheitsprüfung: nur im Programmordner von Music Generator arbeiten
+# Sicherheitsprüfung: nur im Programmordner von SONIQ arbeiten
 if [ ! -f "$ROOT/backend/src/main.ts" ] || [ ! -f "$ROOT/scripts/common.sh" ] || [ "$ROOT" = "/" ] || [ "$ROOT" = "$HOME" ]; then
-  echo "✗ This does not look like the Music Generator folder ($ROOT). Nothing was changed."
+  echo "✗ This does not look like the SONIQ folder ($ROOT). Nothing was changed."
   exit 1
 fi
 
 groesse() { [ -e "$1" ] && du -sh "$1" 2>/dev/null | cut -f1; }
 
 echo "═══════════════════════════════════════════"
-echo "  MUSIC GENERATOR · Uninstall"
+echo "  SONIQ · Uninstall"
 echo "═══════════════════════════════════════════"
 echo ""
 echo "  This removes, inside $ROOT :"

@@ -1,4 +1,4 @@
-# SONIQ Music Generator – Guide
+# SONIQ – Guide
 
 Create your own songs locally: no limits, no subscription, no cloud.
 
@@ -31,8 +31,8 @@ Linux (Arch) is covered in the [main README](../../README.md#linux-arch-linux--d
 ## How the installation works
 
 1. **Get the project.** Download the project folder via Git, or receive it as a folder.
-2. **Run Install.** Double-click “Install”. The installer checks your computer and sets everything up.
-3. **Make music.** “Music Generator ON” opens the app in your browser.
+2. **Run install.** Double-click “install”. The installer checks your computer and sets everything up.
+3. **Make music.** “start” opens the app in your browser.
 
 > [!NOTE]
 > The installer hardly asks anything. You can run it again at any time: finished steps are skipped and

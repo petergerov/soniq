@@ -1,5 +1,6 @@
 // Einstieg und Composition Root: hier (und nur hier) werden alle Bausteine erzeugt und verbunden.
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { loadConfig, type AppConfig } from "./config/app-config.ts";
@@ -45,6 +46,13 @@ function refreshMacIcons(config: AppConfig): void {
   spawn("bash", [join(config.root, "scripts", "symbole.sh")], { stdio: "ignore", detached: true }).on("error", () => {}).unref();
 }
 
+/** Windows: Verknüpfungen "Music Generator ON/OFF" aus der Zeit vor der Umbenennung durch "SONIQ Start/Stop" ersetzen. */
+function migrateWindowsShortcuts(config: AppConfig): void {
+  if (config.platform !== "win32" || !existsSync(join(config.root, "Music Generator ON.lnk"))) return;
+  spawn("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(config.root, "scripts", "shortcuts.ps1")], { stdio: "ignore", detached: true })
+    .on("error", () => {}).unref();
+}
+
 async function main(): Promise<void> {
   const config = loadConfig();
 
@@ -84,8 +92,9 @@ async function main(): Promise<void> {
   songs.requeueInterrupted();
   await removeLeftovers(config.dataDir);
   refreshMacIcons(config);
+  migrateWindowsShortcuts(config);
   await server.listen(config.port, config.host);
-  log(`Music Generator läuft auf http://localhost:${config.port}`);
+  log(`SONIQ läuft auf http://localhost:${config.port}`);
   const working = worker.run();
   worker.wake();
 

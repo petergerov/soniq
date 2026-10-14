@@ -12,7 +12,7 @@ git clone https://github.com/petergerov/soniq.git ~/soniq
 ```
 
 If the Apple developer tools are missing, macOS now asks automatically whether to install them: confirm with
-**Install**, wait, then run the command again.
+**install**, wait, then run the command again.
 
 > [!TIP]
 > **Without Git:** If you received the project folder as a ZIP or via AirDrop, unpack it to a permanent place,
@@ -20,17 +20,17 @@ If the Apple developer tools are missing, macOS now asks automatically whether t
 
 ## 2. Run the installer
 
-Open the folder in Finder and **double-click “Install”**. A Terminal window opens in which the installer works.
+Open the folder in Finder and **double-click “install”**. A Terminal window opens in which the installer works.
 Alternatively in the Terminal:
 
 ```bash
-open ~/soniq/Install.command
+open ~/soniq/install.command
 ```
 
 The installer shows what it found on your Mac and suggests the matching language model:
 
 ```text
-  MUSIC GENERATOR · Installation
+  SONIQ · Installation
 
 ▸ Checking Mac
   Chip:        Apple M4 (arm64)
@@ -49,8 +49,8 @@ Then <kbd>Enter</kbd> once more to start, the rest runs by itself.
 
 > [!WARNING]
 > **macOS warning:** If macOS only offers “Move to Trash” or “Cancel”, choose **Cancel**, then open
-> **System Settings › Privacy & Security**, scroll to the bottom and click **Open Anyway** next to “Install”
-> (password or Touch ID). Then double-click Install again. Faster: see [If macOS blocks the file](#if-macos-blocks-the-file).
+> **System Settings › Privacy & Security**, scroll to the bottom and click **Open Anyway** next to “install”
+> (password or Touch ID). Then double-click install again. Faster: see [If macOS blocks the file](#if-macos-blocks-the-file).
 
 ## What the installer does
 
@@ -62,7 +62,7 @@ Then <kbd>Enter</kbd> once more to start, the rest runs by itself.
 | **Build the model server** | Download acestep.cpp in the tested version and compile it for your Mac. |
 | **Download models** | Only the files your Mac needs, with progress bar, resumable, checksums verified. |
 | **Test the graphics chip** | Trial run: does the language model compute correctly on the graphics chip? Otherwise it uses the CPU. |
-| **Set up icons** | Green start and red stop icon for “Music Generator ON/OFF”. |
+| **Set up icons** | Green start and red stop icon for “start” and “stop”. |
 | **Go** | Start the servers and open the app in the browser. |
 
 ## Which model?
@@ -80,7 +80,7 @@ Bigger means song structure, tempo and lyrics are matched better. The sound mode
 > **ACE-Step 1.5 XL** (4 instead of 2 billion parameters, 5.3 GB, <kbd>Enter</kbd> = no). According to the developers
 > it sounds better, but takes about twice as long: on an M4 with 16 GB a 30-second song took 99 instead of 49 seconds.
 > Recommended from 16 GB RAM. Switch under **Gear › Sound model**, Standard stays preselected.
-> To add it later, run `./Install.command --xl`.
+> To add it later, run `./install.command --xl`.
 
 ## How long?
 
@@ -94,7 +94,7 @@ Bigger means song structure, tempo and lyrics are matched better. The sound mode
 ## If macOS blocks the file
 
 This happens with files from the internet, especially a ZIP. Instead of going through System Settings, one Terminal
-command fixes the whole folder in one go. Afterwards Install and Music Generator ON/OFF open without a prompt:
+command fixes the whole folder in one go. Afterwards install, start and stop open without a prompt:
 
 ```bash
 xattr -dr com.apple.quarantine ~/soniq
@@ -105,10 +105,10 @@ With `git clone` (step 1) the warning never appears in the first place.
 ## Installer options
 
 ```bash
-./Install.command --yes        # no questions, take the recommendation
-./Install.command --lm 4B      # force a language model: 0.6B, 1.7B or 4B
-./Install.command --xl         # also download the XL sound model
-./Install.command --no-start   # don't start the app at the end
+./install.command --yes        # no questions, take the recommendation
+./install.command --lm 4B      # force a language model: 0.6B, 1.7B or 4B
+./install.command --xl         # also download the XL sound model
+./install.command --no-start   # don't start the app at the end
 ```
 
 ---

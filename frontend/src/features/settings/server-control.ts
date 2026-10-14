@@ -1,4 +1,4 @@
-// "Server stoppen" = Skript "Music Generator OFF" ausführen lassen.
+// "Server stoppen" = Skript "stop" ausführen lassen.
 import type { ApiClient } from "../../core/api-client.ts";
 import { byId } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";

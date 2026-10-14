@@ -1,4 +1,4 @@
-# SONIQ Music Generator
+# SONIQ
 
 Create your own songs locally – no limits, no subscription, no cloud.
 A web interface for [ACE-Step 1.5](https://github.com/ace-step/ACE-Step-1.5) via
@@ -14,7 +14,7 @@ Requirements: a Mac with Apple Silicon (M1 or newer), at least 8 GB of memory, 7
 
 ```bash
 git clone https://github.com/petergerov/soniq.git ~/soniq
-open ~/soniq/Install.command
+open ~/soniq/install.command
 ```
 
 The installer
@@ -25,7 +25,7 @@ The installer
 4. builds acestep.cpp in the tested version (`b7ba6d9`),
 5. downloads only the models it needs (resumable),
 6. tests whether the language model computes correctly on the graphics chip (otherwise CPU, see below),
-7. sets up the icons for **Music Generator ON / OFF** and starts the app.
+7. sets up the icons for **start / stop** and starts the app.
 
 It can be run again at any time; finished steps are skipped.
 Options: `--yes` (no questions), `--lm 0.6B|1.7B|4B`, `--xl`, `--no-start`.
@@ -34,8 +34,8 @@ Options: `--yes` (no questions), `--lm 0.6B|1.7B|4B`, `--xl`, `--no-start`.
 
 ## Usage
 
-- **Music Generator ON** starts the model server and the app and opens http://localhost:8765
-- **Music Generator OFF** stops everything and closes the browser tabs
+- **start** starts the model server and the app and opens http://localhost:8765
+- **stop** stops everything and closes the browser tabs
 - The interface is available in twelve languages (selector at the top right): German, English, Spanish, French, Italian, Portuguese, Turkish, Polish, Russian, Ukrainian, Japanese, Chinese. Corrections to `frontend/src/i18n/translations.ts` (interface) and `backend/src/i18n/messages.ts` (server messages) are welcome.
 
 ## Updating
@@ -44,16 +44,16 @@ In the app: Gear › **Check for updates** › **Update now** (fetches the new v
 
 ```bash
 cd ~/soniq && git pull
-open Install.command
+open install.command
 ```
 
 Songs and settings in `data/` are kept.
 
 ## Uninstalling
 
-- **Mac:** double-click `Uninstall.command` (or run it in the Terminal)
-- **Windows:** double-click `Uninstall.bat`
-- **Linux:** `./Uninstall.sh` (or `./arch_linux.sh --uninstall`)
+- **Mac:** double-click `uninstall.command` (or run it in the Terminal)
+- **Windows:** double-click `uninstall.bat`
+- **Linux:** `./uninstall.sh` (or `./arch_linux.sh --uninstall`)
 
 The script shows what it will remove and asks first. It stops the servers, deletes the model server, models, Node.js runtime and settings (on Windows also the shortcuts), and asks whether to keep your **songs and library** (titles, folders, favorites). The default is to keep them. With `--yes` (Windows: `-Yes`) it runs without questions and keeps songs and library. Not removed: the program folder itself, tools outside it (for example Git) and songs in a song folder you chose yourself. Finally, delete the program folder. The Linux version is based on an idea by ZeroDot1.
 
@@ -80,8 +80,8 @@ The script:
 6. Runs the graphics self-test, starts the servers and opens the browser at `http://localhost:8765`.
 
 **Using it on Linux:**
-- Start: `./arch_linux.sh` (or `./Music\ Generator\ ON.sh`)
-- Stop: `./arch_linux.sh --stop` (or `./Music\ Generator\ OFF.sh`, or the “Stop servers” button in the web interface)
+- Start: `./arch_linux.sh` (or `./start.sh`)
+- Stop: `./arch_linux.sh --stop` (or `./stop.sh`, or the “Stop servers” button in the web interface)
 - Status: `./arch_linux.sh --status`
 - Options: `--yes` (no questions), `--yay` (install packages via the AUR helper yay), `--backend [auto|rocm|hip|vulkan|cuda|cpu]`, `--lm [0.6B|1.7B|4B]`, `--xl`, `--rebuild`, `--no-browser`
 
@@ -118,11 +118,11 @@ node --disable-warning=ExperimentalWarning backend/src/main.ts --port 8765
 
 | Path | Contents |
 |---|---|
-| `Install.command` | Installer (Mac) |
-| `Uninstall.command`, `Uninstall.bat` / `.ps1`, `Uninstall.sh` | Uninstall (Mac, Windows, Linux); `scripts/uninstall.sh` is shared by Mac and Linux |
-| `Music Generator ON/OFF.command` | Start and stop (Mac) |
-| `Install.ps1`, `Music Generator ON/OFF.ps1` + `.bat` | Installer, start and stop (Windows) |
-| `arch_linux.sh`, `Install.sh`, `Music Generator ON/OFF.sh` | Installer, start and stop (Arch Linux & Linux) |
+| `install.command` | Installer (Mac) |
+| `uninstall.command`, `uninstall.bat` / `.ps1`, `uninstall.sh` | Uninstall (Mac, Windows, Linux); `scripts/uninstall.sh` is shared by Mac and Linux |
+| `start.command`, `stop.command` | Start and stop (Mac) |
+| `install.ps1`, `start.ps1`, `stop.ps1` + `.bat` | Installer, start and stop (Windows) |
+| `arch_linux.sh`, `install.sh`, `start.sh`, `stop.sh` | Installer, start and stop (Arch Linux & Linux) |
 | `scripts/common.sh` | Shared paths, ports, acestep.cpp version, model checksums |
 | `scripts/common.ps1` | Windows counterpart, reads its values from `common.sh` |
 | `backend/` | Server in TypeScript (Node.js, no runtime dependencies, runs without a build step), see below |

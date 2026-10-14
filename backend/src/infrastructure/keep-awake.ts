@@ -51,7 +51,7 @@ export class WindowsKeepAwake extends HelperProcessKeepAwake {
 /** Linux: systemd-inhibit, falls vorhanden. */
 export class LinuxKeepAwake extends HelperProcessKeepAwake {
   protected start(): ChildProcess {
-    return spawn("systemd-inhibit", ["--what=idle:sleep", "--who=Music Generator", "--why=Generating songs", "sleep", "infinity"], { stdio: "ignore" });
+    return spawn("systemd-inhibit", ["--what=idle:sleep", "--who=SONIQ", "--why=Generating songs", "sleep", "infinity"], { stdio: "ignore" });
   }
 }
 

@@ -6,10 +6,10 @@
 
 | Problem | Solution |
 |---|---|
-| “Not enough disk space” | Free up space (empty the Trash!), then run Install again. The message says how much is needed. |
-| Download interrupted | Run Install again, the download resumes where it stopped. |
-| Installer stops at “Node.js” | Check the internet connection and start Install again, the download resumes. |
-| “Offline” at the top of the app | Music Generator OFF, then ON. If that doesn't help, see the log files in the `data` folder. |
+| “Not enough disk space” | Free up space (empty the Trash!), then run install again. The message says how much is needed. |
+| Download interrupted | Run install again, the download resumes where it stopped. |
+| Installer stops at “Node.js” | Check the internet connection and start install again, the download resumes. |
+| “Offline” at the top of the app | stop, then start. If that doesn't help, see the log files in the `data` folder. |
 | Song ends with an error | Hover over the error to see the reason. Retry with the circular arrow next to it. |
 | Generating stalls | The computer went to sleep. The app keeps it awake while songs are being generated; if it still happens, install the latest update. |
 | Very slow | **Advanced:** lower the iterations (e.g. 30) or choose a shorter length. Windows with an older graphics card runs on Vulkan, which is slower. |
@@ -20,12 +20,12 @@
 | Problem | Solution |
 |---|---|
 | Model server doesn't start, message about a missing DLL | Update the NVIDIA driver (GeForce Experience or nvidia.com), then OFF and ON. |
-| “ErrorOutOfDeviceMemory” in the log, song ends with an error | Not enough graphics memory: run Install again and choose a smaller language model, or halve the value `VAE_CHUNK` in `data\engine.conf` (e.g. 64). Then OFF and ON. |
+| “ErrorOutOfDeviceMemory” in the log, song ends with an error | Not enough graphics memory: run install again and choose a smaller language model, or halve the value `VAE_CHUNK` in `data\engine.conf` (e.g. 64). Then OFF and ON. |
 | Everything is very slow | Check `data\ace-server.err.log` for the chosen backend: `CUDA0` or `Vulkan0` is right, `CPU` is wrong. |
 
 ## Uninstalling
 
-Double-click **Uninstall** (Mac: `Uninstall.command`, Windows: `Uninstall.bat`, Linux: `./Uninstall.sh`).
+Double-click **uninstall** (Mac: `uninstall.command`, Windows: `uninstall.bat`, Linux: `./uninstall.sh`).
 It asks whether to keep songs and library, then removes the model server, models, the Node.js runtime and the settings.
 Afterwards delete the **soniq** folder. Helper tools such as Git stay installed.
 

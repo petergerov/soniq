@@ -1,5 +1,5 @@
 #!/bin/bash
-# Music Generator – Arch Linux Installer, Starter und Manager.
+# SONIQ – Arch Linux Installer, Starter und Manager.
 # Autor: ZeroDot1
 # Prüft das Arch-System, installiert fehlende Pakete (pacman/yay, Node.js),
 # baut den Modellserver (Vulkan/ROCm/CUDA/CPU), lädt die Modelle und startet die App.
@@ -49,7 +49,7 @@ while [ $# -gt 0 ]; do
     --xl) XL=1 ;;
     --no-browser) OPEN_BROWSER=0 ;;
     --help|-h)
-      echo "Music Generator – Arch Linux Setup & Launcher"
+      echo "SONIQ – Arch Linux Setup & Launcher"
       echo "Author: ZeroDot1"
       echo ""
       echo "Usage: $0 [OPTIONS]"
@@ -168,7 +168,7 @@ zeige_status() {
 
 # --- Server-Start -------------------------------------------------------------
 starte_server() {
-  schritt "Starting Music Generator"
+  schritt "Starting SONIQ"
   lade_conf
   mkdir -p "$DATA"
 
@@ -268,16 +268,16 @@ starte_server() {
   oeffne_browser "http://localhost:$PORT"
   echo ""
   echo "═══════════════════════════════════════════════════════════"
-  echo "  Music Generator is open at: http://localhost:$PORT"
+  echo "  SONIQ is open at: http://localhost:$PORT"
   echo "  To stop:      $0 --stop"
-  echo "  or:           './Music Generator OFF.sh'"
+  echo "  or:           './stop.sh'"
   echo "═══════════════════════════════════════════════════════════"
 }
 
 # --- Haupt-Installation --------------------------------------------------------
 installiere() {
   echo "═══════════════════════════════════════════════════════════"
-  echo "  MUSIC GENERATOR · Arch Linux Setup"
+  echo "  SONIQ · Arch Linux Setup"
   echo "═══════════════════════════════════════════════════════════"
 
   # 1. System und Hardware prüfen

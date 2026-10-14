@@ -1,4 +1,4 @@
-# SONIQ Music Generator for Windows
+# SONIQ for Windows
 
 Same app as on the Mac; the model server runs via CUDA on the NVIDIA graphics card.
 The installer downloads the ready-made Windows binaries of acestep.cpp (no compiler needed).
@@ -21,7 +21,7 @@ on a GTX 1060 (6 GB) a 30-second song takes about 1 minute, a 90-second song abo
 git clone https://github.com/petergerov/soniq.git $HOME\soniq
 ```
 
-3. In the `soniq` folder, double-click **Install.bat**.
+3. In the `soniq` folder, double-click **install.bat**.
 
 The installer
 
@@ -32,20 +32,20 @@ The installer
 4. downloads the ready-made acestep.cpp binaries (about 180 MB),
 5. downloads only the models it needs (resumable),
 6. tests whether the language model computes correctly on the graphics card (otherwise CPU),
-7. creates the shortcuts **Music Generator ON / OFF** in the program folder and on the desktop and starts the app.
+7. creates the shortcuts **SONIQ Start / SONIQ Stop** in the program folder and on the desktop and starts the app.
 
 It can be run again at any time; finished steps are skipped.
-Options (in PowerShell): `.\Install.ps1 -Yes`, `-LM 0.6B|1.7B|4B`, `-XL` (also the larger XL sound model, 5.3 GB, from 12 GB graphics memory; selectable afterwards under Gear › Sound model), `-NoStart`,
+Options (in PowerShell): `.\install.ps1 -Yes`, `-LM 0.6B|1.7B|4B`, `-XL` (also the larger XL sound model, 5.3 GB, from 12 GB graphics memory; selectable afterwards under Gear › Sound model), `-NoStart`,
 `-Build` (compile it yourself, needs Visual Studio Build Tools and the CUDA Toolkit).
 
 ## Usage
 
-- **Music Generator ON** starts the model server and the app and opens http://localhost:8765
-- **Music Generator OFF** stops everything (browser tabs stay open)
+- **SONIQ Start** (or `start.bat`) starts the model server and the app and opens http://localhost:8765
+- **SONIQ Stop** (or `stop.bat`) stops everything (browser tabs stay open)
 
 ## Uninstalling
 
-Double-click `Uninstall.bat`. It shows what will be removed and asks whether to keep songs and library (default: keep). Then delete the program folder. Git stays installed.
+Double-click `uninstall.bat`. It shows what will be removed and asks whether to keep songs and library (default: keep). Then delete the program folder. Git stays installed.
 
 ## Differences from the Mac
 
@@ -64,5 +64,5 @@ Double-click `Uninstall.bat`. It shows what will be removed and asks whether to 
   (`[Load] ... backend: CUDA0` or `Vulkan0` is right, `CPU` is wrong).
 - **`ErrorOutOfDeviceMemory` in the log, song ends with an error:** not enough graphics memory.
   For this the installer sets the tile size of the VAE decoder in `data/engine.conf` (`VAE_CHUNK`, e.g. 128 with 6 GB);
-  if needed, set it lower (64) or choose a smaller language model with `.\Install.ps1 -LM 0.6B`, then OFF and ON.
+  if needed, set it lower (64) or choose a smaller language model with `.\install.ps1 -LM 0.6B`, then **SONIQ Stop** and **SONIQ Start**.
 - **Updating in the app** works as on the Mac: it fetches the new version from GitHub and restarts.

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Music Generator – Installer für macOS.
+# SONIQ – Installer für macOS.
 # Prüft den Mac, installiert was fehlt, lädt das passende Modell und startet die App.
 # Kann jederzeit erneut gestartet werden (z. B. nach "git pull"): Erledigtes wird übersprungen.
 #
@@ -35,7 +35,7 @@ ja() {   # Rückfrage mit Enter = ja
 
 mkdir -p "$DATA"
 echo "═══════════════════════════════════════════"
-echo "  MUSIC GENERATOR · Installation"
+echo "  SONIQ · Installation"
 echo "═══════════════════════════════════════════"
 
 # --- 1. Mac prüfen ------------------------------------------------------------
@@ -107,13 +107,13 @@ ja "  Start installation?" || abbruch "Cancelled."
 schritt "Apple developer tools (compiler, git)"
 if ! xcode-select -p >/dev/null 2>&1; then
   xcode-select --install >/dev/null 2>&1
-  abbruch "An Apple window opens to install the developer tools. Please confirm there, then run 'Install' again."
+  abbruch "An Apple window opens to install the developer tools. Please confirm there, then run 'install' again."
 fi
 echo "  present"
 
 schritt "Node.js (runs the web app)"
 case "$ARCH" in arm64) NODE_PLAT="darwin-arm64" ;; *) NODE_PLAT="darwin-x64" ;; esac
-installiere_node "$NODE_PLAT" || abbruch "Node.js could not be installed. Running Install again resumes the download."
+installiere_node "$NODE_PLAT" || abbruch "Node.js could not be installed. Running install again resumes the download."
 
 schritt "cmake (to build the model server)"
 if ! command -v cmake >/dev/null 2>&1; then
@@ -156,11 +156,11 @@ for e in $FILES; do
   if [ -f "$MODELS/$f" ]; then echo "  ✓ $f"; continue; fi
   echo "  ↓ $f"
   curl -L --fail -C - --progress-bar -o "$MODELS/$f.part" "$HF_BASE/$f" \
-    || abbruch "Downloading $f failed. Running Install again resumes the download."
+    || abbruch "Downloading $f failed. Running install again resumes the download."
   echo "    verifying checksum …"
   if [ "$(shasum -a 256 "$MODELS/$f.part" | cut -d' ' -f1)" != "$sha" ]; then
     rm -f "$MODELS/$f.part"
-    abbruch "Checksum of $f does not match. The file was deleted; running Install again downloads it anew."
+    abbruch "Checksum of $f does not match. The file was deleted; running install again downloads it anew."
   fi
   mv "$MODELS/$f.part" "$MODELS/$f"
   NEW_MODELS=1
@@ -206,9 +206,9 @@ echo "  ok"
 # --- Fertig ---------------------------------------------------------------------
 echo ""
 echo "═══════════════════════════════════════════"
-echo "  Done. Start with 'Music Generator ON',"
-echo "  stop with 'Music Generator OFF'."
+echo "  Done. Start with 'start',"
+echo "  stop with 'stop'."
 echo "═══════════════════════════════════════════"
 if [ "$START" = 1 ]; then
-  exec "$ROOT/Music Generator ON.command"
+  exec "$ROOT/start.command"
 fi

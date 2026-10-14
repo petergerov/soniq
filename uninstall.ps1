@@ -1,4 +1,4 @@
-﻿# Music Generator - Deinstallation fuer Windows.
+﻿# SONIQ - Deinstallation fuer Windows.
 # Ursprung: Uninstall-Funktion von ZeroDot1 (Linux), hier fuer Windows umgesetzt.
 # Entfernt Modellserver, Modelle, Node.js-Laufzeit, Einstellungen und die Verknuepfungen.
 # Songs und Bibliothek bleiben auf Wunsch.
@@ -22,15 +22,15 @@ function Groesse([string]$pfad) {
     if ($b -ge 1GB) { return ("{0:N1} GB" -f ($b / 1GB)) } else { return ("{0:N0} MB" -f ($b / 1MB)) }
 }
 
-# Sicherheitspruefung: nur im Programmordner von Music Generator arbeiten
+# Sicherheitspruefung: nur im Programmordner von SONIQ arbeiten
 if (-not (Test-Path (Join-Path $ROOT "backend\src\main.ts")) -or -not (Test-Path (Join-Path $ROOT "scripts\common.ps1")) -or $ROOT -eq $HOME) {
-    Write-Host "x This does not look like the Music Generator folder ($ROOT). Nothing was changed."
+    Write-Host "x This does not look like the SONIQ folder ($ROOT). Nothing was changed."
     if (-not $Yes) { Taste-Zum-Schliessen }
     exit 1
 }
 
 Write-Host "==========================================="
-Write-Host "  MUSIC GENERATOR - Uninstall"
+Write-Host "  SONIQ - Uninstall"
 Write-Host "==========================================="
 Write-Host ""
 Write-Host "  This removes, inside $ROOT :"
@@ -43,7 +43,7 @@ if (Test-Path $runtime) { Write-Host "    runtime\  Node.js                   ($
 if (Test-Path $modules) { Write-Host "    node_modules\  developer tools      ($(Groesse $modules))" }
 if (Test-Path $venv)   { Write-Host "    .venv\    old Python environment    ($(Groesse $venv))" }
 if (Test-Path $DATA)   { Write-Host "    data\     settings, logs, library   ($(Groesse $DATA))" }
-Write-Host "    the shortcuts 'Music Generator ON' and 'OFF' (program folder and desktop)"
+Write-Host "    the shortcuts 'SONIQ Start' and 'SONIQ Stop' (program folder and desktop)"
 Write-Host "  Not removed: the program folder itself, tools installed outside it"
 Write-Host "  (for example Git) and songs in a song folder you chose yourself."
 Write-Host ""
@@ -85,7 +85,7 @@ if (Test-Path $DATA) {
     }
 }
 foreach ($dir in @($ROOT, [Environment]::GetFolderPath("Desktop"))) {
-    foreach ($n in @("Music Generator ON.lnk", "Music Generator OFF.lnk")) {
+    foreach ($n in @("SONIQ Start.lnk", "SONIQ Stop.lnk", "Music Generator ON.lnk", "Music Generator OFF.lnk")) {
         $f = Join-Path $dir $n
         if (Test-Path $f) { Write-Host "  - removing shortcut $f"; Remove-Item $f -Force -ErrorAction SilentlyContinue }
     }

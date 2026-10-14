@@ -7,7 +7,7 @@ mkdir -p "$DATA"
 
 NODE=$(node_bin)
 if [ ! -x "$ENGINE/build/ace-server" ] || [ -z "$NODE" ]; then
-  echo "Not installed yet. Please run 'Install' first."
+  echo "Not installed yet. Please run 'install' first."
   read -n 1 -s -r -p "Press any key to close..."
   exit 1
 fi
@@ -81,7 +81,7 @@ echo "All servers are running."
 
 open "http://localhost:$PORT"
 echo ""
-echo "Music Generator is open at http://localhost:$PORT"
-echo "To stop: use 'Music Generator OFF'."
+echo "SONIQ is open at http://localhost:$PORT"
+echo "To stop: use 'stop'."
 fenster_schliessen
 exit 0
