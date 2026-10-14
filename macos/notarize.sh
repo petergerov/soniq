@@ -41,6 +41,13 @@ if ! echo "$RESULT" | grep -q '"status" *: *"Accepted"'; then
 fi
 
 echo "▸ Stapling"
-xcrun stapler staple "$FILE"
+# Das Ticket holt stapler von Apples Server; direkt nach dem Notarisieren ist es manchmal noch nicht verteilt
+# oder die Verbindung bricht ab (Error 68). Dann mit Pause wiederholen.
+for attempt in 1 2 3 4 5; do
+  xcrun stapler staple "$FILE" && break
+  [ "$attempt" = 5 ] && { echo "Stapling failed after $attempt attempts."; exit 1; }
+  echo "  stapling failed, retrying in $((attempt * 15)) s …"
+  sleep $((attempt * 15))
+done
 xcrun stapler validate "$FILE"
 spctl --assess --type open --context context:primary-signature --verbose=2 "$FILE"
