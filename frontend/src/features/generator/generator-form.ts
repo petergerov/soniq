@@ -169,6 +169,13 @@ export class GeneratorForm {
     roll("diceBtn", this.f.prompt, () => randomPrompt());
     roll("titleDice", this.f.title, () => randomTitle());
     roll("styleDice", this.f.style, () => randomStyle(!this.lyrics.instrumental), () => this.styleChips.sync());
+    // Zufallsmodus: Prompt und Stil auf einen Klick
+    byId("randomBtn").addEventListener("click", (e) => {
+      this.f.prompt.value = randomPrompt();
+      this.f.style.value = randomStyle(!this.lyrics.instrumental);
+      this.styleChips.sync();
+      restartAnimation(e.currentTarget as HTMLElement, "roll");
+    });
   }
 
   private bindSubmit(): void {

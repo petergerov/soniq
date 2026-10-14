@@ -165,6 +165,11 @@ summary::before { content: ""; flex: none; width: 6px; height: 6px; margin: 0 6p
 details[open] > summary::before { transform: rotate(45deg); margin-bottom: 4px; }
 @media (prefers-reduced-motion: reduce) { summary::before { transition: none; } }
 summary > :first-child:not(:only-child) { margin-right: auto; }
+.randrow { display: flex; justify-content: flex-end; margin: -6px 0 6px; }
+.sek.rand { display: inline-flex; align-items: center; gap: 6px; }
+.sek.rand:hover { color: var(--accent-soft); }
+.sek.rand.roll svg { animation: roll .35s ease; }
+@media (prefers-reduced-motion: reduce) { .sek.rand.roll svg { animation: none; } }
 .dice-wrap { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .submit { display: flex; gap: 10px; align-items: flex-end; justify-content: flex-end; margin-top: 8px; }
 
