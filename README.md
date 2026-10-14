@@ -174,6 +174,16 @@ constructors in `main.ts` (composition root):
 **Frontend** (`frontend/src`): `core/` (API client, DOM, formatting, storage), `i18n/`, and one folder per feature
 under `features/` (`generator`, `analyze`, `library`, `player`, `settings`, `status`). `main.ts` wires everything together.
 
+
+### Mac app (SONIQ.app)
+
+`macos/build-app.sh [--dmg]` builds `dist-mac/SONIQ.app` (and `SONIQ.dmg`): a small menu bar app (`macos/SONIQ/main.swift`)
+that starts the backend with `MG_PACKAGED=1`; the backend starts the model server and shows the setup while models are
+missing. Inside the app: `Contents/MacOS/{SONIQ,node,ace-server}`, the model server's libraries in `Contents/Frameworks`,
+the web app in `Contents/Resources/app`. Songs, settings and models live in `~/Library/Application Support/SONIQ`.
+Needs Apple Silicon and the Xcode command line tools; the model server is built from `engine/acestep.cpp` (built if missing).
+Without `SIGN_IDENTITY` the app is signed ad hoc (runs on this Mac). For testing next to a running SONIQ:
+`SONIQ_PORT=8793 SONIQ_HOME=/tmp/soniq-test MG_SYNTH_PORT=8185 MG_LM_PORT=8186 dist-mac/SONIQ.app/Contents/MacOS/SONIQ`.
 ## Graphics chip and the two modes
 
 On the Apple M4, the language model produces wrong results under Metal in acestep.cpp `b7ba6d9`

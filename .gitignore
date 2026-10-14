@@ -21,3 +21,6 @@ __pycache__/
 
 # IDE-Einstellungen (JetBrains)
 .idea/
+
+# Gebaute Mac-App und DMG (macos/build-app.sh)
+dist-mac/
