@@ -12,7 +12,7 @@ node_modules/
 # Persönliche Daten: Songs, Datenbank, Logs, Installationsergebnis
 data/
 
-# Python (Werkzeuge in docs/anleitung) / macOS
+# Python (docs/guide/capture.py) / macOS
 __pycache__/
 *.pyc
 .DS_Store

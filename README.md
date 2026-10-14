@@ -4,9 +4,8 @@ Eigene Songs lokal erzeugen – ohne Limits, ohne Abo, ohne Cloud.
 Web-Oberfläche für [ACE-Step 1.5](https://github.com/ace-step/ACE-Step-1.5) über
 [acestep.cpp](https://github.com/ServeurpersoCom/acestep.cpp).
 
-- **Mac** (Apple Silicon, Metal): diese Seite. Ausführliche Anleitung mit Bildern: **[Installationsanleitung.pdf](Installationsanleitung.pdf)**
+- **Mac** (Apple Silicon, Metal): diese Seite. Ausführliche Anleitung mit Bildern (Englisch): **[docs/guide](docs/guide/README.md)**
 - **Windows** (NVIDIA, CUDA/Vulkan): **[README-WINDOWS.md](README-WINDOWS.md)**
-- Anleitung in anderen Sprachen: **[Installation-Guide-EN.pdf](Installation-Guide-EN.pdf)** (English), **[Installation-Guide-ZH.pdf](Installation-Guide-ZH.pdf)** (中文)
 - **Linux** (Arch Linux / Derivate mit Installer, andere Distributionen von Hand): Abschnitt [Linux](#linux-arch-linux--derivate) unten
 
 ## Installation
@@ -130,7 +129,7 @@ node --disable-warning=ExperimentalWarning backend/src/main.ts --port 8765
 | `frontend/` | Oberfläche in TypeScript (Vite); `frontend/dist/` ist die gebaute Fassung und liegt mit im Repo |
 | `shared/api.ts` | Typen der HTTP-API, von Backend und Frontend gemeinsam genutzt |
 | `runtime/` | portable Node.js-Laufzeit (und auf dem Mac ggf. cmake), vom Installer, nicht im Repo |
-| `docs/anleitung/` | Quelle der Installationsanleitung. `capture.py` fotografiert die laufende App (`uv run --with websockets python docs/anleitung/capture.py`), `build_pdf.py` baut daraus das PDF (`uv run --with reportlab python docs/anleitung/build_pdf.py Installationsanleitung.pdf`; andere Sprachen: `capture.py … en` und `build_pdf.py Installation-Guide-EN.pdf en`, Texte in `texts.py`) |
+| `docs/guide/` | Anleitung mit Bildern (Englisch, Markdown). `capture.py` fotografiert die laufende App für die Bilder in `images/` (`uv run --with websockets python docs/guide/capture.py`) |
 | `engine/` | acestep.cpp und Modelle (vom Installer, nicht im Repo) |
 | `data/` | Songs, Datenbank, Logs, `engine.conf` (nicht im Repo) |
 

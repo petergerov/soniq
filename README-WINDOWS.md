@@ -3,7 +3,7 @@
 Gleiche App wie auf dem Mac, Modellserver läuft über CUDA auf der NVIDIA-Grafikkarte.
 Der Installer lädt die fertigen Windows-Binaries von acestep.cpp (kein Compiler nötig).
 
-Ausführliche Anleitung mit Bildern (Windows ab Seite 5): **[Installationsanleitung.pdf](Installationsanleitung.pdf)**, English: **[Installation-Guide-EN.pdf](Installation-Guide-EN.pdf)**, 中文: **[Installation-Guide-ZH.pdf](Installation-Guide-ZH.pdf)**
+Ausführliche Anleitung mit Bildern (Englisch): **[Installation on Windows](docs/guide/install-windows.md)**
 
 ## Installation
 
