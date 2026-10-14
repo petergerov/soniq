@@ -6,9 +6,6 @@ runtime/
 # Entwicklerwerkzeuge (npm install). frontend/dist/ gehört dagegen ins Repo: Endnutzer bauen nichts.
 node_modules/
 
-# Alte Python-Umgebung (bis Version 0.1)
-.venv/
-
 # Persönliche Daten: Songs, Datenbank, Logs, Installationsergebnis
 data/
 
@@ -17,3 +14,8 @@ __pycache__/
 *.pyc
 .DS_Store
 .gstack/
+
+.idea/
+
+# IDE-Einstellungen (JetBrains)
+.idea/
