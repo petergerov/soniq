@@ -74,8 +74,8 @@ Open them with the **gear** at the top right.
 
 ## Where the songs are
 
-Finished songs are stored in the subfolder `data/songs` of the program folder, i.e. `~/MusicGenerator/data/songs` on
-the Mac or `C:\Users\<Name>\MusicGenerator\data\songs` on Windows. The file names are IDs; the titles live in the app.
+Finished songs are stored in the subfolder `data/songs` of the program folder, i.e. `~/soniq/data/songs` on
+the Mac or `C:\Users\<Name>\soniq\data\songs` on Windows. The file names are IDs; the titles live in the app.
 
 To use a different place, go to **Gear › Song folder**, enter a full path and save. The app creates the folder and
 moves the existing songs there. Leaving the field empty means back to default.

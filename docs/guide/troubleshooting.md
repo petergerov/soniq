@@ -27,7 +27,7 @@
 
 Double-click **Uninstall** (Mac: `Uninstall.command`, Windows: `Uninstall.bat`, Linux: `./Uninstall.sh`).
 It asks whether to keep songs and library, then removes the model server, models, the Node.js runtime and the settings.
-Afterwards delete the **MusicGenerator** folder. Helper tools such as Git stay installed.
+Afterwards delete the **soniq** folder. Helper tools such as Git stay installed.
 
 ## Model, license and training data
 

@@ -15,7 +15,7 @@ No account needed.
 3. [Using the app](using-the-app.md): starting and stopping, the form, library, folders, settings, updates
 4. [Help](troubleshooting.md): common problems, uninstalling, model license
 
-Linux (Arch) is covered in the [main README](../../README.md#linux-arch-linux--derivate).
+Linux (Arch) is covered in the [main README](../../README.md#linux-arch-linux--derivatives).
 
 ## What you need
 

@@ -5,10 +5,10 @@
 ## 1. Get the project
 
 Open the **Terminal** app (Spotlight: <kbd>Cmd</kbd>+<kbd>Space</kbd>, type “Terminal”) and paste this command.
-It downloads the project into the folder **MusicGenerator** in your home folder:
+It downloads the project into the folder **soniq** in your home folder:
 
 ```bash
-git clone https://github.com/petergerov/soniq.git ~/MusicGenerator
+git clone https://github.com/petergerov/soniq.git ~/soniq
 ```
 
 If the Apple developer tools are missing, macOS now asks automatically whether to install them: confirm with
@@ -24,7 +24,7 @@ Open the folder in Finder and **double-click “Install”**. A Terminal window 
 Alternatively in the Terminal:
 
 ```bash
-open ~/MusicGenerator/Install.command
+open ~/soniq/Install.command
 ```
 
 The installer shows what it found on your Mac and suggests the matching language model:
@@ -97,7 +97,7 @@ This happens with files from the internet, especially a ZIP. Instead of going th
 command fixes the whole folder in one go. Afterwards Install and Music Generator ON/OFF open without a prompt:
 
 ```bash
-xattr -dr com.apple.quarantine ~/MusicGenerator
+xattr -dr com.apple.quarantine ~/soniq
 ```
 
 With `git clone` (step 1) the warning never appears in the first place.

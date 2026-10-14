@@ -5,10 +5,10 @@
 ## 1. Get the project
 
 Open **PowerShell** (Start menu, type “PowerShell”) and paste this command. It downloads the project into the
-folder **MusicGenerator** in your user folder:
+folder **soniq** in your user folder:
 
 ```powershell
-git clone https://github.com/petergerov/soniq.git $HOME\MusicGenerator
+git clone https://github.com/petergerov/soniq.git $HOME\soniq
 ```
 
 If Windows doesn't know the `git` command, run `winget install Git.Git` once first and reopen PowerShell.
@@ -16,7 +16,7 @@ A ZIP works too: unpack it and put the folder in a permanent place.
 
 ## 2. Run the installer
 
-In the **MusicGenerator** folder, **double-click “Install”** (the file `Install.bat`). A PowerShell window opens;
+In the **soniq** folder, **double-click “Install”** (the file `Install.bat`). A PowerShell window opens;
 the questions are the same as [on the Mac](install-mac.md#2-run-the-installer): choose the language model, confirm
 with <kbd>Enter</kbd>, wait. Alternatively without questions:
 
