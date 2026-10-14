@@ -189,7 +189,7 @@ with acestep.cpp's own float parser instead of `std::from_chars`, which Apple on
 
 Releases: the GitHub Action `.github/workflows/mac-app.yml` builds the DMG on every tag `v*` (and on demand), signs it
 with the Developer ID certificate, notarizes it (`macos/notarize.sh`) and attaches `SONIQ-<version>.dmg` to the release.
-Without the signing secrets it builds an ad hoc signed DMG; the secrets are listed at the top of the workflow.
+Without the signing secrets it builds an ad hoc signed DMG. Setting up the certificate and notarization step by step: [`macos/README.md`](macos/README.md).
 ## Graphics chip and the two modes
 
 On the Apple M4, the language model produces wrong results under Metal in acestep.cpp `b7ba6d9`
