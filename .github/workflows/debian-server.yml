@@ -1,5 +1,5 @@
-# Builds soniq_<version>_amd64.deb (Vulkan ace-server + portable Node + web UI + systemd).
-# On tag v*: uploads the .deb to the GitHub Release (creates the release if Mac has not yet).
+# Builds soniq_<version>_{amd64,arm64}.deb (Vulkan ace-server + portable Node + web UI + systemd).
+# On tag v*: uploads both .deb files to the GitHub Release (creates the release if Mac has not yet).
 name: Debian server
 
 on:
@@ -14,7 +14,15 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            deb_arch: amd64
+          - runner: ubuntu-24.04-arm
+            deb_arch: arm64
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
@@ -30,11 +38,11 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: engine/acestep.cpp
-          key: acestep-deb-${{ steps.v.outputs.acestep }}-${{ hashFiles('linux/build-deb.sh') }}
+          key: acestep-deb-${{ matrix.deb_arch }}-${{ steps.v.outputs.acestep }}-${{ hashFiles('linux/build-deb.sh') }}
       - uses: actions/cache@v4
         with:
           path: dist-linux/cache
-          key: node-deb-${{ steps.v.outputs.node }}
+          key: node-deb-${{ matrix.deb_arch }}-${{ steps.v.outputs.node }}
 
       - name: Install build dependencies
         run: |
@@ -43,11 +51,11 @@ jobs:
             build-essential cmake ninja-build git curl ca-certificates xz-utils pkg-config \
             libvulkan-dev vulkan-tools glslang-tools spirv-tools spirv-headers \
             patchelf fakeroot dpkg-dev
-          # glslc: prefer the package when present (Ubuntu 24.04+); SDK step supplies it otherwise
           sudo apt-get install -y --no-install-recommends glslc || true
 
-      # glslc/shaderc from the LunarG SDK — apt's glslc is often too old or incomplete for ggml-vulkan
+      # LunarG SDK (glslc/shaderc). On arm64 the action may skip; apt glslc is the fallback.
       - name: Install Vulkan SDK
+        continue-on-error: true
         uses: humbletim/install-vulkan-sdk@v1.2
         with:
           version: 1.4.309.0
@@ -56,22 +64,21 @@ jobs:
       - name: Build .deb
         env:
           VERSION: ${{ steps.v.outputs.app }}
-          VULKAN_SDK: ${{ env.VULKAN_SDK }}
         run: |
           chmod +x linux/build-deb.sh
-          # SDK action exports VULKAN_SDK; ensure glslc from the SDK is first on PATH
           if [ -n "${VULKAN_SDK:-}" ]; then
             export PATH="$VULKAN_SDK/bin:$PATH"
             export CMAKE_PREFIX_PATH="${VULKAN_SDK}${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
           fi
           command -v glslc
           glslc --version || true
+          uname -m
           linux/build-deb.sh
 
       - uses: actions/upload-artifact@v4
         with:
-          name: soniq-${{ steps.v.outputs.app }}-amd64
-          path: dist-linux/soniq_${{ steps.v.outputs.app }}_amd64.deb
+          name: soniq-${{ steps.v.outputs.app }}-${{ matrix.deb_arch }}
+          path: dist-linux/soniq_${{ steps.v.outputs.app }}_${{ matrix.deb_arch }}.deb
           if-no-files-found: error
 
       - name: Release
@@ -79,11 +86,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          DEB="dist-linux/soniq_${{ steps.v.outputs.app }}_amd64.deb"
+          DEB="dist-linux/soniq_${{ steps.v.outputs.app }}_${{ matrix.deb_arch }}.deb"
           TAG="$GITHUB_REF_NAME"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$DEB" --clobber
-          else
-            gh release create "$TAG" "$DEB" \
-              --title "SONIQ ${{ steps.v.outputs.app }}" --generate-notes
-          fi
+          # Retry create/upload: Mac or the other arch job may create the release in parallel
+          for i in 1 2 3 4 5; do
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              gh release upload "$TAG" "$DEB" --clobber && exit 0
+            elif gh release create "$TAG" "$DEB" \
+              --title "SONIQ ${{ steps.v.outputs.app }}" --generate-notes; then
+              exit 0
+            fi
+            sleep $((i * 3))
+          done
+          echo "Could not publish $DEB to release $TAG"
+          exit 1

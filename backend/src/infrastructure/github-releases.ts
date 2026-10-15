@@ -26,9 +26,13 @@ export async function latestRelease(repo: string): Promise<LatestRelease | undef
   if (!res.ok) throw new Error(`GitHub: HTTP ${res.status}`);
   const r = (await res.json()) as ReleaseJson;
   const assets = r.assets ?? [];
-  const byExt = (ext: string) => assets.find((a) => a.name?.toLowerCase().endsWith(ext))?.browser_download_url;
-  // Fertige App: passendes Paket je Plattform, sonst die Release-Seite
-  const download = process.platform === "linux" ? byExt(".deb") ?? byExt(".dmg")
+  const byName = (test: (name: string) => boolean) =>
+    assets.find((a) => a.name && test(a.name.toLowerCase()))?.browser_download_url;
+  const byExt = (ext: string) => byName((n) => n.endsWith(ext));
+  // Fertige App: passendes Paket je Plattform/Architektur, sonst die Release-Seite
+  const debArch = process.arch === "arm64" ? "arm64" : "amd64";
+  const download = process.platform === "linux"
+    ? byName((n) => n.endsWith(`_${debArch}.deb`)) ?? byExt(".deb")
     : process.platform === "darwin" ? byExt(".dmg")
     : byExt(".dmg") ?? byExt(".deb");
   const url = r.html_url ?? `https://github.com/${repo}/releases`;
