@@ -15,6 +15,7 @@ export interface AppConfig {
   frontendDir: string;
   /** Einstiegsdatei des Servers, für den Neustart nach einem Update */
   entryFile: string;
+  /** Bind-Adresse (MG_HOST, Standard 127.0.0.1; Server-Paket oft 0.0.0.0) */
   host: string;
   port: number;
   /** Vom Installer bzw. der Einrichtung geschrieben: MODE, LM_FILE, TESTED_REV (siehe EngineConf) */
@@ -75,7 +76,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
     dbPath: join(dataDir, "music.db"),
     frontendDir: join(root, "frontend", "dist"),
     entryFile: join(root, "backend", "src", "main.ts"),
-    host: "127.0.0.1",
+    host: env.MG_HOST?.trim() || "127.0.0.1",
     port: parsePort(portArg >= 0 ? argv[portArg + 1] : env.PORT, 8765),
     engineConfPath: join(dataDir, "engine.conf"),
     synthPort: parsePort(env.MG_SYNTH_PORT, 8085),

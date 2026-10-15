@@ -101,12 +101,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          DMG="dist-mac/SONIQ-${{ steps.v.outputs.app }}.dmg"
+          TAG="$GITHUB_REF_NAME"
           NOTE=""
           if [ "$HAS_CERT" != 'true' ] || [ "$HAS_NOTARY" != 'true' ]; then
             NOTE="Not notarized: on first start, open it via System Settings › Privacy & Security › Open Anyway."
           fi
-          gh release create "$GITHUB_REF_NAME" "dist-mac/SONIQ-${{ steps.v.outputs.app }}.dmg" \
-            --title "SONIQ ${{ steps.v.outputs.app }}" --generate-notes --notes "$NOTE"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$DMG" --clobber
+            [ -n "$NOTE" ] && gh release edit "$TAG" --notes "$NOTE" || true
+          else
+            gh release create "$TAG" "$DMG" \
+              --title "SONIQ ${{ steps.v.outputs.app }}" --generate-notes --notes "$NOTE"
+          fi
 
       - name: Remove signing keychain
         if: always() && env.SIGNING_KEYCHAIN != ''

@@ -129,7 +129,8 @@ async function main(): Promise<void> {
     migrateWindowsShortcuts(config);
   }
   await server.listen(config.port, config.host);
-  log(`SONIQ läuft auf http://localhost:${config.port}`);
+  const where = config.host === "0.0.0.0" || config.host === "::" ? `Port ${config.port}` : `http://${config.host}:${config.port}`;
+  log(`SONIQ läuft auf ${where}`);
   // Die fertige App bringt Oberfläche, Symbole und Verknüpfungen selbst mit
   if (!config.packaged) buildFrontendIfStale(config.root, config.dataDir, log);
   if (config.packaged) void setup.startEngineIfReady();

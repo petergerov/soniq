@@ -7,6 +7,7 @@ A web interface for [ACE-Step 1.5](https://github.com/ace-step/ACE-Step-1.5) via
 - **Mac** (Apple Silicon, Metal): this page. Detailed guide with pictures: **[docs/guide](docs/guide/README.md)**
 - **Windows** (NVIDIA, CUDA/Vulkan): **[README-WINDOWS.md](README-WINDOWS.md)**
 - **Linux** (Arch Linux and derivatives with an installer, other distributions by hand): see [Linux](#linux-arch-linux--derivatives) below
+- **Debian / Ubuntu server** (`.deb` + systemd, from GitHub Releases): see [`linux/README.md`](linux/README.md)
 
 ## Installation
 
@@ -125,6 +126,7 @@ node --disable-warning=ExperimentalWarning backend/src/main.ts --port 8765
 | `start.command`, `stop.command` | Start and stop (Mac) |
 | `install.ps1`, `start.ps1`, `stop.ps1` + `.bat` | Installer, start and stop (Windows) |
 | `arch_linux.sh`, `install.sh`, `start.sh`, `stop.sh` | Installer, start and stop (Arch Linux & Linux) |
+| `linux/` | Debian/Ubuntu server `.deb` (`build-deb.sh`, systemd unit); CI: `.github/workflows/debian-server.yml` |
 | `scripts/common.sh` | Shared paths, ports, acestep.cpp version, model checksums |
 | `scripts/common.ps1` | Windows counterpart, reads its values from `common.sh` |
 | `backend/` | Server in TypeScript (Node.js, no runtime dependencies, runs without a build step), see below |
@@ -187,9 +189,10 @@ Without `SIGN_IDENTITY` the app is signed ad hoc (runs on this Mac). For testing
 The model server in the app is a separate portable build (`engine/acestep.cpp/build-app`, `GGML_NATIVE=OFF`, macOS 13.5+,
 with acestep.cpp's own float parser instead of `std::from_chars`, which Apple only ships from macOS 26).
 
-Releases: the GitHub Action `.github/workflows/mac-app.yml` builds the DMG on every tag `v*` (and on demand), signs it
-with the Developer ID certificate, notarizes it (`macos/notarize.sh`) and attaches `SONIQ-<version>.dmg` to the release.
-Without the signing secrets it builds an ad hoc signed DMG. Setting up the certificate and notarization step by step: [`macos/README.md`](macos/README.md).
+Releases: on every tag `v*`, GitHub Actions attach platform packages to the same release:
+
+- **Mac:** `.github/workflows/mac-app.yml` → `SONIQ-<version>.dmg` (sign/notarize when secrets are set; see [`macos/README.md`](macos/README.md))
+- **Debian/Ubuntu server:** `.github/workflows/debian-server.yml` → `soniq_<version>_amd64.deb` (Vulkan + systemd; see [`linux/README.md`](linux/README.md))
 ## Graphics chip and the two modes
 
 On the Apple M4, the language model produces wrong results under Metal in acestep.cpp `b7ba6d9`

@@ -4,7 +4,7 @@ export interface LatestRelease {
   version: string;
   /** Release-Seite */
   url: string;
-  /** Direkter Download der DMG, sonst die Release-Seite */
+  /** Direkter Download (.dmg / .deb je Plattform), sonst die Release-Seite */
   downloadUrl: string;
   /** Zeilen der Release-Notizen (ohne Leerzeilen) */
   notes: string[];
@@ -25,12 +25,17 @@ export async function latestRelease(repo: string): Promise<LatestRelease | undef
   if (res.status === 404) return undefined;   // noch kein Release
   if (!res.ok) throw new Error(`GitHub: HTTP ${res.status}`);
   const r = (await res.json()) as ReleaseJson;
-  const dmg = r.assets?.find((a) => a.name?.toLowerCase().endsWith(".dmg"))?.browser_download_url;
+  const assets = r.assets ?? [];
+  const byExt = (ext: string) => assets.find((a) => a.name?.toLowerCase().endsWith(ext))?.browser_download_url;
+  // Fertige App: passendes Paket je Plattform, sonst die Release-Seite
+  const download = process.platform === "linux" ? byExt(".deb") ?? byExt(".dmg")
+    : process.platform === "darwin" ? byExt(".dmg")
+    : byExt(".dmg") ?? byExt(".deb");
   const url = r.html_url ?? `https://github.com/${repo}/releases`;
   return {
     version: (r.tag_name ?? "").replace(/^v/, ""),
     url,
-    downloadUrl: dmg ?? url,
+    downloadUrl: download ?? url,
     notes: (r.body ?? "").split(/\r?\n/).map((l) => l.replace(/^[-*#\s]+/, "").trim()).filter(Boolean).slice(0, 15),
   };
 }
