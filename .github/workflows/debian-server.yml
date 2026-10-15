@@ -53,8 +53,10 @@ jobs:
             patchelf fakeroot dpkg-dev
           sudo apt-get install -y --no-install-recommends glslc || true
 
-      # LunarG SDK (glslc/shaderc). On arm64 the action may skip; apt glslc is the fallback.
+      # LunarG SDK (glslc/shaderc) only on amd64: its glslc is an x86-64 binary and does not run on the arm64
+      # runner ("Syntax error"), but it would come first in PATH. arm64 uses glslc from Ubuntu (installed above).
       - name: Install Vulkan SDK
+        if: matrix.deb_arch == 'amd64'
         continue-on-error: true
         uses: humbletim/install-vulkan-sdk@v1.2
         with:
