@@ -1,5 +1,5 @@
 // Songliste der Bibliothek: zeichnet die Zeilen und setzt Klicks in Befehle um.
-import type { Song, Stem } from "../../../../shared/api.ts";
+import { tracksFromText, type Song, type Stem, type StemTrack } from "../../../../shared/api.ts";
 import { byId, closest, labelIconButtons } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import type { LibraryStore } from "./library-store.ts";
@@ -27,6 +27,10 @@ export interface SongListDeps {
   /** Einzelspuren eines Songs laden bzw. eine davon im Player abspielen */
   loadStems: (songId: string) => Promise<Stem[]>;
   playStem: (song: Song, stem: Stem) => void;
+  extractStems: (songId: string, tracks: StemTrack[]) => Promise<Stem[]>;
+  cancelExtract: (songId: string) => Promise<Stem[]>;
+  /** Mixer öffnen (Waveforms, Mute, Solo) */
+  openMixer: (song: Song) => void;
 }
 
 export class SongList {
@@ -43,6 +47,8 @@ export class SongList {
   private readonly openStems = new Set<string>();
   private readonly stemCache = new Map<string, Stem[]>();
   private readonly stemLoading = new Set<string>();
+  /** Gewählte Spuren zum Herauslösen, je Song */
+  private readonly extractPicks = new Map<string, StemTrack[]>();
 
   constructor(deps: SongListDeps) {
     this.deps = deps;
@@ -57,7 +63,7 @@ export class SongList {
       const song = this.deps.store.find(id);
       const cached = this.stemCache.get(id);
       const doneCount = cached?.filter((s) => s.status === "done").length;
-      if (song && (song.status === "running" || doneCount !== song.stems)) void this.loadStems(id);
+      if (song && (song.status === "running" || song.stems_pending > 0 || doneCount !== song.stems)) void this.loadStems(id);
     }
   }
 
@@ -94,6 +100,8 @@ export class SongList {
       stems: this.stemCache.get(s.id),
       currentStemId: playback.currentId,
       stemPlaying: playback.isPlaying(),
+      stemsAvailable: store.stemsAvailable,
+      extractTracks: this.extractTracks(s),
     })).join("");
     this.root.classList.toggle("crossing", !!this.crossFrom);
     labelIconButtons(this.root);
@@ -120,6 +128,28 @@ export class SongList {
         if (stem?.url) this.deps.playStem(song, stem);
         return;
       }
+      case "extract-track": {
+        const track = button.dataset.track as StemTrack | undefined;
+        if (!track || song.stems_pending > 0) return;
+        const next = new Set(this.extractTracks(song));
+        if (!next.delete(track)) next.add(track);
+        this.extractPicks.set(song.id, [...next]);
+        return this.render();
+      }
+      case "extract-go": {
+        const tracks = this.extractTracks(song);
+        if (!tracks.length) return;
+        this.stemCache.set(song.id, await this.deps.extractStems(song.id, tracks));
+        this.openStems.add(song.id);
+        await this.deps.store.refresh();
+        return;
+      }
+      case "extract-cancel":
+        this.stemCache.set(song.id, await this.deps.cancelExtract(song.id));
+        await this.deps.store.refresh();
+        return;
+      case "mixer":
+        return this.deps.openMixer(song);
       case "fav": return store.toggleFavorite(song);
       case "hide": return store.toggleHidden(song);
       case "retry": return store.retry(song.id);
@@ -130,6 +160,14 @@ export class SongList {
         return store.remove(song.id);
       }
     }
+  }
+
+  private extractTracks(song: Song): StemTrack[] {
+    const saved = this.extractPicks.get(song.id);
+    if (saved) return saved;
+    const guessed = tracksFromText(`${song.params.style ?? ""} ${song.caption}`);
+    const hasVocals = !!(song.lyrics && song.lyrics !== "[Instrumental]");
+    return guessed.length ? guessed : (hasVocals ? ["drums", "bass", "guitar", "vocals"] : ["drums", "bass", "guitar", "keyboard"]);
   }
 
   /** Erster Klick wählt A, zweiter Klick auf einen anderen Song kreuzt; nochmal A (oder Escape) bricht ab. */

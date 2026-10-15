@@ -32,6 +32,7 @@
     </h1>
     <nav class="tabs" aria-label="Seiten" data-i18n-aria="pages">
       <a href="#/" class="tab" data-route-link="generate" aria-current="page" data-i18n="tab_generate">Erzeugen</a>
+      <a href="#/replace" class="tab" data-route-link="replace" data-i18n="tab_replace">Ersetzen</a>
       <a href="#/library" class="tab" data-route-link="library"><span data-i18n="library">Bibliothek</span><span id="libBadge" class="badge" hidden></span></a>
     </nav>
     <div class="top-right">
@@ -214,6 +215,38 @@
     </form>
   </section>
 
+  <section class="card replace-card" data-route="replace" id="replace" hidden>
+    <h2 class="col-title" data-i18n="replace_title">Ersetzen / begleiten</h2>
+    <p class="small replace-lead" data-i18n="replace_lead">Eigenständige Funktion: Instrumente einer Aufnahme ersetzen oder neue Begleitspuren dazu erzeugen.</p>
+    <div class="replace-box">
+      <div id="replaceDrop" class="dropzone" tabindex="0" role="button" aria-label="Datei für Ersatz oder Begleitung hochladen" data-i18n-aria="replace_aria">
+        <input id="replaceFile" type="file" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg" hidden>
+        <svg class="dz-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4"/><path d="M7.5 8.5L12 4l4.5 4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+        <span class="dz-text">
+          <span class="dz-hint" data-i18n="replace_drop">Song oder Aufnahme hierher — Instrumente ersetzen oder eine Begleitung dazu</span>
+          <span id="replaceStatus" class="dz-status" role="status" aria-live="polite"></span>
+        </span>
+      </div>
+      <div class="seg" role="group" aria-label="Ersetzen oder begleiten" data-i18n-aria="replace_title">
+        <button type="button" class="sek" data-intent="replace" aria-pressed="true" data-i18n="replace_intent_replace">Instrumente ersetzen</button>
+        <button type="button" class="sek" data-intent="accompany" aria-pressed="false" data-i18n="replace_intent_accompany">Neue Begleitung</button>
+      </div>
+      <div class="replace-keep">
+        <span class="small" data-i18n="replace_keep">Behalten (herauslösen)</span>
+        <div id="replaceKeep" class="chips track-chips"></div>
+      </div>
+      <span class="small" id="replaceNewLbl" data-i18n="replace_new">Neu erzeugen</span>
+      <div id="replaceNew" class="chips track-chips"></div>
+      <label class="field"><span class="lbl" data-i18n="style">Stil</span>
+        <textarea id="replaceStyle" rows="2" data-i18n-ph="replace_style_ph" placeholder="Stil der neuen Spuren"></textarea>
+      </label>
+      <div class="extract-bar">
+        <button type="button" id="replaceGo" class="aktion" data-i18n="replace_go">Ersetzen</button>
+        <span id="replaceHint" class="small"></span>
+      </div>
+    </div>
+  </section>
+
   <section class="card" data-route="library" hidden>
     <div class="libhead">
       <div class="libtitle"><h2 class="col-title" data-i18n="library">Bibliothek</h2><span id="libStats" class="sumhint"></span></div>
@@ -223,6 +256,19 @@
     </div>
     <div id="folderBar" class="folderbar"></div>
     <div id="library"></div>
+  </section>
+
+  <section class="card mixer-card" data-route="mixer" id="mixer" hidden>
+    <div class="mixer-head">
+      <button type="button" id="mixerBack" class="sek" data-i18n="mixer_back">← Bibliothek</button>
+      <h2 class="col-title" id="mixerTitle" data-i18n="mixer_title">Mixer</h2>
+    </div>
+    <div class="mixer-transport">
+      <button type="button" id="mixerPlay" class="aktion round" aria-label="Abspielen" data-i18n-aria="play" disabled>▶</button>
+      <input id="mixerScrub" type="range" min="0" max="1000" value="0" aria-label="Position" data-i18n-aria="mixer_position">
+      <span id="mixerTime" class="time">0:00 / 0:00</span>
+    </div>
+    <div id="mixerTracks" class="mixer-tracks"></div>
   </section>
 </div>
 

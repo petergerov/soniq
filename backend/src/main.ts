@@ -33,6 +33,8 @@ import { AnalysisService } from "./services/analysis-service.ts";
 import { FolderService } from "./services/folder-service.ts";
 import { PresetService } from "./services/preset-service.ts";
 import { SetupService } from "./services/setup-service.ts";
+import { ExtractTracks } from "./services/extract.ts";
+import { ReplaceAccompany } from "./services/replace-accompany.ts";
 import { TrackByTrack } from "./services/track-by-track.ts";
 import { StemService } from "./services/stem-service.ts";
 import { GenerationService } from "./services/generation-service.ts";
@@ -81,13 +83,20 @@ async function main(): Promise<void> {
   // Services
   const stems = new StemRepository(db);
   const stemService = new StemService({ stems, songs, storage });
+  const stemsAvailable = () => existsSync(join(config.modelsDir, STEM_MODEL));
   const trackByTrack = new TrackByTrack({ stems, storage, removeStems: (id) => stemService.removeForSong(id) });
-  const worker = new GenerationWorker({ songs, settings, storage, engineFactory, keepAwake: createKeepAwake(config.platform), trackByTrack, log });
-  const generation = new GenerationService({
-    songs, folders, storage, jobs: worker, removeStems: (id) => stemService.removeForSong(id),
-    stemsAvailable: () => existsSync(join(config.modelsDir, STEM_MODEL)),
+  const extract = new ExtractTracks({ stems, songs, storage, stemsAvailable });
+  const replaceAccompany = new ReplaceAccompany({ stems, storage, removeStems: (id) => stemService.removeForSong(id) });
+  const worker = new GenerationWorker({
+    songs, settings, storage, engineFactory, keepAwake: createKeepAwake(config.platform),
+    trackByTrack, extract, replaceAccompany, nextExtractSongId: () => stems.nextExtractSongId(), log,
   });
-  const library = new LibraryService({ songs, folders, storage, stemCounts: () => stems.doneCounts() });
+  const generation = new GenerationService({
+    songs, folders, storage, jobs: worker, removeStems: (id) => stemService.removeForSong(id), stemsAvailable,
+  });
+  const library = new LibraryService({
+    songs, folders, storage, stemCounts: () => stems.counts(), pendingExtractJobs: () => stems.pendingExtractJobs(),
+  });
   const folderService = new FolderService(folders, songs);
   const settingsService = new SettingsService({ settings, songs, storage, modelsDir: config.modelsDir, packaged: config.packaged });
   const analysis = new AnalysisService(settings, engineFactory);
@@ -108,7 +117,7 @@ async function main(): Promise<void> {
   registerFolderRoutes(router, folderService, library);
   registerPresetRoutes(router, presets);
   registerSetupRoutes(router, setup);
-  registerStemRoutes(router, stemService);
+  registerStemRoutes(router, { stems: stemService, extract, generation, jobs: worker });
   registerSystemRoutes(router, { settings: settingsService, analysis, system, updates });
   const server = new HttpServer(router, new StaticFiles(config.frontendDir), log);
 

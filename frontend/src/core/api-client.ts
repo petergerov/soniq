@@ -1,5 +1,5 @@
 // Typisierter Zugriff auf die HTTP-API des Backends. Einzige Stelle, die fetch() für /api benutzt.
-import type { AnalyzeResult, ErrorBody, FolderOverview, GenerateRequest, GenerateResponse, HealthInfo, Preset, PresetValues, QueueInfo, SetupRequest, SetupStatus, Stem, Settings, SettingsView, Song, SongPatch, UpdateCheck, UpdateStatus } from "../../../shared/api.ts";
+import type { AnalyzeResult, ErrorBody, FolderOverview, GenerateRequest, GenerateResponse, HealthInfo, Preset, PresetValues, QueueInfo, SetupRequest, SetupStatus, Stem, StemIntent, StemTrack, Settings, SettingsView, Song, SongPatch, UpdateCheck, UpdateStatus } from "../../../shared/api.ts";
 
 export class ApiError extends Error {
   override name = "ApiError";
@@ -38,6 +38,20 @@ export class ApiClient {
 
   song(id: string): Promise<Song> { return this.send("GET", `/api/songs/${id}`); }
   stems(songId: string): Promise<Stem[]> { return this.send("GET", `/api/songs/${songId}/stems`); }
+  extractStems(songId: string, tracks: StemTrack[]): Promise<Stem[]> {
+    return this.send("POST", `/api/songs/${songId}/stems`, { tracks });
+  }
+  cancelExtract(songId: string): Promise<Stem[]> { return this.send("POST", `/api/songs/${songId}/stems/cancel`); }
+  uploadStems(file: File, request: {
+    intent: StemIntent; tracks: StemTrack[]; keepers?: StemTrack[]; title?: string; caption: string; lyrics?: string;
+    duration?: number; bpm?: number; keyscale?: string; timesignature?: string; vocal_language?: string; seed?: number;
+    folder_id?: string | null;
+  }): Promise<GenerateResponse> {
+    const body = new FormData();
+    body.append("audio", file);
+    body.append("request", JSON.stringify(request));
+    return this.send("POST", "/api/stems/upload", body);
+  }
   updateSong(id: string, patch: SongPatch): Promise<Song> { return this.send("PATCH", `/api/songs/${id}`, patch); }
   retrySong(id: string): Promise<Song> { return this.send("POST", `/api/songs/${id}/retry`); }
   deleteSong(id: string): Promise<{ cancelled?: true; deleted?: true }> { return this.send("DELETE", `/api/songs/${id}`); }

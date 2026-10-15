@@ -47,10 +47,11 @@ export function assignLetters(songsInCreationOrder: readonly { id: string; group
   return letters;
 }
 
-export function toSongDto(r: SongRecord, letters?: Map<string, string>, stems = 0): Song {
+export function toSongDto(r: SongRecord, letters?: Map<string, string>, stems = 0, stemsPending = 0): Song {
   return {
     ...r,
     stems,
+    stems_pending: stemsPending,
     letter: letters?.get(r.id) ?? "",
     params: JSON.parse(r.params) as SongParams,
     result_meta: r.result_meta ? (JSON.parse(r.result_meta) as SongResultMeta) : null,

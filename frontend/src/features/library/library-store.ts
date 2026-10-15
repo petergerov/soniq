@@ -21,6 +21,8 @@ export class LibraryStore {
   estimates: Record<string, number> = {};
   /** IDs der gerade laufenden Songs */
   runningIds: string[] = [];
+  /** Spuren-Modell vorhanden? (Herauslösen / Ersetzen) */
+  stemsAvailable = true;
   currentFolder: FolderView = storage.get("folder") ?? "";
   favoritesOnly = false;
   /** Ausgeblendete Songs (Fehlversuche) trotzdem zeigen */
@@ -73,10 +75,10 @@ export class LibraryStore {
         this.favoritesStale = false;
       }
       const queue = await this.api.queue();
-      this.activeCount = queue.running.length + queue.queued;
+      this.activeCount = queue.running.length + queue.queued + (queue.stem_jobs ?? 0);
       this.estimates = queue.estimates ?? {};
       this.runningIds = queue.running.map((r) => r.id);
-      busy = this.activeCount > 0;
+      busy = this.activeCount > 0 || this.songs.some((s) => s.stems_pending > 0);
       this.stats = queue.library;
       this.notify();
     } catch {
@@ -150,9 +152,11 @@ export class LibraryStore {
   /** Eine weitere Version desselben Prompts (gleiche Gruppe, neuer Seed). */
   async generateAnother(song: Song): Promise<void> {
     const p = song.params;
+    const { mode, tracks, keepers: _keepers, source: _source, ...rest } = p;
     await this.api.generate({
-      ...p, instrumental: false, keep_caption: p.use_cot_caption !== true, title: song.title || "",
+      ...rest, instrumental: false, keep_caption: p.use_cot_caption !== true, title: song.title || "",
       seed: -1, variants: 1, group_id: song.group_id, folder_id: song.folder_id,
+      ...(mode === "tracks" ? { mode, tracks } : {}),
     });
     await this.refresh();
   }

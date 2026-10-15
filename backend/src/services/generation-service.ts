@@ -1,12 +1,13 @@
 // Neue Songs in Auftrag geben, wiederholen, abbrechen oder löschen.
-import type { GenerateResponse, GenerationMode, SongParams, StemTrack } from "../../../shared/api.ts";
+import type { GenerateResponse, GenerationMode, SongParams, StemIntent, StemTrack } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
 import { newId, randomSeed } from "../domain/ids.ts";
 import { INSTRUMENTAL, nowIso } from "../domain/song.ts";
-import { VOCAL_TRACKS } from "../domain/stem.ts";
+import { sourceFileName, VOCAL_TRACKS } from "../domain/stem.ts";
 import type { FolderRepository } from "../infrastructure/folder-repository.ts";
 import type { SongRepository } from "../infrastructure/song-repository.ts";
 import type { SongStorage } from "../infrastructure/song-storage.ts";
+import { MAX_UPLOAD_BYTES } from "./analysis-service.ts";
 import type { JobRunner } from "./generation-worker.ts";
 
 /** Geprüfte Anfrage (siehe http/validation.ts). */
@@ -31,6 +32,23 @@ export interface GenerateCommand {
   folderId: string | null; // Ordner der Bibliothek, in dem die neuen Songs landen
   mode: GenerationMode;    // "tracks" = Spur für Spur (siehe services/track-by-track.ts)
   tracks: StemTrack[];     // bei "tracks", schon in Reihenfolge
+}
+
+/** Geprüfte Anfrage für Ersetzen / Begleiten (Upload + JSON). */
+export interface StemUploadCommand {
+  intent: StemIntent;
+  tracks: StemTrack[];
+  keepers: StemTrack[];
+  title: string;
+  caption: string;
+  lyrics: string;
+  duration: number;
+  bpm: number;
+  keyscale: string;
+  timesignature: string;
+  vocalLanguage: string;
+  seed: number;
+  folderId: string | null;
 }
 
 export type RemoveOutcome = { cancelled: true } | { deleted: true };
@@ -100,6 +118,36 @@ export class GenerationService {
     return { group_id: groupId, ids };
   }
 
+  /** Hochgeladene Datei: Keeper herauslösen und ersetzen, oder Begleitung um eine isolierte Aufnahme. */
+  async enqueueUpload(file: File, cmd: StemUploadCommand): Promise<GenerateResponse> {
+    if (!this.deps.stemsAvailable()) throw new AppError("bad_request", "stems_model_missing");
+    if (!cmd.tracks.length) throw new AppError("invalid", "no_tracks");
+    if (cmd.intent === "replace" && !cmd.keepers.length) throw new AppError("invalid", "no_keepers");
+    if (file.size > MAX_UPLOAD_BYTES) throw new AppError("too_large", "too_big");
+    const id = newId();
+    const name = file.name || "upload.wav";
+    const ext = name.includes(".") ? name.slice(name.lastIndexOf(".") + 1).toLowerCase() : "wav";
+    const source = sourceFileName(id, ext === "mp3" ? "mp3" : "wav");
+    await this.deps.storage.save(source, new Uint8Array(await file.arrayBuffer()));
+    const caption = cmd.caption.trim();
+    if (!caption) throw new AppError("invalid", "no_prompt");
+    const seed = cmd.seed < 0 ? randomSeed() : cmd.seed;
+    const title = cmd.title.trim() || name.replace(/\.[^.]+$/, "") || caption.slice(0, 40);
+    const folderId = cmd.folderId && this.deps.folders.find(cmd.folderId) ? cmd.folderId : null;
+    const params: SongParams = {
+      caption, lyrics: cmd.lyrics || INSTRUMENTAL, duration: cmd.duration, bpm: cmd.bpm,
+      keyscale: cmd.keyscale, timesignature: cmd.timesignature, vocal_language: cmd.vocalLanguage,
+      seed, inference_steps: 0, mode: cmd.intent, tracks: cmd.tracks, source,
+      ...(cmd.intent === "replace" ? { keepers: cmd.keepers } : {}),
+    };
+    this.deps.songs.insert({
+      id, group_id: id, created_at: nowIso(), title, caption, lyrics: params.lyrics, seed,
+      params: JSON.stringify(params), folder_id: folderId,
+    });
+    this.deps.jobs.wake();
+    return { group_id: id, ids: [id] };
+  }
+
   retry(id: string): void {
     this.deps.songs.requeue(id);
     this.deps.jobs.wake();
@@ -109,16 +157,18 @@ export class GenerationService {
   async remove(id: string): Promise<RemoveOutcome> {
     const song = this.deps.songs.find(id);
     if (!song) throw new AppError("not_found");
+    this.deps.jobs.cancel(id);
     if (song.status === "queued") {
       this.deps.songs.markCancelled(id, null);
       return { cancelled: true };
     }
     if (song.status === "running") {
       this.deps.songs.markCancelled(id, nowIso());
-      this.deps.jobs.cancel(id);
       return { cancelled: true };
     }
     if (song.file) await this.deps.storage.remove(song.file);
+    const source = (JSON.parse(song.params) as SongParams).source;
+    if (source) await this.deps.storage.remove(source);
     await this.deps.removeStems(id);
     this.deps.songs.delete(id);
     return { deleted: true };

@@ -75,6 +75,11 @@ export class AudioPlayer implements PlaybackState {
     return this.ws?.isPlaying() ?? false;
   }
 
+  /** Für den Mixer: den Haupt-Player anhalten, damit nicht zwei Quellen gleichzeitig laufen. */
+  pause(): void {
+    if (this.ws?.isPlaying()) this.ws.pause();
+  }
+
   /** Texte neu setzen (nach Sprachwechsel). */
   refreshTexts(): void {
     this.volume?.update();

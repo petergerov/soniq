@@ -32,6 +32,15 @@ function extensionFor(contentType: string): "wav" | "mp3" {
   return contentType.includes("mpeg") || contentType.includes("mp3") ? "mp3" : "wav";
 }
 
+function audioType(name: string): string {
+  const n = name.toLowerCase();
+  if (n.endsWith(".mp3")) return "audio/mpeg";
+  if (n.endsWith(".m4a")) return "audio/mp4";
+  if (n.endsWith(".flac")) return "audio/flac";
+  if (n.endsWith(".ogg")) return "audio/ogg";
+  return "audio/wav";
+}
+
 function isConnectionError(e: unknown): boolean {
   const code = (e as { cause?: { code?: string } }).cause?.code ?? "";
   return e instanceof TypeError && (e.message === "fetch failed" || ["ECONNREFUSED", "ECONNRESET", "ENOTFOUND", "EHOSTUNREACH"].includes(code));
@@ -129,7 +138,8 @@ export class AceStepEngine implements MusicEngine {
     for (const k of ["bpm", "keyscale", "timesignature", "duration", "seed"] as const) if (r[k] !== undefined && r[k] !== null && r[k] !== "") req[k] = r[k];
     const form = new FormData();
     form.append("request", new Blob([JSON.stringify(req)], { type: "application/json" }), "request.json");
-    form.append("audio", new Blob([new Uint8Array(r.source)], { type: "audio/wav" }), "source.wav");
+    const name = r.sourceName || "source.wav";
+    form.append("audio", new Blob([new Uint8Array(r.source)], { type: audioType(name) }), name);
     const job = await this.startJob(this.base, "/synth", { body: form }, signal);
     const res = await this.waitForJob(this.base, job, r.track, performance.now(), progress, signal);
     const { audio, extension } = await this.extractAudio(res);

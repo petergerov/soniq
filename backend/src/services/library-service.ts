@@ -20,8 +20,10 @@ export interface LibraryServiceDeps {
   songs: SongRepository;
   folders: FolderRepository;
   storage: SongStorage;
-  /** Fertige Einzelspuren je Song */
-  stemCounts: () => Map<string, number>;
+  /** Fertige und wartende Einzelspuren je Song */
+  stemCounts: () => Map<string, { done: number; pending: number }>;
+  /** Extract-Aufträge auf fertigen Songs (für Warteschlange und ETA) */
+  pendingExtractJobs: () => { song_id: string; units: number; duration: number; created_at: string }[];
 }
 
 export class LibraryService {
@@ -34,13 +36,17 @@ export class LibraryService {
   list(query: SongQuery): Song[] {
     const letters = this.letters();
     const stems = this.deps.stemCounts();
-    return this.deps.songs.list(query).map((r) => toSongDto(r, letters, stems.get(r.id) ?? 0));
+    return this.deps.songs.list(query).map((r) => {
+      const c = stems.get(r.id);
+      return toSongDto(r, letters, c?.done ?? 0, c?.pending ?? 0);
+    });
   }
 
   get(id: string): Song {
     const r = this.deps.songs.find(id);
     if (!r) throw new AppError("not_found");
-    return toSongDto(r, undefined, this.deps.stemCounts().get(id) ?? 0);
+    const c = this.deps.stemCounts().get(id);
+    return toSongDto(r, undefined, c?.done ?? 0, c?.pending ?? 0);
   }
 
   update(id: string, patch: SongPatch): Song {
@@ -85,13 +91,19 @@ export class LibraryService {
 
   async queue(): Promise<QueueInfo> {
     const active = this.deps.songs.active();
+    const extracts = this.deps.pendingExtractJobs();
     const runs = this.deps.songs.runRecords();
     const rate = learnRate(runs.finished);
+    const extractRuns = extracts.map((e) => ({
+      id: e.song_id, status: "queued" as const, created_at: e.created_at, started_at: null, finished_at: null,
+      duration: e.duration, units: e.units,
+    }));
     return {
       running: active.filter((r) => r.status === "running"),
       queued: active.filter((r) => r.status === "queued").length,
       library: await this.deps.storage.usage(),
-      estimates: rate ? estimateQueue(runs.active, rate, nowIso()) : {},
+      estimates: rate ? estimateQueue([...runs.active, ...extractRuns], rate, nowIso()) : {},
+      stem_jobs: extracts.length,
     };
   }
 

@@ -107,3 +107,27 @@ export function parseFolderName(input: Input): string {
   if (typeof input.name !== "string") invalid("name", "string expected");
   return input.name;
 }
+
+export function parseExtractTracks(input: Input): StemTrack[] {
+  const tracks = input.tracks;
+  if (!Array.isArray(tracks) || !tracks.length || !tracks.every(isStemTrack)) invalid("tracks", "non-empty list of track names expected");
+  return orderTracks(tracks);
+}
+
+export function parseStemUploadCommand(input: Input): import("../services/generation-service.ts").StemUploadCommand {
+  const intent = str(input, "intent");
+  if (intent !== "replace" && intent !== "accompany") invalid("intent", '"replace" or "accompany" expected');
+  const tracks = input.tracks;
+  if (!Array.isArray(tracks) || !tracks.length || !tracks.every(isStemTrack)) invalid("tracks", "non-empty list of track names expected");
+  const keepersRaw = input.keepers;
+  const keepers = Array.isArray(keepersRaw) && keepersRaw.every(isStemTrack) ? orderTracks(keepersRaw) : [];
+  if (intent === "replace" && !keepers.length) invalid("keepers", "non-empty list of track names expected");
+  return {
+    intent, tracks: orderTracks(tracks), keepers,
+    title: str(input, "title"), caption: str(input, "caption"), lyrics: str(input, "lyrics"),
+    duration: num(input, "duration", 0), bpm: num(input, "bpm", 0, { integer: true }),
+    keyscale: str(input, "keyscale"), timesignature: String(input.timesignature ?? ""),
+    vocalLanguage: str(input, "vocal_language"), seed: num(input, "seed", -1, { integer: true }),
+    folderId: optionalId(input, "folder_id"),
+  };
+}

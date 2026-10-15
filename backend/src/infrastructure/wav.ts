@@ -11,6 +11,11 @@ export interface Pcm {
 
 export type WavDepth = 16 | 24 | 32;
 
+/** Bittiefe der Spuren-WAVs: bei MP3-Ausgabe 16 Bit (gemischt wird trotzdem als WAV). */
+export function wavDepthFor(outputFormat: string): WavDepth {
+  return outputFormat === "wav24" ? 24 : outputFormat === "wav32" ? 32 : 16;
+}
+
 const FORMAT_PCM = 1;
 const FORMAT_FLOAT = 3;
 const FORMAT_EXTENSIBLE = 0xfffe;

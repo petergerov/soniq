@@ -1,5 +1,5 @@
 // Ablage der fertigen Audiodateien im Song-Ordner (Einstellung oder data/songs).
-import { copyFile, mkdir, readdir, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, readdir, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { isFile } from "./files.ts";
@@ -35,6 +35,10 @@ export class SongStorage {
 
   async save(file: string, data: Uint8Array): Promise<void> {
     await writeFile(await this.pathOf(file), data);
+  }
+
+  async read(file: string): Promise<Uint8Array> {
+    return new Uint8Array(await readFile(await this.pathOf(file)));
   }
 
   async remove(file: string): Promise<void> {

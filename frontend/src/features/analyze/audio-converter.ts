@@ -52,6 +52,11 @@ async function resample(source: AudioBuffer, rate: number): Promise<AudioBuffer>
 /** Gibt die Datei unverändert zurück, wenn der Server sie lesen kann, sonst eine WAV-Fassung. */
 export async function toServerReadableAudio(file: File): Promise<File> {
   if (await readsNatively(file)) return file;
+  return toWavAudio(file);
+}
+
+/** Immer WAV (Ersetzen/Begleiten mischt die Aufnahme mit neuen Spuren). */
+export async function toWavAudio(file: File): Promise<File> {
   const decoded = await decode(file);
   const audio = await resample(decoded, targetRate(decoded.duration, decoded.sampleRate));
   const channels = Array.from({ length: CHANNELS }, (_, i) => audio.getChannelData(i));

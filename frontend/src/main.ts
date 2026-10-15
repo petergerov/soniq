@@ -7,6 +7,7 @@ import { formatDuration } from "./core/format.ts";
 import { Router } from "./core/router.ts";
 import { Dropzone } from "./features/analyze/dropzone.ts";
 import { GeneratorForm } from "./features/generator/generator-form.ts";
+import { ReplaceView } from "./features/replace/replace-view.ts";
 import { FolderBar } from "./features/library/folder-bar.ts";
 import { LibraryHeader } from "./features/library/library-header.ts";
 import { LibraryStore } from "./features/library/library-store.ts";
@@ -14,6 +15,7 @@ import { PlayedSongs } from "./features/library/played-songs.ts";
 import { SongDrag } from "./features/library/song-drag.ts";
 import { SongList } from "./features/library/song-list.ts";
 import { displayTitle } from "./features/library/song-row.ts";
+import { MixerView } from "./features/mixer/mixer-view.ts";
 import { AudioPlayer, type PlayOptions } from "./features/player/audio-player.ts";
 import { ServerControl } from "./features/settings/server-control.ts";
 import { SettingsDialog } from "./features/settings/settings-dialog.ts";
@@ -41,6 +43,10 @@ const form = new GeneratorForm({
   api, t, targetFolder: () => store.targetFolder, onQueued: () => void store.refresh(), preferredTerms: () => store.favoriteTerms,
 });
 new Dropzone(api, t, (result) => form.applyAnalysis(result));
+const replace = new ReplaceView({
+  api, t, targetFolder: () => store.targetFolder, onQueued: () => { void store.refresh(); router.go("library"); },
+});
+void api.settings().then((s) => { store.stemsAvailable = s.stems_available; replace.setAvailable(s.stems_available); }, () => {});
 
 // Bibliothek + Player
 const header = new LibraryHeader(store, i18n);
@@ -59,14 +65,25 @@ const player = new AudioPlayer({
     .sort((a, b) => a.letter.localeCompare(b.letter)),
   onVersionPick: (song) => playSong(song, { keepPosition: true }),
 });
+const mixer = new MixerView({
+  api, t, findSong: (id) => store.find(id), back: () => router.go("library"), pauseMainPlayer: () => player.pause(),
+});
 songList = new SongList({
   store, played, playback: player, drag, t, play: playSong, // Übernehmen und Kreuzen füllen das Formular: dafür auf die Seite „Erzeugen“ wechseln
   reuse: (song) => { form.fill(song); router.go("generate"); },
   cross: (a, b) => { form.cross(a, b); router.go("generate"); },
   loadStems: (songId) => api.stems(songId),
+  extractStems: (songId, tracks) => api.extractStems(songId, tracks),
+  cancelExtract: (songId) => api.cancelExtract(songId),
+  openMixer: (song) => router.go("mixer", song.id),
   // Eine Spur spielt der Player wie einen eigenen Song (eigene Gruppe: keine A/B-Knöpfe)
   playStem: (song, stem) => playSong({ ...song, id: stem.id, group_id: `stem:${stem.id}`, letter: "", url: stem.url, title: `${displayTitle(song)} · ${t(`track_${stem.track}`)}` }),
 });
+router.onChange((state) => {
+  if (state.route === "mixer" && state.songId) void mixer.open(state.songId).catch((e: Error) => alert(`${t("error")}: ${e.message}`));
+  else mixer.close();
+});
+if (router.current === "mixer" && router.songId) void mixer.open(router.songId).catch((e: Error) => alert(`${t("error")}: ${e.message}`));
 bindKeyboardShortcuts({
   form, playback: player, songs: () => store.songs, play: playSong, nextVersion: () => player.nextVersion(),
   formVisible: () => router.current === "generate",
@@ -103,10 +120,12 @@ new ServerControl(api, t, () => store.stopPolling(), () => void store.refresh())
 
 i18n.onChange(() => {
   form.refreshTexts();
+  replace.refreshTexts();
   songList.render();
   folderBar.render();
   header.render();
   player.refreshTexts();
+  mixer.refreshTexts();
   notifier.render();
   updates.reset();
   void health.check();

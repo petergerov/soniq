@@ -1,14 +1,14 @@
 # New features: separate tracks
 
 Plan for three related features. All of them work with **single instrument tracks (stems)** and use task types of
-ACE-Step 1.5 that SONIQ does not use yet. Nothing here is built yet; the experiments in
+ACE-Step 1.5 that SONIQ did not use before. Experiments in
 [Background](#background-what-acestepcpp-can-do) were run on 2026-10-14.
 
 | # | Feature | In short | Status |
 |---|---|---|---|
-| B | **Track by track** | Generate a new song as separate tracks, one after the other, each fitting the ones before. The mix is the sum of the tracks. | 💡 planned |
-| A | **Extract tracks** | Pull single tracks out of a finished song from the library. | 💡 planned |
-| C | **Replace instruments / new accompaniment** | Upload a file and generate replacement tracks for chosen instruments (or all), or a new accompaniment around it. | 💡 planned, needs an experiment first |
+| B | **Track by track** | Generate a new song as separate tracks, one after the other, each fitting the ones before. The mix is the sum of the tracks. | ✅ done |
+| A | **Extract tracks** | Pull single tracks out of a finished song from the library. | ✅ done |
+| C | **Replace instruments / new accompaniment** | Upload a file; **extract the keepers first**, then `lego` replacements on their sum (or accompany an isolated take). | ✅ done |
 
 Status: ✅ done · 🚧 in progress · 💡 open
 
@@ -89,7 +89,10 @@ Used by all three features; built once, in the first step that needs them.
   (`queue-estimate.ts` learns a separate rate for track jobs).
 - **Track list on a song** (library): button **"Tracks"** on every song that has tracks. It opens a list under the
   row: per track play (in the player bar), download, and **"All as ZIP"** (existing `ZipResponse`). Labels per kind
-  ("extracted", "replacement" …).
+  ("extracted", "replacement" …). **"Mixer"** opens `#/mixer/:songId`: waveforms, volume, mute and solo per track,
+  synced playback (main player bar hidden while on that page).
+- **Replace / accompany** is its own page `#/replace` (nav tab), not part of Create — upload, choose replace vs
+  accompany, keepers/new tracks, then queue.
 - **API** (sketch): `GET /api/songs/:id/stems`, `GET /api/songs/:id/stems/:stem/audio`, `GET /api/songs/:id/stems.zip`,
   `POST /api/songs/:id/stems` (extract), `POST /api/stems/upload` (feature C), `DELETE /api/stems/:id`.
 - **Translations**: all new texts in the 12 interface languages.
@@ -139,39 +142,65 @@ the VAE encode) and the song's caption. The song file stays unchanged.
 
 **Goal:** upload any file (own recording or song) and let ACE-Step generate new tracks for it.
 
+**Decision (user, 2026-10-15):** for a mixed song, **separate first, then replace**. `lego` directly on the
+full mix does not follow the song (experiment C1). `extract` follows the song (experiment A). `lego` on a
+**sum of clean tracks** locks (experiment B). So the backing for a replacement is the extracted keepers, not
+the upload.
+
 **Interface:** new area on the Create page **"Replace / accompany"** with a drop zone (WAV, MP3, M4A, FLAC, OGG like
 the analysis), then:
 - **What do you want?**
-  - **Replace instruments**: choose which instruments get a replacement track (chips) or **"All"**.
-  - **New accompaniment**: the file is e.g. vocals or a single instrument; choose which instruments to add.
+  - **Replace instruments** (upload is a mix): choose which instruments to replace (chips). The others are
+    extracted and kept. No **"All"** — that is a new arrangement and belongs to track-by-track (B), using
+    style/tempo/key from the analysis.
+  - **New accompaniment** (upload is already a single take): choose which instruments to add. No extract.
 - Style / prompt for the new tracks (filled from the analysis of the file, editable).
-- Result is a new library entry ("Replacement for …" / "Accompaniment for …") with all tracks in the track list:
-  the uploaded original, every new track, and the mixes (see below).
+- Result is a new library entry ("Replacement for …" / "Accompaniment for …") with the original, extracted
+  keepers, replacements, and the mix.
 
-**Flow, replace instruments** (per chosen instrument X):
-1. Analysis of the upload (`/understand`, exists): BPM, key, caption.
-2. New X track with `lego`, backing = uploaded file. → "replacement X".
-3. The original X is still inside the upload. Two results:
-   - **"Original + new X"**: upload + new track (the old X stays audible).
-   - **"Without original X"** (true replacement): sum of the *other* instruments, extracted with `extract` (feature A)
-     plus the new X. Costs one extract per other instrument and carries the quality limits of experiment A.
-   - With **"All"**: every chosen instrument gets a new track, each with `lego` over the upload; the mix of only the
-     new tracks is a completely new arrangement of the song.
-4. Option for a part of the song only: `repainting_start` / `repainting_end` (lego region), e.g. new guitar only in
-   the chorus.
+**Flow, replace instruments** (chosen set R, keepers K = the other tracks the user wants to keep):
+1. Analysis of the upload (`/understand`, exists): BPM, key, caption, length.
+2. `extract` each keeper K (feature A). Honest label: re-generated, not a lossless split.
+3. For each replacement X in R, in order (rhythm first): `lego` with backing = **sum of extracted keepers +
+   replacements so far**. Caption = track description + style; BPM, key, time signature, length from step 1.
+4. Mix = extracted keepers + new replacements (peak normalized). The upload is stored but not in the mix, so
+   the old X is gone.
+5. Optional later: `repainting_start` / `repainting_end` for a part of the song only.
+
+**Cost:** one extract per keeper + one `lego` per replacement (~75 s per track per minute). Replacing guitar
+in a five-track song ≈ four extracts + one lego.
 
 **Flow, new accompaniment:**
-- Variant 1: `lego` for each chosen instrument, one after the other like feature B, first backing = upload.
-- Variant 2: one `complete` with all chosen instruments (`"DRUMS | BASS | GUITAR"`): one pass instead of several,
-  but returns one mix, not separate tracks.
-- Default: variant 1 (separate tracks); variant 2 as a fast option if the experiment shows it sounds better.
+- Default: `lego` for each chosen instrument, one after the other like feature B, first backing = the upload
+  (already isolated).
+- Optional later: one `complete` (`"DRUMS | BASS | GUITAR"`) as a faster one-mix pass, if a listening test
+  prefers it.
 
-**Experiment before building C** (like A and B):
-1. Replacement: upload "Amber Echoes", new `guitar` (electric instead of acoustic) with `lego`: does it follow the
-   song? Mix with the original and the "without original guitar" variant.
-2. Accompaniment: the extracted vocals from experiment A as upload, add drums, bass, keyboard with `lego` one after
-   the other and once with `complete`. Compare.
-3. Measure (`rhythm.py`, level, share of backing), then listen.
+**Experiment C1 — replace all** (2026-10-14, base model, `lego` per track, backing = full mix of
+"Cajun Moon", ~2:28). Seven tracks independently on the same upload (not sequential like B): drums, percussion,
+bass, guitar, keyboard, vocals, backing vocals. Files: `tmp/CajunMoon.m4a`, `tmp/generated/96ca0d9bce70.*.wav`.
+
+| Track | Level | Bleed of original | Corr vs original | Onsets vs original |
+|---|---|---|---|---|
+| drums | −16.9 dB | 0.00 | 0 | **off** (−245 ms) |
+| percussion | −22.4 dB | 0.00 | 0 | +43 ms |
+| bass | −25.6 dB | 0.00 | 0 | **off** (+96 ms) |
+| guitar | −20.8 dB | 0.00 | 0 | **off** (+203 ms) |
+| keyboard | −21.0 dB | 0.00 | 0 | **off** (+160 ms) |
+| vocals | −19.8 dB | 0.00 | 0 | **off** (−139 ms) |
+| backing vocals | −14.9 dB | 0.00 | 0 | **off** (+224 ms) |
+| sum of the seven | −16.9 dB | 0.00 | 0 | **not** the song (difference louder than the mix) |
+
+→ `lego` still returns **clean** tracks (no original in the output), same as B. They do **not** follow the song
+and do **not** lock to each other (pairwise corr ≈ 0). Bass has almost no sub energy. Listening: **not
+convincing** (user, 2026-10-14).
+
+→ Do not `lego` a replacement on the full mix. **Extract keepers, then `lego` the new track on their sum**
+(user, 2026-10-15). "Replace all" is out (that is B). "Original + new X" is out (old X stays, and the new
+track does not follow).
+
+**Still to try** (accompaniment only): isolated take as upload, add drums/bass/keyboard with `lego` one after
+the other (like B) and once with `complete`. Compare.
 
 ---
 
@@ -205,14 +234,14 @@ Not yet: presets do not store the generation mode and tracks.
 | 1 | ✅ Base model in the catalog; tracks table, storage, engine methods (`lego`, `extract`, mixing), API | – |
 | 2 | ✅ **B** backend: track-by-track generation in the worker, time estimate | 1 |
 | 3 | ✅ **B** interface: switch, track choice, track list on the song (play, download, ZIP) | 2 |
-| 4 | **A**: extract in the worker + "Extract tracks …" in the track list | 1, 3 |
-| 5 | Experiment **C**, then decide variants with the user | 1 |
-| 6 | **C**: upload area, choice replace / accompany, instruments or "All", results | 4, 5 |
+| 4 | ✅ **A**: extract in the worker + "Extract tracks …" in the track list | 1, 3 |
+| 5 | ✅ Experiment **C**: replace-on-mix rejected; **extract then replace** decided | 1 |
+| 6 | ✅ **C**: upload area, replace = extract keepers then lego; accompany = lego on the take | 4, 5 |
 | 7 | Base model for everyone: installer question / `--stems`, Mac app button, guide (`docs/guide`), README | 1 |
 
 ## Open questions
 
 - Track order in B: fixed (as above) or user-defined order? Own description per track?
-- C "without original X": worth the extra extract passes, or offer only "original + new X"?
+- C accompaniment: sequential `lego` vs one `complete`?
 - Length limit for track-by-track and uploads (time grows with length × number of tracks)?
 - Do the tracks count against the song folder size display and the library ZIP ("Download all")?

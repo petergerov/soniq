@@ -27,10 +27,32 @@ export class StemRepository {
     return this.db.get<StemRecord>("SELECT * FROM stems WHERE id=?", id);
   }
 
-  /** Anzahl fertiger Spuren je Song (für die Bibliothek) */
-  doneCounts(): Map<string, number> {
-    const rows = this.db.all<{ song_id: string; n: number }>("SELECT song_id, COUNT(*) AS n FROM stems WHERE status='done' GROUP BY song_id");
-    return new Map(rows.map((r) => [r.song_id, r.n]));
+  /** Fertige und noch nicht fertige Spuren je Song (für die Bibliothek) */
+  counts(): Map<string, { done: number; pending: number }> {
+    const rows = this.db.all<{ song_id: string; done: number; pending: number }>(
+      "SELECT song_id, SUM(status='done') AS done, SUM(status IN ('queued','running')) AS pending FROM stems GROUP BY song_id",
+    );
+    return new Map(rows.map((r) => [r.song_id, { done: r.done, pending: r.pending }]));
+  }
+
+  /** Nächster fertiger Song mit wartenden Extract-Spuren (der Song selbst bleibt "done"). */
+  nextExtractSongId(): string | undefined {
+    return this.db.get<{ song_id: string }>(
+      `SELECT st.song_id FROM stems st JOIN songs s ON s.id=st.song_id
+       WHERE st.kind='extracted' AND st.status='queued' AND s.status NOT IN ('queued','running')
+       ORDER BY st.created_at, st.rowid LIMIT 1`,
+    )?.song_id;
+  }
+
+  /** Extract-Aufträge auf fertigen Songs, für Warteschlange und Zeitschätzung. */
+  pendingExtractJobs(): { song_id: string; units: number; duration: number; created_at: string }[] {
+    return this.db.all(
+      `SELECT st.song_id, COUNT(*) AS units, MIN(st.created_at) AS created_at,
+              COALESCE(json_extract(s.result_meta,'$.duration'), json_extract(s.params,'$.duration'), 0) AS duration
+       FROM stems st JOIN songs s ON s.id=st.song_id
+       WHERE st.kind='extracted' AND st.status IN ('queued','running') AND s.status NOT IN ('queued','running')
+       GROUP BY st.song_id ORDER BY MIN(st.created_at)`,
+    );
   }
 
   insert(s: NewStem): void {

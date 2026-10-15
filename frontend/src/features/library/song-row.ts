@@ -1,5 +1,5 @@
 // HTML einer Songzeile. Reine Darstellung: kennt weder API noch Ereignisse.
-import type { Song, Stem } from "../../../../shared/api.ts";
+import { STEM_TRACKS, type Song, type Stem, type StemTrack } from "../../../../shared/api.ts";
 import { escapeHtml as esc } from "../../core/dom.ts";
 import { formatDuration, generationTime } from "../../core/format.ts";
 import type { Translate } from "../../i18n/i18n.ts";
@@ -24,6 +24,10 @@ export interface SongRowContext {
   /** Spur, die gerade im Player ist, und ob sie läuft */
   currentStemId: string | null;
   stemPlaying: boolean;
+  /** Spuren-Modell da? Sonst ist Herauslösen gesperrt */
+  stemsAvailable: boolean;
+  /** Gewählte Spuren im Extract-Picker */
+  extractTracks: readonly StemTrack[];
 }
 
 const ICON_FOLDER = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`;
@@ -91,6 +95,9 @@ function stateLine(song: Song, ctx: SongRowContext): string {
     case "cancelled": return `<div class="s">${t("cancelled")}</div>`;
     case "error": return `<div class="s err" title="${esc(song.message)}">${t("error")} · ${esc(shortError(song.message, t))}</div>`;
     case "done": {
+      if (song.stems_pending > 0 && song.message) {
+        return `<div class="s run">${esc(song.message)}${eta(ctx, "eta_left")}</div><div class="mini-bar"></div>`;
+      }
       const took = ctx.wasPlayed ? null : generationTime(song.created_at, song.finished_at);
       return took ? `<div class="s took">${t("created_in")} ${took}</div>` : "";
     }
@@ -130,9 +137,9 @@ function lyricsBlock(song: Song, lyrics: string, ctx: SongRowContext): string {
     `href="data:text/plain;charset=utf-8,${encodeURIComponent(lyrics)}" title="${ctx.t("lyrics_dl")}">TXT ↓</a></div>`;
 }
 
-/** Song mit Einzelspuren (fertig oder "Spur für Spur" in Arbeit) */
+/** Song mit Einzelspuren, oder fertiger Song (Herauslösen anbieten) */
 export function hasStems(song: Song): boolean {
-  return song.stems > 0 || (song.params.mode === "tracks" && song.status !== "queued");
+  return song.stems > 0 || song.stems_pending > 0 || (song.params.mode === "tracks" && song.status !== "queued") || song.status === "done";
 }
 
 function stemRow(stem: Stem, ctx: SongRowContext): string {
@@ -148,12 +155,34 @@ function stemRow(stem: Stem, ctx: SongRowContext): string {
       ${stem.url ? `<a class="download mini" href="${stem.url}?download=1" title="${t("download")}">WAV ↓</a>` : ""}</div>`;
 }
 
+function extractBlock(song: Song, ctx: SongRowContext): string {
+  if (song.status !== "done" || !song.file) return "";
+  const { t } = ctx;
+  const pending = song.stems_pending > 0;
+  const chips = STEM_TRACKS.map((track) => {
+    const on = ctx.extractTracks.includes(track);
+    return `<button type="button" class="chip ${on ? "on" : ""}" data-a="extract-track" data-track="${track}" aria-pressed="${on}" ${pending || !ctx.stemsAvailable ? "disabled" : ""}>${t(`track_${track}`)}</button>`;
+  }).join("");
+  const action = pending
+    ? `<button type="button" class="sek" data-a="extract-cancel">${t("extract_cancel")}</button>`
+    : `<button type="button" class="sek" data-a="extract-go" ${!ctx.stemsAvailable || !ctx.extractTracks.length ? "disabled" : ""}>${t("extract_go")}</button>`;
+  return `<div class="extract">
+      <div class="small">${t(ctx.stemsAvailable ? "extract_honest" : "gen_tracks_missing")}</div>
+      <div class="chips track-chips">${chips}</div>
+      <div class="extract-bar">${action}<span class="small">${ctx.stemsAvailable ? t("extract_hint", ctx.extractTracks.length) : ""}</span></div>
+    </div>`;
+}
+
 function stemsBlock(song: Song, ctx: SongRowContext): string {
   if (!ctx.stemsOpen) return "";
-  if (!ctx.stems) return `<div class="stems"><div class="small">…</div></div>`;
-  const zip = ctx.stems.some((s) => s.url)
+  if (!ctx.stems) return `<div class="stems">${extractBlock(song, ctx)}<div class="small">…</div></div>`;
+  const ready = ctx.stems.some((s) => s.url);
+  const zip = ready
     ? `<a class="download mini stems-zip" href="/api/songs/${song.id}/stems.zip" title="${ctx.t("stems_zip_tip")}">ZIP ↓</a>` : "";
-  return `<div class="stems">${ctx.stems.map((s) => stemRow(s, ctx)).join("")}${zip}</div>`;
+  const mixer = ready
+    ? `<button type="button" class="sek mini stems-mixer" data-a="mixer" title="${ctx.t("mixer_open_tip")}">${ctx.t("mixer_open")}</button>` : "";
+  return `<div class="stems">${extractBlock(song, ctx)}${ctx.stems.map((s) => stemRow(s, ctx)).join("")}
+      <div class="stems-actions">${mixer}${zip}</div></div>`;
 }
 
 export function renderSongRow(song: Song, ctx: SongRowContext): string {

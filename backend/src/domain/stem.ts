@@ -38,6 +38,16 @@ export function stemFileName(songId: string, track: StemTrack, kind: StemKind): 
   return kind === "generated" ? `${songId}.${track}.wav` : `${songId}.${kind}.${track}.wav`;
 }
 
+/** Hochgeladene Vorlage für Ersetzen/Begleiten, neben den Spuren. */
+export function sourceFileName(songId: string, ext = "wav"): string {
+  const clean = ext.replace(/^\./, "").toLowerCase() || "wav";
+  return `${songId}.source.${clean}`;
+}
+
+export function formatElapsed(seconds: number): string {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
 export function toStemDto(r: StemRecord): Stem {
   return {
     id: r.id, song_id: r.song_id, track: r.track as StemTrack, kind: r.kind as StemKind, status: r.status as StemStatus,

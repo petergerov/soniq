@@ -18,13 +18,18 @@ export interface SongParams {
   inference_steps: number;
   lm_temperature?: number | null;
   use_cot_caption?: boolean;
-  /** "tracks" = Spur für Spur (lego, eine Spur nach der anderen); fehlt = ganzer Song */
+  /** "tracks" = Spur für Spur; "replace" / "accompany" = hochgeladene Datei (newfeatures.md C) */
   mode?: GenerationMode;
-  /** Bei mode "tracks": die Spuren, in Reihenfolge "Rhythmus zuerst" */
+  /** Bei mode "tracks" / "replace" / "accompany": die neuen Spuren, in Reihenfolge "Rhythmus zuerst" */
   tracks?: StemTrack[];
+  /** Bei mode "replace": herausgelöste Spuren, die bleiben */
+  keepers?: StemTrack[];
+  /** Bei replace/accompany: Dateiname der hochgeladenen Vorlage */
+  source?: string;
 }
 
-export type GenerationMode = "full" | "tracks";
+export type GenerationMode = "full" | "tracks" | "replace" | "accompany";
+export type StemIntent = "replace" | "accompany";
 
 /** Vom Modell ergänzte Werte. */
 export interface SongResultMeta {
@@ -60,6 +65,8 @@ export interface Song {
   started_at: string | null;
   /** Anzahl fertiger Einzelspuren (Spur für Spur, herausgelöst …) */
   stems: number;
+  /** Wartende oder laufende Einzelspuren (z. B. Herauslösen auf einem fertigen Song) */
+  stems_pending: number;
   /** Versionen desselben Prompts heißen A, B, C … ("" bei Einzelstücken). */
   letter: string;
   url: string | null;
@@ -130,6 +137,26 @@ export const STEM_TRACKS = [
   "drums", "percussion", "bass", "guitar", "keyboard", "synth", "strings", "brass", "woodwinds", "fx", "vocals", "backing_vocals",
 ] as const;
 export type StemTrack = (typeof STEM_TRACKS)[number];
+
+/** Spuren, die der Text nahelegt (Stil/Beschreibung), für die Vorauswahl beim Herauslösen. */
+const TRACK_HINTS: readonly [RegExp, StemTrack][] = [
+  [/backing\s*vocal|harmony|harmon|chor(?:us)?|choir/i, "backing_vocals"],
+  [/vocal|gesang|sing(?:er|ing)?|voice|stimme/i, "vocals"],
+  [/drum|schlagzeug|\bbeat\b|kit/i, "drums"],
+  [/percussion|shaker|conga|bongo|tambour/i, "percussion"],
+  [/\bbass\b/i, "bass"],
+  [/guitar|gitarre/i, "guitar"],
+  [/piano|keyboard|\bkeys\b|klav/i, "keyboard"],
+  [/synth/i, "synth"],
+  [/string|streich|violin|cello|orchestra/i, "strings"],
+  [/brass|trumpet|horn|posaune|trombone|bläser/i, "brass"],
+  [/woodwind|sax|flute|clarinet|holzbl/i, "woodwinds"],
+  [/\bfx\b|effect|effekt/i, "fx"],
+];
+
+export function tracksFromText(text: string): StemTrack[] {
+  return TRACK_HINTS.filter(([re]) => re.test(text)).map(([, track]) => track);
+}
 /** generated = Spur für Spur erzeugt, extracted = aus dem Song herausgelöst, replacement / accompaniment = zu einer hochgeladenen Datei */
 export type StemKind = "generated" | "extracted" | "replacement" | "accompaniment";
 export type StemStatus = "queued" | "running" | "done" | "error";
@@ -163,6 +190,8 @@ export interface QueueInfo {
   library: { count: number; bytes: number };
   /** Geschätzte Sekunden, bis ein laufender oder wartender Song fertig ist (fehlt, solange es keine Erfahrungswerte gibt) */
   estimates: Record<string, number>;
+  /** Herauslösen auf fertigen Songs (zählen zur Warteschlange, der Song bleibt "done") */
+  stem_jobs: number;
 }
 
 export type DitModel = "standard" | "xl";

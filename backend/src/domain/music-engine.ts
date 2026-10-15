@@ -30,8 +30,10 @@ export type StemTask = "lego" | "extract";
 export interface StemRequest {
   task: StemTask;
   track: StemTrack;
-  /** Playback (lego) bzw. Mix (extract) als WAV */
+  /** Playback (lego) bzw. Mix (extract) */
   source: Uint8Array;
+  /** Dateiname inkl. Endung, damit der Modellserver MP3/M4A/WAV erkennt */
+  sourceName?: string;
   caption: string;
   lyrics?: string;
   bpm?: number | null;

@@ -55,7 +55,7 @@ export class StemService {
     return { archiveName, entries };
   }
 
-  /** Beim Löschen eines Songs: Spuren samt Dateien entfernen. */
+  /** Beim Löschen eines Songs: Spuren samt Dateien entfernen (die Vorlage löscht der Aufrufer). */
   async removeForSong(songId: string): Promise<void> {
     for (const stem of this.deps.stems.forSong(songId)) if (stem.file) await this.deps.storage.remove(stem.file);
     this.deps.stems.deleteForSong(songId);
