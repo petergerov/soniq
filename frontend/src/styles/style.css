@@ -2,34 +2,34 @@
    Violett→Blau = Marke, Klick und laufende Arbeit · Smaragd = fertig/gewählt · Rot = Fehler
    Alle Farben, Radien und Schatten kommen aus den Tokens unten. */
 :root {
-  /* Flächen */
-  --bg: #08080b;
-  --surface: #111116;
-  --surface-2: #17171d;
-  --surface-3: #1e1e26;
-  --line: rgba(255, 255, 255, .07);
-  --line-strong: rgba(255, 255, 255, .13);
+  /* Flächen — eine Stufe heller, leicht lila (Logo-Gamma) statt pechschwarz */
+  --bg: #14121c;
+  --surface: #1c1926;
+  --surface-2: #242030;
+  --surface-3: #2d283a;
+  --line: rgba(196, 181, 253, .08);
+  --line-strong: rgba(196, 181, 253, .16);
   /* Text */
-  --text: #f4f4f6;
-  --muted: #9a9aab;
-  --faint: #6b6b7b;
+  --text: #f5f3ff;
+  --muted: #a8a0bc;
+  --faint: #7a7290;
   /* Akzente */
   --accent: #8b5cf6;
   --accent-soft: #a78bfa;
   --accent-2: #3b82f6;
-  --accent-tint: rgba(139, 92, 246, .12);
+  --accent-tint: rgba(139, 92, 246, .16);
   --gradient: linear-gradient(135deg, #a78bfa 0%, #7c3aed 50%, #2563eb 100%);
   --success: #34d399;
   --success-tint: rgba(52, 211, 153, .1);
   --error: #f87171;
   --error-tint: rgba(248, 113, 113, .1);
   /* Wellenform im Player */
-  --wave: #2b2b36;
+  --wave: #3a3450;
   --wave-progress: #a78bfa;
   /* Form */
   --radius: 16px;
   --radius-sm: 10px;
-  --shadow: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 20px 40px -24px rgba(0, 0, 0, .8);
+  --shadow: 0 1px 0 rgba(196, 181, 253, .06) inset, 0 20px 40px -24px rgba(20, 10, 40, .65);
   --focus: 0 0 0 3px rgba(139, 92, 246, .35);
   --font: "Inter var", Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -47,8 +47,9 @@ body {
 .glow {
   position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(900px 420px at 50% -160px, rgba(124, 58, 237, .22), transparent 70%),
-    radial-gradient(600px 300px at 85% -120px, rgba(37, 99, 235, .14), transparent 70%);
+    radial-gradient(1000px 480px at 50% -140px, rgba(124, 58, 237, .32), transparent 68%),
+    radial-gradient(700px 360px at 90% -80px, rgba(37, 99, 235, .18), transparent 70%),
+    radial-gradient(800px 500px at 10% 100%, rgba(139, 92, 246, .08), transparent 65%);
 }
 .wrap { max-width: 900px; margin: 0 auto; padding: 28px 20px; display: flex; flex-direction: column; gap: 18px; }
 
@@ -81,7 +82,7 @@ body {
 [data-route][hidden] { display: none; }
 
 /* ------------------------------------------------------------ Karten */
-.card { background: linear-gradient(180deg, var(--surface), #0e0e13); border: 1px solid var(--line);
+.card { background: linear-gradient(180deg, var(--surface-2), var(--surface)); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 22px; min-width: 0; box-shadow: var(--shadow); }
 .col-title { margin: 0; font-size: 15px; font-weight: 650; color: var(--text); letter-spacing: -.01em; }
 
@@ -349,7 +350,7 @@ button.chip { font: inherit; font-size: 12px; }
 
 /* ------------------------------------------------------------ Player */
 footer#player { position: fixed; left: 50%; transform: translateX(-50%); width: min(900px, calc(100vw - 24px)); bottom: 12px; z-index: 10; border-radius: 18px;
-  background: rgba(17, 17, 22, .82); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  background: rgba(28, 25, 38, .88); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4);
   border: 1px solid var(--line-strong); box-shadow: 0 20px 50px rgba(0, 0, 0, .6); }
 .player-in { padding: 10px 16px 10px 12px; display: flex; align-items: center; gap: 14px; }
 #playBtn { background: var(--gradient); color: #fff; box-shadow: 0 6px 18px -6px rgba(124, 58, 237, .9); }
@@ -382,13 +383,13 @@ footer#player { position: fixed; left: 50%; transform: translateX(-50%); width: 
 /* ------------------------------------------------------------ Dialog */
 dialog { border: 1px solid var(--line-strong); border-radius: 20px; background: var(--surface); color: var(--text);
   width: min(480px, calc(100vw - 32px)); padding: 24px; box-shadow: 0 30px 80px rgba(0, 0, 0, .7); }
-dialog::backdrop { background: rgba(4, 4, 8, .6); backdrop-filter: blur(4px); }
+dialog::backdrop { background: rgba(16, 12, 28, .55); backdrop-filter: blur(4px); }
 dialog .col-title { margin-bottom: 18px; font-size: 17px; }
 
 /* Generieren: feste Leiste am Formularende */
 .genbar { position: sticky; bottom: calc(var(--player-h, 0px) + 12px);   /* über dem schwebenden Player */
   z-index: 4; margin: 22px -22px -22px;
-  padding: 14px 22px 18px; background: rgba(14, 14, 19, .92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  padding: 14px 22px 18px; background: rgba(28, 25, 38, .92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border-top: 1px solid var(--line); border-radius: 0 0 var(--radius) var(--radius); }
 .genbar .aktion.big { min-width: 200px; }
 @media (max-width: 620px) { .genbar .aktion.big { min-width: 0; padding: 0 1rem; font-size: 13px; } .genrow { gap: 10px; } }
