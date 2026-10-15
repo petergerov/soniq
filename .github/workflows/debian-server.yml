@@ -40,15 +40,32 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            build-essential cmake git curl ca-certificates xz-utils \
-            libvulkan-dev vulkan-tools glslang-tools spirv-tools \
+            build-essential cmake ninja-build git curl ca-certificates xz-utils pkg-config \
+            libvulkan-dev vulkan-tools glslang-tools spirv-tools spirv-headers \
             patchelf fakeroot dpkg-dev
+          # glslc: prefer the package when present (Ubuntu 24.04+); SDK step supplies it otherwise
+          sudo apt-get install -y --no-install-recommends glslc || true
+
+      # glslc/shaderc from the LunarG SDK — apt's glslc is often too old or incomplete for ggml-vulkan
+      - name: Install Vulkan SDK
+        uses: humbletim/install-vulkan-sdk@v1.2
+        with:
+          version: 1.4.309.0
+          cache: true
 
       - name: Build .deb
         env:
           VERSION: ${{ steps.v.outputs.app }}
+          VULKAN_SDK: ${{ env.VULKAN_SDK }}
         run: |
           chmod +x linux/build-deb.sh
+          # SDK action exports VULKAN_SDK; ensure glslc from the SDK is first on PATH
+          if [ -n "${VULKAN_SDK:-}" ]; then
+            export PATH="$VULKAN_SDK/bin:$PATH"
+            export CMAKE_PREFIX_PATH="${VULKAN_SDK}${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
+          fi
+          command -v glslc
+          glslc --version || true
           linux/build-deb.sh
 
       - uses: actions/upload-artifact@v4

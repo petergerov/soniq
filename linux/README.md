@@ -33,11 +33,14 @@ sudo apt remove soniq
 On amd64 Debian/Ubuntu:
 
 ```bash
-sudo apt install build-essential cmake git curl xz-utils \
-  libvulkan-dev vulkan-tools glslang-tools spirv-tools patchelf fakeroot dpkg-dev
+sudo apt install build-essential cmake git curl xz-utils pkg-config \
+  libvulkan-dev vulkan-tools glslang-tools glslc spirv-tools spirv-headers \
+  patchelf fakeroot dpkg-dev
 VERSION=0.2.0 ./linux/build-deb.sh
 sudo apt install ./dist-linux/soniq_0.2.0_amd64.deb
 ```
+
+CI also installs the LunarG Vulkan SDK (`glslc` / shaderc) via `humbletim/install-vulkan-sdk`.
 
 ## Pipeline
 

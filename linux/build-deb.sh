@@ -23,25 +23,32 @@ PKG_NAME="soniq_${DEB_VERSION}_amd64"
 NODE_PLAT="linux-x64"
 schritt() { echo ""; echo "▸ $1"; }
 
-mkdir -p "$CACHE"
+mkdir -p "$OUT" "$CACHE"
+fail_log() { echo ""; echo "Build failed. Last lines of $OUT/engine-build.log:"; tail -60 "$OUT/engine-build.log" 2>/dev/null || true; exit 1; }
 
 schritt "Build tools"
 need() { command -v "$1" >/dev/null 2>&1 || { echo "Missing: $1"; exit 1; }; }
-need cmake; need git; need curl; need tar; need dpkg-deb
+need cmake; need git; need curl; need tar; need dpkg-deb; need glslc
 pkg-config --exists vulkan 2>/dev/null || [ -f /usr/include/vulkan/vulkan.h ] \
   || { echo "Missing Vulkan headers (apt install libvulkan-dev)."; exit 1; }
+echo "  cmake $(cmake --version | head -1)"
+echo "  glslc $(command -v glslc)"
 echo "  ok"
 
 schritt "Model server acestep.cpp (${ACESTEP_REV:0:7}, Vulkan, portable)"
 if ! "$EB/ace-server" --help 2>&1 | head -1 | grep -q "${ACESTEP_REV:0:7}"; then
   [ -d "$ENGINE/.git" ] || git clone --quiet "$ACESTEP_REPO" "$ENGINE"
   ( cd "$ENGINE" && { git cat-file -e "$ACESTEP_REV^{commit}" 2>/dev/null || git fetch --quiet origin; } \
-    && git checkout --quiet "$ACESTEP_REV" && git submodule update --init --recursive --quiet )
+    && git checkout --quiet "$ACESTEP_REV" && git submodule update --init --recursive --quiet ) \
+    || { echo "Failed to checkout acestep.cpp $ACESTEP_REV"; exit 1; }
   rm -rf "$EB"
-  cmake -S "$ENGINE" -B "$EB" -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON -DGGML_NATIVE=OFF \
-    > "$OUT/engine-build.log" 2>&1
-  cmake --build "$EB" --config Release -j "$(nproc)" >> "$OUT/engine-build.log" 2>&1 \
-    || { tail -40 "$OUT/engine-build.log"; exit 1; }
+  {
+    echo "== cmake configure =="
+    cmake -S "$ENGINE" -B "$EB" -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON -DGGML_NATIVE=OFF
+    echo "== cmake build =="
+    cmake --build "$EB" --config Release -j "$(nproc)"
+  } > "$OUT/engine-build.log" 2>&1 || fail_log
+  [ -x "$EB/ace-server" ] || fail_log
 fi
 echo "  ok"
 
