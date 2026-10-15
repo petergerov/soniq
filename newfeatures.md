@@ -135,6 +135,13 @@ Measured with that preset, 30 s, several seeds:
   `[Instrumental]`.
 End to end (drums, bass, guitar, vocals, 30 s): drums 0.018 (tonal), bass 0.005 (above 400 Hz), 4:13 in total.
 
+**Step 7 (2026-10-15).** The installers ask for the track model after XL (Mac `--stems`, Linux `--stems`, Windows
+`-Stems`; already there = kept; `--yes` alone does not download it). The Mac app offers it as a checkbox in the first
+setup and as "Download track model" under Gear › Track model (`POST /api/setup/stems`, same download/checksum/restart
+as XL); afterwards the features unlock without reloading the page. Greyed-out features name the way to the model
+(`core/stems-hint.ts`: Mac app → settings, project folder → `install --stems`). Guide: "Single tracks" in
+`docs/guide/using-the-app.md`, installer options in README, `docs/guide/install-*.md`.
+
 **To try in this step** (guitar was off-beat in the experiment): always send `timesignature`; more steps for
 melodic tracks; an order with keyboard or guitar before bass; describe the rhythm in the caption ("on the beat",
 "eighth notes"). Measure with `rhythm.py`, then listen.
@@ -253,7 +260,7 @@ Not yet: presets do not store the generation mode and tracks.
 | 4 | ✅ **A**: extract in the worker + "Extract tracks …" in the track list | 1, 3 |
 | 5 | ✅ Experiment **C**: replace-on-mix rejected; **extract then replace** decided | 1 |
 | 6 | ✅ **C**: upload area, replace = extract keepers then lego; accompany = lego on the take | 4, 5 |
-| 7 | Base model for everyone: installer question / `--stems`, Mac app button, guide (`docs/guide`), README | 1 |
+| 7 | ✅ Base model for everyone: installer question / `--stems`, Mac app button, guide (`docs/guide`), README | 1 |
 
 ## Open questions
 

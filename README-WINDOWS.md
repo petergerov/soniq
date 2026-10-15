@@ -35,7 +35,7 @@ The installer
 7. creates the shortcuts **SONIQ Start / SONIQ Stop** in the program folder and on the desktop and starts the app.
 
 It can be run again at any time; finished steps are skipped.
-Options (in PowerShell): `.\install.ps1 -Yes`, `-LM 0.6B|1.7B|4B`, `-XL` (also the larger XL sound model, 5.3 GB, from 12 GB graphics memory; selectable afterwards under Gear › Sound model), `-NoStart`,
+Options (in PowerShell): `.\install.ps1 -Yes`, `-LM 0.6B|1.7B|4B`, `-XL` (also the larger XL sound model, 5.3 GB, from 12 GB graphics memory; selectable afterwards under Gear › Sound model), `-Stems` (also the track model, 2.5 GB: track by track, Stem Separation, Replace / accompany), `-NoStart`,
 `-Build` (compile it yourself, needs Visual Studio Build Tools and the CUDA Toolkit).
 
 ## Usage

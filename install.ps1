@@ -6,9 +6,10 @@
 #            -LM SIZE     Sprachmodell erzwingen: 0.6B, 1.7B oder 4B
 #            -NoStart     App am Ende nicht starten
 #            -XL          zusätzlich das XL-Klangmodell laden (5,3 GB, in den Einstellungen wählbar)
+#            -Stems       zusätzlich das Spuren-Modell laden (2,5 GB: Spur für Spur, Herauslösen, Ersetzen)
 #            -Build       Modellserver selbst kompilieren statt fertige Binaries zu laden
 #                         (braucht Visual Studio Build Tools + CUDA Toolkit)
-param([switch]$Yes, [string]$LM = "", [switch]$NoStart, [switch]$Build, [switch]$XL)
+param([switch]$Yes, [string]$LM = "", [switch]$NoStart, [switch]$Build, [switch]$XL, [switch]$Stems)
 
 . (Join-Path $PSScriptRoot "scripts\common.ps1")
 Set-Location $ROOT
@@ -113,10 +114,23 @@ if (-not $XL -and -not $Yes) {
 }
 if ($XL) { Write-Host "  -> plus XL sound model" }
 
+# Optional: Spuren-Modell (Base) für einzelne Spuren. Ist es schon da, bleibt es; sonst nur auf Wunsch.
+$STEMS_FILE = "acestep-v15-base-Q8_0.gguf"
+if (Test-Path (Join-Path $MODELS $STEMS_FILE)) { $Stems = [switch]$true }
+if (-not $Stems -and -not $Yes) {
+    Write-Host ""
+    Write-Host "  Track model (optional extra, 2.5 GB): generate a song track by track, extract single tracks"
+    Write-Host "  from a song, or replace instruments in your own recording. Without it these features stay greyed out."
+    $a = Read-Host "  Download the track model as well? [Enter = no, y = yes]"
+    if ($a -match '^[jJyY]') { $Stems = [switch]$true }
+}
+if ($Stems) { Write-Host "  -> plus track model" }
+
 # Dateien + Größe in MB (für die Speicherplatz-Prüfung)
 $FILES = [ordered]@{}
 $WANT = @("vae-BF16.gguf", "Qwen3-Embedding-0.6B-Q8_0.gguf", "acestep-v15-sft-Q8_0.gguf", $LM_FILE)
 if ($XL) { $WANT += $XL_FILE }
+if ($Stems) { $WANT += $STEMS_FILE }
 foreach ($f in $WANT) {
     if (-not $MODEL_SHA[$f]) { Abbruch "File $f is missing in the model table (scripts\common.sh)." }
     $FILES[$f] = $MODEL_MB[$f]

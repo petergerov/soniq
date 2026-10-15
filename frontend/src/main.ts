@@ -5,6 +5,7 @@ import { ApiClient } from "./core/api-client.ts";
 import { byId, enableKeyboardButtons } from "./core/dom.ts";
 import { formatDuration } from "./core/format.ts";
 import { Router } from "./core/router.ts";
+import { setPackagedApp } from "./core/stems-hint.ts";
 import { Dropzone } from "./features/analyze/dropzone.ts";
 import { GeneratorForm } from "./features/generator/generator-form.ts";
 import { ReplaceView } from "./features/replace/replace-view.ts";
@@ -46,7 +47,11 @@ new Dropzone(api, t, (result) => form.applyAnalysis(result));
 const replace = new ReplaceView({
   api, t, targetFolder: () => store.targetFolder, onQueued: () => { void store.refresh(); router.go("library"); },
 });
-void api.settings().then((s) => { store.stemsAvailable = s.stems_available; replace.setAvailable(s.stems_available); }, () => {});
+void api.settings().then((s) => {
+  setPackagedApp(s.packaged);
+  store.stemsAvailable = s.stems_available;
+  replace.setAvailable(s.stems_available);
+}, () => {});
 
 // Bibliothek + Player
 const header = new LibraryHeader(store, i18n);
@@ -112,7 +117,21 @@ const health = new HealthIndicator(api, t, (h) => {
   }
 });
 // Fertige App ohne Modelle: Einrichtung zeigen
-const setup = new SetupDialog(api, t, () => void health.check());
+const setup = new SetupDialog(api, t, () => {
+  void health.check();
+  refreshStemsAvailable();
+});
+
+/** Nach einer Einrichtung (z. B. Spuren-Modell nachgeladen): Spur-Funktionen ohne Neuladen der Seite freigeben. */
+function refreshStemsAvailable(): void {
+  void api.settings().then((s) => {
+    setPackagedApp(s.packaged);
+    store.stemsAvailable = s.stems_available;
+    replace.setAvailable(s.stems_available);
+    form.setStemsAvailable(s.stems_available);
+    songList.render();
+  }, () => {});
+}
 const updates = new UpdatePanel(api, t);
 // Fertige App: beim Start still nach einem neuen Release sehen und dann das Zahnrad markieren
 void setup.check().then(async (packaged) => {
@@ -121,7 +140,7 @@ void setup.check().then(async (packaged) => {
   gear.classList.add("has-update");
   gear.title = t("upd_badge");
 });
-new SettingsDialog(api, () => updates.reset(), () => void health.check(), () => void setup.addXl());
+new SettingsDialog(api, t, () => updates.reset(), () => void health.check(), () => void setup.addXl(), () => void setup.addStems());
 new ServerControl(api, t, () => store.stopPolling(), () => void store.refresh());
 
 i18n.onChange(() => {

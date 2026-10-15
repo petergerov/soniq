@@ -2,6 +2,7 @@
 import type { AnalyzeResult, GenerateRequest, PresetValues, Song } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { byId, restartAnimation, scrollToTop } from "../../core/dom.ts";
+import { setPackagedApp } from "../../core/stems-hint.ts";
 import { storage } from "../../core/storage.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import { BubbleSlider } from "./bubble-slider.ts";
@@ -104,7 +105,10 @@ export class GeneratorForm {
     // Nach dem Lyrics-Editor: die Spurauswahl fragt ihn, ob "Instrumental" gewählt ist
     this.trackPicker = new TrackPicker({ t: deps.t, instrumental: () => this.lyrics.instrumental });
     // Spur für Spur geht nur mit dem Spuren-Modell; die Einstellungen sagen, ob es da ist
-    void deps.api.settings().then((s) => this.trackPicker.setAvailable(s.stems_available), () => {});
+    void deps.api.settings().then((s) => {
+      setPackagedApp(s.packaged);
+      this.trackPicker.setAvailable(s.stems_available);
+    }, () => {});
     const slider = (name: string, onChange?: () => void) => new BubbleSlider(this.form.querySelector(`input[name="${name}"]`)!.closest<HTMLElement>(".slider")!, onChange);
     this.sliders = {
       duration: slider("duration"),
@@ -198,6 +202,11 @@ export class GeneratorForm {
   /** Wie ein Klick auf Generieren (Tastenkürzel). */
   submit(): void {
     this.form.requestSubmit();
+  }
+
+  /** Spuren-Modell ist (jetzt) da bzw. fehlt: "Spur für Spur" freigeben oder sperren. */
+  setStemsAvailable(available: boolean): void {
+    this.trackPicker.setAvailable(available);
   }
 
   /** Texte neu setzen (nach Sprachwechsel). */

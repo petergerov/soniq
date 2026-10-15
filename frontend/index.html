@@ -308,6 +308,10 @@
       <span class="small" id="ditHint" hidden data-i18n="dit_xl_missing"></span>
       <button type="button" id="ditGetXl" class="sek" hidden data-i18n="dit_xl_get">XL-Klangmodell laden (5,1 GB)</button>
     </label>
+    <div class="field"><span class="lbl" data-i18n="stems_model">Spuren-Modell</span>
+      <span class="small" id="stemsState"></span>
+      <button type="button" id="stemsGet" class="sek" hidden data-i18n="stems_get">Spuren-Modell laden (2,5 GB)</button>
+    </div>
     <label class="field"><span class="lbl" title="" data-i18n-title="out_fmt_tip" data-i18n="out_fmt">Ausgabeformat</span>
       <select name="output_format">
         <option value="wav16">WAV 16 Bit</option>
@@ -348,6 +352,7 @@
     <p class="small muted" data-i18n="setup_lm_tip">Plant Aufbau, Tempo und Tonart. Größer = bessere Songs, braucht mehr Arbeitsspeicher.</p>
     <div id="setupLm" class="setup-options" role="radiogroup"></div>
     <label class="setup-xl"><input type="checkbox" id="setupXl"> <span id="setupXlText"></span></label>
+    <label class="setup-xl"><input type="checkbox" id="setupStems"> <span id="setupStemsText"></span></label>
     <p class="small muted" id="setupInfo"></p>
     <div class="setup-actions"><button type="button" id="setupStart" class="aktion" data-i18n="setup_start">Laden und einrichten</button></div>
   </div>

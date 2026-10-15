@@ -97,6 +97,22 @@ R, V, U and Ctrl/⌘ + Enter work on the Create page only.
 Click a title to rename it. The line below shows **BPM · IT** (iterations) **· VAR** (variance) · key · length.
 “Created in …” disappears once you play the song for the first time.
 
+## Single tracks
+
+Three features work with single instrument tracks (stems). They need the **track model** (2.5 GB): the installer asks
+for it (or `install --stems`), the Mac app downloads it under **Gear › Track model**. Without it they are greyed out.
+Each track takes about as long as a whole song of the same length.
+
+- **Track by track** (Create › Generation): a new song built instrument by instrument, each track fitting the ones
+  before. The mix is exactly the sum of the tracks.
+- **Stem Separation** (library, ⋮ menu of a song): pull 2, 4 or 6 tracks out of a finished song. The model re-generates
+  them, so they follow the song but are no exact split of the mix.
+- **Replace / accompany** (tab **Replace**): upload a file and replace chosen instruments, or add new accompaniment
+  tracks to a single take, for example vocals.
+
+Songs with tracks get a **Tracks** button (play, download each track, all as ZIP) and a **Mixer** (waveform, volume,
+mute and solo per track). Details: [docs/stems.md](../stems.md) (German).
+
 ## Folders
 
 ![The folder bar](images/folders.png)
@@ -136,7 +152,8 @@ your songs are kept. If it reports a new installer version, run **install** once
 **Mac app (SONIQ.app):** at start the app looks for a new version on GitHub; if there is one, the gear gets a dot.
 **Gear › Check for updates** then shows what is new and **Download new version**: open the DMG and drag SONIQ to
 Applications (replace). Songs, settings and models stay in `~/Library/Application Support/SONIQ`.
-In the Mac app, a missing XL sound model can be downloaded under **Gear › Sound model**.
+In the Mac app, a missing XL sound model can be downloaded under **Gear › Sound model**, the track model under
+**Gear › Track model**.
 
 ---
 

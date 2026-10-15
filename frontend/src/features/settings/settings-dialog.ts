@@ -2,6 +2,8 @@
 import type { OutputFormat } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { byId } from "../../core/dom.ts";
+import { setPackagedApp, stemsMissingText } from "../../core/stems-hint.ts";
+import type { Translate } from "../../i18n/i18n.ts";
 
 interface SettingsControls extends HTMLFormControlsCollection {
   server_url: HTMLInputElement;
@@ -18,7 +20,9 @@ export class SettingsDialog {
   private readonly api: ApiClient;
   private readonly onOpen: () => void;
   private readonly onSaved: () => void;
+  private readonly t: Translate;
   private readonly onGetXl: () => void;
+  private readonly onGetStems: () => void;
   private readonly dialog = byId<HTMLDialogElement>("settingsDlg");
   private readonly f = byId<HTMLFormElement>("settingsForm").elements as SettingsControls;
 
@@ -26,12 +30,19 @@ export class SettingsDialog {
    * @param onOpen   beim Öffnen (z. B. Update-Bereich zurücksetzen)
    * @param onSaved  nach dem Speichern (z. B. Serverstatus neu prüfen)
    * @param onGetXl  fertige App: XL-Klangmodell nachladen (über die Einrichtung)
+   * @param onGetStems fertige App: Spuren-Modell nachladen (über die Einrichtung)
    */
-  constructor(api: ApiClient, onOpen: () => void, onSaved: () => void, onGetXl: () => void) {
+  constructor(api: ApiClient, t: Translate, onOpen: () => void, onSaved: () => void, onGetXl: () => void, onGetStems: () => void) {
     this.api = api;
+    this.t = t;
     this.onOpen = onOpen;
     this.onSaved = onSaved;
     this.onGetXl = onGetXl;
+    this.onGetStems = onGetStems;
+    byId("stemsGet").addEventListener("click", () => {
+      this.dialog.close();
+      this.onGetStems();
+    });
     byId("ditGetXl").addEventListener("click", () => {
       this.dialog.close();
       this.onGetXl();
@@ -55,6 +66,10 @@ export class SettingsDialog {
     // Fehlt XL: in der fertigen App ein Knopf zum Nachladen, sonst der Hinweis auf den Installer
     byId("ditHint").hidden = s.dit_xl_available || s.packaged;
     byId("ditGetXl").hidden = s.dit_xl_available || !s.packaged;
+    // Spuren-Modell: da, in der fertigen App nachladbar, sonst Hinweis auf den Installer
+    setPackagedApp(s.packaged);
+    byId("stemsState").textContent = s.stems_available ? this.t("stems_model_ok") : s.packaged ? "" : stemsMissingText(this.t);
+    byId("stemsGet").hidden = s.stems_available || !s.packaged;
     this.onOpen();
     this.dialog.showModal();
   }

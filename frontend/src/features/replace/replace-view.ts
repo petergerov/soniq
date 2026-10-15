@@ -2,6 +2,7 @@
 import { STEM_TRACKS, type AnalyzeResult, type StemIntent, type StemTrack } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { byId } from "../../core/dom.ts";
+import { setPackagedApp, stemsMissingText } from "../../core/stems-hint.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import { toWavAudio, UnsupportedAudioError } from "../analyze/audio-converter.ts";
 
@@ -37,7 +38,10 @@ export class ReplaceView {
   constructor(deps: ReplaceViewDeps) {
     this.deps = deps;
     this.bind();
-    void deps.api.settings().then((s) => this.setAvailable(s.stems_available), () => {});
+    void deps.api.settings().then((s) => {
+      setPackagedApp(s.packaged);
+      this.setAvailable(s.stems_available);
+    }, () => {});
     this.render();
   }
 
@@ -151,9 +155,9 @@ export class ReplaceView {
     const nNew = STEM_TRACKS.filter((x) => this.next.has(x)).length;
     this.go.textContent = replace ? t("replace_go") : t("replace_go_accompany");
     this.go.disabled = !this.available || !this.file || !nNew || (replace && !nKeep);
-    this.go.title = this.available ? "" : t("replace_missing");
+    this.go.title = this.available ? "" : stemsMissingText(t);
     this.hint.className = `small ${this.available ? "" : "err-t"}`.trim();
-    this.hint.textContent = !this.available ? t("replace_missing")
+    this.hint.textContent = !this.available ? stemsMissingText(t)
       : !this.file ? t("replace_need_file")
       : replace && !nKeep ? t("replace_need_keepers")
       : !nNew ? t("replace_need_tracks")

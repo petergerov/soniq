@@ -82,6 +82,11 @@ Bigger means song structure, tempo and lyrics are matched better. The sound mode
 > Recommended from 16 GB RAM. Switch under **Gear › Sound model**, Standard stays preselected.
 > To add it later, run `./install.command --xl`.
 
+> [!NOTE]
+> **Optional: track model.** The installer also asks whether to download the track model (2.5 GB, <kbd>Enter</kbd> = no).
+> It is needed for **track by track**, **Stem Separation** and **Replace / accompany**; without it these stay greyed out.
+> To add it later, run `./install.command --stems`.
+
 ## How long?
 
 | Step | Duration |
@@ -108,6 +113,7 @@ With `git clone` (step 1) the warning never appears in the first place.
 ./install.command --yes        # no questions, take the recommendation
 ./install.command --lm 4B      # force a language model: 0.6B, 1.7B or 4B
 ./install.command --xl         # also download the XL sound model
+./install.command --stems      # also download the track model (single tracks)
 ./install.command --no-start   # don't start the app at the end
 ```
 

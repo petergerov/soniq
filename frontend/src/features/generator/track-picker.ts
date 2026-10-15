@@ -3,6 +3,7 @@
 import { STEM_TRACKS, type GenerationMode, type SongParams, type StemTrack } from "../../../../shared/api.ts";
 import { byId, closest } from "../../core/dom.ts";
 import { storage } from "../../core/storage.ts";
+import { stemsMissingText } from "../../core/stems-hint.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 
 const MODE_KEY = "genMode";
@@ -90,7 +91,7 @@ export class TrackPicker {
       b.setAttribute("aria-pressed", String(isTracks === tracksMode));
       if (isTracks) {
         b.disabled = !this.available;
-        b.title = this.available ? t("gen_tracks_tip") : t("gen_tracks_missing");
+        b.title = this.available ? t("gen_tracks_tip") : stemsMissingText(t);
       }
     });
     this.chips.hidden = !tracksMode;
@@ -103,6 +104,6 @@ export class TrackPicker {
     const n = this.tracks.length;
     this.hint.hidden = !tracksMode;
     this.hint.className = `small ${n || !tracksMode ? "" : "err-t"}`.trim();
-    this.hint.textContent = !this.available ? t("gen_tracks_missing") : n ? t("tracks_hint", n) : t("tracks_none");
+    this.hint.textContent = !this.available ? stemsMissingText(t) : n ? t("tracks_hint", n) : t("tracks_none");
   }
 }

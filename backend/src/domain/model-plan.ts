@@ -44,10 +44,11 @@ export function fixedFiles(catalog: ModelCatalog): ModelFile[] {
   return catalog.files.filter((f) => !f.name.startsWith(LM_PREFIX) && !f.name.includes(XL_MARK) && !f.name.includes(BASE_MARK));
 }
 
-/** Die festen Dateien (VAE, Text-Embedding, Klangmodell), das gewählte Sprachmodell und auf Wunsch XL. */
-export function requiredFiles(catalog: ModelCatalog, size: LmSize, withXl: boolean): ModelFile[] {
+/** Die festen Dateien (VAE, Text-Embedding, Klangmodell), das gewählte Sprachmodell und auf Wunsch XL und Spuren-Modell. */
+export function requiredFiles(catalog: ModelCatalog, size: LmSize, withXl: boolean, withStems = false): ModelFile[] {
   const fixed = fixedFiles(catalog);
   const lm = lmFile(catalog, size);
   const xl = withXl ? xlFile(catalog) : undefined;
-  return [...fixed, ...(lm ? [lm] : []), ...(xl ? [xl] : [])];
+  const stems = withStems ? baseFile(catalog) : undefined;
+  return [...fixed, ...(lm ? [lm] : []), ...(xl ? [xl] : []), ...(stems ? [stems] : [])];
 }

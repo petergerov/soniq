@@ -2,7 +2,9 @@
 
 Überblick über die Spur-Funktionen in SONIQ: was man in der Oberfläche macht, und was im Hintergrund passiert.
 
-Alle drei Erzeugungs-Funktionen brauchen das **Spuren-Modell** `acestep-v15-base` (~2,5 GB). Das normale Song-Modell (SFT/Turbo) kann `extract` und `lego` nicht. Ohne die Datei sind die Features ausgegraut bzw. mit Hinweis zum Download.
+Alle drei Erzeugungs-Funktionen brauchen das **Spuren-Modell** `acestep-v15-base` (~2,5 GB). Das normale Song-Modell (SFT/Turbo) kann `extract` und `lego` nicht. Ohne die Datei sind die Features ausgegraut, mit Hinweis, wie man es bekommt: Installer-Frage bzw. `install --stems`
+(Windows `.\install.ps1 -Stems`, Linux `./arch_linux.sh --stems`); in der Mac-App **Einstellungen › Spuren-Modell laden**
+oder das Häkchen in der ersten Einrichtung. Danach sind die Funktionen ohne Neuladen der Seite frei.
 
 Grobe Dauer: etwa **75 Sekunden pro Spur und Minute Musik**.
 

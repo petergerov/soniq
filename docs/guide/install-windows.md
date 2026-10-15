@@ -39,6 +39,7 @@ server (about 180 MB) and the models, verifies their checksums, tests the graphi
 | **Graphics card** | RTX 30xx and newer run on CUDA. Older cards (GTX 10xx/16xx, RTX 20xx) automatically use Vulkan: a 30-second song takes about 1 minute on a GTX 1060, 90 seconds about 2.5 minutes. |
 | **Language model** | Graphics memory limits the choice as well: below 6 GB 0.6B, 6 to 7 GB 1.7B, from 8 GB 4B. The installer suggests a fitting one. |
 | **XL sound model** | Recommended from 12 GB graphics memory. Add it later with `.\install.ps1 -XL`. |
+| **Track model** | 2.5 GB, for track by track, Stem Separation and Replace / accompany. Add it later with `.\install.ps1 -Stems`. |
 | **Start and stop** | Shortcuts on the desktop and in the folder. OFF stops the servers but leaves the browser tab open. |
 | **Log files** | In the `data` folder: `server.log`, `ace-server.log` and an `.err.log` with error messages for each. |
 
@@ -48,6 +49,7 @@ server (about 180 MB) and the models, verifies their checksums, tests the graphi
 .\install.ps1 -Yes          # no questions, take the recommendation
 .\install.ps1 -LM 1.7B      # force a language model: 0.6B, 1.7B or 4B
 .\install.ps1 -XL           # also download the XL sound model
+.\install.ps1 -Stems        # also download the track model (single tracks)
 .\install.ps1 -NoStart      # don't start the app at the end
 .\install.ps1 -Build        # compile the model server yourself (needs Visual Studio Build Tools + CUDA Toolkit)
 ```

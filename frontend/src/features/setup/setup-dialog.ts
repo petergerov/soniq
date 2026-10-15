@@ -27,6 +27,7 @@ export class SetupDialog {
   private readonly dialog = byId<HTMLDialogElement>("setupDlg");
   private readonly lmBox = byId("setupLm");
   private readonly xl = byId<HTMLInputElement>("setupXl");
+  private readonly stems = byId<HTMLInputElement>("setupStems");
   private status: SetupStatus | undefined;
   private timer: number | undefined;
 
@@ -37,6 +38,7 @@ export class SetupDialog {
     this.dialog.addEventListener("cancel", (e) => e.preventDefault());   // Esc schließt nicht
     this.lmBox.addEventListener("change", () => this.renderInfo());
     this.xl.addEventListener("change", () => this.renderInfo());
+    this.stems.addEventListener("change", () => this.renderInfo());
     byId("setupStart").addEventListener("click", () => void this.start());
     byId("setupCancel").addEventListener("click", () => void this.api.cancelSetup().then((s) => this.show(s)));
   }
@@ -56,6 +58,15 @@ export class SetupDialog {
   async addXl(): Promise<void> {
     try {
       this.show(await this.api.addXl());
+    } catch (e) {
+      alert((e as Error).message);
+    }
+  }
+
+  /** Fertige App, Einstellungen › Spuren-Modell: Base-Modell nachladen; Fortschritt wie bei der Einrichtung. */
+  async addStems(): Promise<void> {
+    try {
+      this.show(await this.api.addStems());
     } catch (e) {
       alert((e as Error).message);
     }
@@ -110,6 +121,9 @@ export class SetupDialog {
     this.xl.checked = this.xl.checked || s.xl.present;
     this.xl.disabled = s.xl.present;
     byId("setupXlText").textContent = t("setup_xl", gb(s.xl.mb));
+    this.stems.checked = this.stems.checked || s.stems.present;
+    this.stems.disabled = s.stems.present;
+    byId("setupStemsText").textContent = t("setup_stems", gb(s.stems.mb));
     this.renderInfo();
   }
 
@@ -118,7 +132,8 @@ export class SetupDialog {
     const s = this.status;
     if (!s) return;
     const lm = s.lm_options.find((o) => o.size === this.chosenLm);
-    const mb = s.base_mb + (lm && !lm.present ? lm.mb : 0) + (this.xl.checked && !s.xl.present ? s.xl.mb : 0);
+    const mb = s.base_mb + (lm && !lm.present ? lm.mb : 0) + (this.xl.checked && !s.xl.present ? s.xl.mb : 0)
+      + (this.stems.checked && !s.stems.present ? s.stems.mb : 0);
     byId("setupInfo").textContent = this.t("setup_info", gb(mb), s.ram_gb, s.free_gb);
   }
 
@@ -142,7 +157,7 @@ export class SetupDialog {
 
   private async start(): Promise<void> {
     try {
-      this.show(await this.api.startSetup({ lm: this.chosenLm, xl: this.xl.checked && !this.xl.disabled }));
+      this.show(await this.api.startSetup({ lm: this.chosenLm, xl: this.xl.checked && !this.xl.disabled, stems: this.stems.checked && !this.stems.disabled }));
     } catch (e) {
       const error = byId("setupError");
       error.hidden = false;

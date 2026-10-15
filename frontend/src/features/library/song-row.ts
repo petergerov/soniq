@@ -2,6 +2,7 @@
 import { EXTRACT_COUNTS, type ExtractCount, type Song, type Stem, type SynthCompute } from "../../../../shared/api.ts";
 import { escapeHtml as esc } from "../../core/dom.ts";
 import { formatDuration, generationTime } from "../../core/format.ts";
+import { stemsMissingText } from "../../core/stems-hint.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 
 export interface SongRowContext {
@@ -206,7 +207,7 @@ function extractBlock(song: Song, ctx: SongRowContext): string {
     : `<button type="button" class="sek" data-a="extract-go" ${!ctx.stemsAvailable ? "disabled" : ""}>${t("extract_go")}</button>`;
   const compute = computeBadge(ctx.synthCompute, t);
   return `<div class="extract">
-      <div class="extract-head"><div class="small">${t(ctx.stemsAvailable ? "extract_honest" : "gen_tracks_missing")}</div>${compute}</div>
+      <div class="extract-head"><div class="small">${(ctx.stemsAvailable ? t("extract_honest") : stemsMissingText(t))}</div>${compute}</div>
       <div class="chips track-chips">${chips}</div>
       <div class="extract-bar">${action}<span class="small">${ctx.stemsAvailable ? t("extract_hint", ctx.extractCount) : ""}</span></div>
     </div>`;

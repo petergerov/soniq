@@ -16,6 +16,7 @@
 #                          (rocm/hip empfohlen für AMD Radeon wie RX 9070 XT)
 #   --lm [0.6B|1.7B|4B]    Sprachmodellgröße festlegen
 #   --xl                   Zusätzlich das XL-Klangmodell herunterladen (5,3 GB)
+#   --stems                Zusätzlich das Spuren-Modell herunterladen (2,5 GB: Spur für Spur, Herauslösen, Ersetzen)
 #   --no-browser           Browser beim Start nicht automatisch öffnen
 #   --help, -h             Diese Hilfe anzeigen
 
@@ -29,6 +30,7 @@ AUTO=0
 ACTION="run"       # run, install_only, start, stop, status, uninstall
 LM_SIZE=""
 XL=0
+STEMS=0
 REBUILD=0
 BACKEND="auto"
 OPEN_BROWSER=1
@@ -47,6 +49,7 @@ while [ $# -gt 0 ]; do
     --backend) BACKEND="$2"; shift ;;
     --lm) LM_SIZE="$2"; shift ;;
     --xl) XL=1 ;;
+    --stems) STEMS=1 ;;
     --no-browser) OPEN_BROWSER=0 ;;
     --help|-h)
       echo "SONIQ – Arch Linux Setup & Launcher"
@@ -67,6 +70,7 @@ while [ $# -gt 0 ]; do
       echo "                         (rocm/hip for AMD Radeon such as RX 9070 XT)"
       echo "  --lm [0.6B|1.7B|4B]    Force language model size"
       echo "  --xl                   Also download the XL sound model"
+      echo "  --stems                Also download the track model (track by track, extract, replace)"
       echo "  --no-browser           Do not open the browser automatically"
       echo "  --help, -h             Show help"
       exit 0
@@ -616,12 +620,25 @@ installiere() {
   fi
   [ "$XL" = 1 ] && echo "  → plus XL sound model"
 
+  # Optional: Spuren-Modell (Base) für einzelne Spuren. Ist es schon da, bleibt es; sonst nur auf Wunsch.
+  STEMS_FILE="acestep-v15-base-Q8_0.gguf"
+  [ -f "$MODELS/$STEMS_FILE" ] && STEMS=1
+  if [ "$STEMS" != 1 ] && [ "$AUTO" != 1 ]; then
+    echo ""
+    echo "  Track model (optional extra, 2.5 GB): generate a song track by track, extract single tracks"
+    echo "  from a song, or replace instruments in your own recording. Without it these features stay greyed out."
+    read -r -p "  Download the track model as well? [Enter = no, y = yes]: " a
+    [[ "$a" =~ ^[jJyY] ]] && STEMS=1
+  fi
+  [ "$STEMS" = 1 ] && echo "  → plus track model"
+
   # 7. Modelle herunterladen
   schritt "7. Downloading models"
   mkdir -p "$MODELS"
   local FILES
   FILES=$(echo "$MODEL_FILES" | grep -v 'acestep-5Hz-lm-\|xl-sft\|v15-base' ; echo "$MODEL_FILES" | grep "^$LM_FILE:")
   [ "$XL" = 1 ] && FILES=$(echo "$FILES"; echo "$MODEL_FILES" | grep 'xl-sft')
+  [ "$STEMS" = 1 ] && FILES=$(echo "$FILES"; echo "$MODEL_FILES" | grep 'v15-base')
 
   local NEED_MB=0
   for e in $FILES; do

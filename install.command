@@ -6,16 +6,18 @@
 # Optionen:  --yes        keine Rückfragen, Empfehlung übernehmen
 #            --lm SIZE    Sprachmodell erzwingen: 0.6B, 1.7B oder 4B
 #            --xl         zusätzlich das XL-Klangmodell laden (5,3 GB, in den Einstellungen wählbar)
+#            --stems      zusätzlich das Spuren-Modell laden (2,5 GB: Spur für Spur, Herauslösen, Ersetzen)
 #            --no-start   App am Ende nicht starten
 source "$(dirname "$0")/scripts/common.sh"
 cd "$ROOT" || exit 1
 
-AUTO=0; START=1; LM_SIZE=""; XL=0
+AUTO=0; START=1; LM_SIZE=""; XL=0; STEMS=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --yes) AUTO=1 ;;
     --no-start) START=0 ;;
     --xl) XL=1 ;;
+    --stems) STEMS=1 ;;
     --lm) LM_SIZE="$2"; shift ;;
   esac
   shift
@@ -90,9 +92,22 @@ if [ "$XL" != 1 ] && [ "$AUTO" != 1 ]; then
 fi
 [ "$XL" = 1 ] && echo "  → plus XL sound model"
 
-# Benötigte Dateien (Name:MB:SHA-256 aus common.sh): die drei festen, das gewählte Sprachmodell, auf Wunsch XL
+# Optional: Spuren-Modell (Base) für einzelne Spuren. Ist es schon da, bleibt es; sonst nur auf Wunsch.
+STEMS_FILE=$(echo "$MODEL_FILES" | grep 'v15-base' | cut -d: -f1)
+[ -f "$MODELS/$STEMS_FILE" ] && STEMS=1
+if [ "$STEMS" != 1 ] && [ "$AUTO" != 1 ]; then
+  echo ""
+  echo "  Track model (optional extra, 2.5 GB): generate a song track by track, extract single tracks"
+  echo "  from a song, or replace instruments in your own recording. Without it these features stay greyed out."
+  read -r -p "  Download the track model as well? [Enter = no, y = yes] " a
+  [[ "$a" =~ ^[yY] ]] && STEMS=1
+fi
+[ "$STEMS" = 1 ] && echo "  → plus track model"
+
+# Benötigte Dateien (Name:MB:SHA-256 aus common.sh): die drei festen, das gewählte Sprachmodell, auf Wunsch XL und Spuren-Modell
 FILES=$(echo "$MODEL_FILES" | grep -v 'acestep-5Hz-lm-\|xl-sft\|v15-base' ; echo "$MODEL_FILES" | grep "^$LM_FILE:")
 [ "$XL" = 1 ] && FILES=$(echo "$FILES"; echo "$MODEL_FILES" | grep 'xl-sft')
+[ "$STEMS" = 1 ] && FILES=$(echo "$FILES"; echo "$MODEL_FILES" | grep 'v15-base')
 NEED_MB=0
 for e in $FILES; do
   IFS=: read -r f mb _ <<< "$e"

@@ -301,6 +301,8 @@ export interface SetupStatus {
   recommended_lm: LmSize;
   lm_options: { size: LmSize; mb: number; present: boolean }[];
   xl: { mb: number; present: boolean };
+  /** Spuren-Modell (Base): Spur für Spur, Herauslösen, Ersetzen */
+  stems: { mb: number; present: boolean };
   /** Noch fehlende feste Dateien (VAE, Text-Embedding, Klangmodell) in MB */
   base_mb: number;
   /** Datei, die gerade geladen wird */
@@ -314,6 +316,8 @@ export interface SetupStatus {
 export interface SetupRequest {
   lm: LmSize;
   xl: boolean;
+  /** Spuren-Modell mitladen */
+  stems?: boolean;
 }
 
 export interface ErrorBody {
