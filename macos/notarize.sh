@@ -49,5 +49,6 @@ for attempt in 1 2 3 4 5; do
   echo "  stapling failed, retrying in $((attempt * 15)) s …"
   sleep $((attempt * 15))
 done
-xcrun stapler validate "$FILE"
+# "stapler staple" prüft das Ticket schon selbst ("staple and validate action worked"); ein extra "stapler validate"
+# fragt erneut bei Apple nach und scheiterte im CI an derselben abgebrochenen Verbindung. Zum Schluss Gatekeeper:
 spctl --assess --type open --context context:primary-signature --verbose=2 "$FILE"
