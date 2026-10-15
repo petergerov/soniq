@@ -28,6 +28,8 @@ export interface SongListDeps {
   /** Einzelspuren eines Songs laden bzw. eine davon im Player abspielen */
   loadStems: (songId: string) => Promise<Stem[]>;
   playStem: (song: Song, stem: Stem) => void;
+  /** Hochgeladene Vorlage (Ersetzen/Begleiten) im Player abspielen */
+  playSource: (song: Song) => void;
   extractStems: (songId: string, tracks: StemTrack[]) => Promise<Stem[]>;
   cancelExtract: (songId: string) => Promise<Stem[]>;
   deleteAllStems: (songId: string) => Promise<Stem[]>;
@@ -152,6 +154,9 @@ export class SongList {
         if (stem?.url) this.deps.playStem(song, stem);
         return;
       }
+      case "source-play":
+        if (song.source_url) this.deps.playSource(song);
+        return;
       case "stems-del-all": {
         const ok = await confirmDialog({
           title: t("stems_del_all"),

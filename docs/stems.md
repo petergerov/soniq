@@ -58,6 +58,10 @@ Upload ist schon eine **isolierte Take** (z. B. Gesang oder Gitarre). Kein Ext
 
 **Ergebnis:** neuer Bibliothek-Eintrag („Replacement for …“ / „Accompaniment for …“) mit Spuren (`replacement` / `accompaniment`) und Mix.
 
+Der Upload bleibt erreichbar: in der Spurenliste als **Original** (abspielen, herunterladen), im Mixer als eigener Kanal
+und im ZIP als `00 original.wav`. Beim Ersetzen ist der Kanal anfangs stumm (darin stecken die ersetzten Instrumente;
+per Solo zum Vergleichen), beim Begleiten hörbar (die Aufnahme gehört zum Song).
+
 ---
 
 ## Mixer
@@ -70,6 +74,9 @@ Upload ist schon eine **isolierte Take** (z. B. Gesang oder Gitarre). Kein Ext
 - Lautsprecher-Icon → Klick klappt den Lautstärke-Regler aus  
 - Mute (M) und Solo (S)  
 - gemeinsamer Transport (Play/Pause, Scrub, Zeit), Spuren synchron  
+- Herunterladen: **↓** je Spur, **ZIP ↓** für alle (mit Original), **Mix ↓** = der Mix so, wie er gerade klingt
+  (Lautstärke, Mute und Solo). Den Mix rechnet der Server aus den gespeicherten WAVs; Spitzen über 0,95 werden wie
+  beim Song-Mix abgesenkt, ein Original mit 44,1 kHz wird auf die 48 kHz der Spuren umgerechnet.
 
 Keine neue Synthese — es werden die gespeicherten WAV-Dateien geladen. Der normale Player-Balken ist auf dieser Seite ausgeblendet.
 
@@ -87,6 +94,6 @@ Keine neue Synthese — es werden die gespeicherten WAV-Dateien geladen. Der nor
 - Dateien: `<song-id>.<track>.wav` im Song-Ordner.  
 - Tabelle `stems`: `id`, `song_id`, `track`, `kind`, `status`, Reihenfolge, Zeiten. Song löschen löscht die Spuren.  
 - Engine: Multipart `POST /synth` mit `synth_model` = Base-Modell.  
-- API u. a.: `GET /api/songs/:id/stems`, `…/stems.zip`, `GET /api/stems/:id/audio`, `DELETE /api/stems/:id`, `DELETE /api/songs/:id/stems`, `POST /api/songs/:id/stems` (extract), `POST /api/stems/upload` (replace/accompany).
+- API u. a.: `GET /api/songs/:id/stems`, `…/stems.zip`, `GET /api/stems/:id/audio`, `DELETE /api/stems/:id`, `DELETE /api/songs/:id/stems`, `POST /api/songs/:id/stems` (extract), `POST /api/stems/upload` (replace/accompany), `GET /api/songs/:id/source` (Original), `GET /api/songs/:id/mix?gains=<spur-id>:<0…1>,…,source:<0…1>` (Mix als WAV; fehlende Kanäle sind stumm).
 
 Plan, Experimente und Status der Umsetzung: [`newfeatures.md`](../newfeatures.md).

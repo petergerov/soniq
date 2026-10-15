@@ -20,7 +20,12 @@ const FORMAT_PCM = 1;
 const FORMAT_FLOAT = 3;
 const FORMAT_EXTENSIBLE = 0xfffe;
 
-export function parseWav(data: Uint8Array): Pcm {
+/** Gelesene WAV-Datei samt Bittiefe (ein Mix daraus soll nicht gröber werden als seine Spuren). */
+export interface WavFile extends Pcm {
+  depth: WavDepth;
+}
+
+export function parseWav(data: Uint8Array): WavFile {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const text = (pos: number) => String.fromCharCode(data[pos]!, data[pos + 1]!, data[pos + 2]!, data[pos + 3]!);
   if (data.byteLength < 12 || text(0) !== "RIFF" || text(8) !== "WAVE") throw new Error("not a WAV file");
@@ -53,7 +58,7 @@ export function parseWav(data: Uint8Array): Pcm {
         throw new Error(`unsupported WAV format ${format}/${bits} bit`);
       }
       if (!channels || !sampleRate) throw new Error("WAV without fmt chunk");
-      return { sampleRate, channels, samples };
+      return { sampleRate, channels, samples, depth: bits as WavDepth };
     }
     pos = body + size + (size % 2);   // Chunks sind auf gerade Längen aufgefüllt
   }
@@ -106,6 +111,46 @@ export function mix(tracks: readonly Pcm[]): Pcm {
   const samples = new Float32Array(Math.max(...tracks.map((t) => t.samples.length)));
   for (const t of tracks) for (let i = 0; i < t.samples.length; i++) samples[i]! += t.samples[i]!;
   return { sampleRate: first.sampleRate, channels: first.channels, samples };
+}
+
+/**
+ * `pcm` mal `gain` zur Summe addieren (ohne Summe: neue anlegen). Ändert die übergebene Summe; ist `pcm` länger,
+ * wächst sie mit. So liegt beim Mischen nur die Summe und die gerade gelesene Spur im Speicher.
+ */
+export function addScaled(sum: Pcm | undefined, pcm: Pcm, gain: number): Pcm {
+  if (sum && (sum.sampleRate !== pcm.sampleRate || sum.channels !== pcm.channels)) throw new Error("tracks differ in sample rate or channels");
+  let samples = sum?.samples ?? new Float32Array(pcm.samples.length);
+  if (samples.length < pcm.samples.length) {
+    const longer = new Float32Array(pcm.samples.length);
+    longer.set(samples);
+    samples = longer;
+  }
+  for (let i = 0; i < pcm.samples.length; i++) samples[i]! += pcm.samples[i]! * gain;
+  return { sampleRate: pcm.sampleRate, channels: pcm.channels, samples };
+}
+
+/**
+ * Andere Abtastrate, linear interpoliert. Gedacht für die hochgeladene Vorlage, die bei langen Dateien mit 44,1 kHz oder
+ * weniger ankommt, während die Spuren 48 kHz haben (hochrechnen; zum Herunterrechnen fehlt ein Tiefpass).
+ */
+export function resample(pcm: Pcm, rate: number): Pcm {
+  if (pcm.sampleRate === rate) return pcm;
+  const { channels } = pcm;
+  const frames = pcm.samples.length / channels;
+  const outFrames = Math.round((frames * rate) / pcm.sampleRate);
+  const samples = new Float32Array(outFrames * channels);
+  const step = pcm.sampleRate / rate;
+  for (let f = 0; f < outFrames; f++) {
+    const pos = f * step;
+    const i = Math.min(Math.floor(pos), frames - 1);
+    const j = Math.min(i + 1, frames - 1);
+    const frac = pos - i;
+    for (let c = 0; c < channels; c++) {
+      const a = pcm.samples[i * channels + c]!;
+      samples[f * channels + c] = a + (pcm.samples[j * channels + c]! - a) * frac;
+    }
+  }
+  return { sampleRate: rate, channels, samples };
 }
 
 /** Leiser machen, falls die Spitze über `ceiling` liegt (Summen übersteuern sonst). */

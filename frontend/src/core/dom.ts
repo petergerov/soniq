@@ -69,6 +69,15 @@ export class PressGuard {
   }
 }
 
+/** Datei aus dem Speicher herunterladen (z. B. einen frisch gemischten Mix). */
+export function saveBlob(blob: Blob, filename: string): void {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60_000);   // sofort freigeben bricht den Download in manchen Browsern ab
+}
+
 /** Startet eine CSS-Animation erneut (Klasse entfernen, Reflow, wieder setzen). */
 export function restartAnimation(el: HTMLElement, className: string): void {
   el.classList.remove(className);

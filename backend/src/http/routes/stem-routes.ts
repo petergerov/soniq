@@ -6,9 +6,9 @@ import type { GenerationService } from "../../services/generation-service.ts";
 import type { JobRunner } from "../../services/generation-worker.ts";
 import type { StemService } from "../../services/stem-service.ts";
 import { HttpError, queryBool, readFormData, readJson } from "../request.ts";
-import { FileResponse, ZipResponse } from "../responses.ts";
+import { DownloadResponse, FileResponse, ZipResponse } from "../responses.ts";
 import type { Router } from "../router.ts";
-import { parseExtractTracks, parseStemUploadCommand } from "../validation.ts";
+import { parseExtractTracks, parseMixGains, parseStemUploadCommand } from "../validation.ts";
 
 export interface StemRouteServices {
   stems: StemService;
@@ -33,6 +33,14 @@ export function registerStemRoutes(router: Router, s: StemRouteServices): void {
     .get("/api/songs/:id/stems.zip", async ({ params }) => {
       const { archiveName, entries } = await s.stems.zipEntries(params.id!);
       return new ZipResponse(await StoredZip.prepare(entries), `${archiveName}.zip`);
+    })
+    .get("/api/songs/:id/mix", async ({ params, url }) => {
+      const mix = await s.stems.mixdown(params.id!, parseMixGains(url.searchParams.get("gains")));
+      return new DownloadResponse(mix.data, mix.downloadName);
+    })
+    .get("/api/songs/:id/source", async ({ params, url }) => {
+      const file = await s.stems.source(params.id!, queryBool(url, "download"));
+      return new FileResponse(file.path, { downloadName: file.downloadName });
     })
     .get("/api/stems/:id/audio", async ({ params, url }) => {
       const file = await s.stems.audio(params.id!, queryBool(url, "download"));

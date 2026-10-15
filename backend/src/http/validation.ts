@@ -114,6 +114,17 @@ export function parseExtractTracks(input: Input): StemTrack[] {
   return orderTracks(tracks);
 }
 
+/** `gains=<id>:<0…1>,…` des Mixers (Spur-IDs und "source"); fehlende Kanäle sind stumm. */
+export function parseMixGains(value: string | null): Map<string, number> {
+  const gains = new Map<string, number>();
+  for (const pair of (value ?? "").split(",").filter(Boolean)) {
+    const m = /^([\w-]+):(\d+(?:\.\d+)?)$/.exec(pair.trim());
+    if (!m || Number(m[2]) > 1) invalid("gains", "list of <id>:<0…1> expected");
+    gains.set(m[1]!, Number(m[2]));
+  }
+  return gains;
+}
+
 export function parseStemUploadCommand(input: Input): import("../services/generation-service.ts").StemUploadCommand {
   const intent = str(input, "intent");
   if (intent !== "replace" && intent !== "accompany") invalid("intent", '"replace" or "accompany" expected');

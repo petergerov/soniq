@@ -15,7 +15,7 @@ import { LibraryStore } from "./features/library/library-store.ts";
 import { PlayedSongs } from "./features/library/played-songs.ts";
 import { SongDrag } from "./features/library/song-drag.ts";
 import { SongList } from "./features/library/song-list.ts";
-import { displayTitle } from "./features/library/song-row.ts";
+import { displayTitle, sourcePlayId } from "./features/library/song-row.ts";
 import { MixerView } from "./features/mixer/mixer-view.ts";
 import { AudioPlayer, type PlayOptions } from "./features/player/audio-player.ts";
 import { ServerControl } from "./features/settings/server-control.ts";
@@ -84,6 +84,7 @@ songList = new SongList({
   openMixer: (song) => router.go("mixer", song.id),
   // Eine Spur spielt der Player wie einen eigenen Song (eigene Gruppe: keine A/B-Knöpfe)
   playStem: (song, stem) => playSong({ ...song, id: stem.id, group_id: `stem:${stem.id}`, letter: "", url: stem.url, title: `${displayTitle(song)} · ${t(`track_${stem.track}`)}` }),
+  playSource: (song) => playSong({ ...song, id: sourcePlayId(song.id), group_id: `source:${song.id}`, letter: "", url: song.source_url, title: `${displayTitle(song)} · ${t("source_track")}` }),
 });
 router.onChange((state) => {
   if (state.route === "mixer" && state.songId) void mixer.open(state.songId).catch((e: Error) => alert(`${t("error")}: ${e.message}`));

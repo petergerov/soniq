@@ -70,6 +70,8 @@ export interface Song {
   /** Versionen desselben Prompts heißen A, B, C … ("" bei Einzelstücken). */
   letter: string;
   url: string | null;
+  /** Hochgeladene Vorlage (Ersetzen/Begleiten), sonst null */
+  source_url: string | null;
 }
 
 export interface GenerateRequest {
@@ -181,6 +183,8 @@ export function extractPreset(count: ExtractCount, instrumental: boolean): StemT
 /** generated = Spur für Spur erzeugt, extracted = aus dem Song herausgelöst, replacement / accompaniment = zu einer hochgeladenen Datei */
 export type StemKind = "generated" | "extracted" | "replacement" | "accompaniment";
 export type StemStatus = "queued" | "running" | "done" | "error";
+/** Kanal der hochgeladenen Vorlage im Mixer (Schlüssel neben den Spur-IDs in GET /api/songs/:id/mix?gains=…) */
+export const SOURCE_CHANNEL = "source";
 
 export interface Stem {
   id: string;

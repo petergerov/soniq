@@ -261,6 +261,7 @@ Not yet: presets do not store the generation mode and tracks.
 | 5 | ✅ Experiment **C**: replace-on-mix rejected; **extract then replace** decided | 1 |
 | 6 | ✅ **C**: upload area, replace = extract keepers then lego; accompany = lego on the take | 4, 5 |
 | 7 | ✅ Base model for everyone: installer question / `--stems`, Mac app button, guide (`docs/guide`), README | 1 |
+| 8 | ✅ Upload of **C** as "Original" (track list, mixer channel: muted after replace, audible for accompany; ZIP); mixer downloads each track, all as ZIP and the mix as heard (`GET /api/songs/:id/mix`, mixed on the server) | 6 |
 
 ## Open questions
 

@@ -43,6 +43,14 @@ export class ApiClient {
   }
   cancelExtract(songId: string): Promise<Stem[]> { return this.send("POST", `/api/songs/${songId}/stems/cancel`); }
   deleteAllStems(songId: string): Promise<Stem[]> { return this.send("DELETE", `/api/songs/${songId}/stems`); }
+  /** Mix nach Reglerstellung als WAV: Kanal-ID (Spur oder Vorlage) → Lautstärke 0…1, fehlende Kanäle sind stumm. */
+  async mixdown(songId: string, gains: ReadonlyMap<string, number>): Promise<{ blob: Blob; filename: string }> {
+    const list = [...gains].map(([id, gain]) => `${id}:${Math.round(gain * 1000) / 1000}`).join(",");
+    const r = await fetch(`/api/songs/${songId}/mix?gains=${encodeURIComponent(list)}`, { headers: { "X-Lang": this.lang() } });
+    if (!r.ok) throw await this.error(r);
+    const name = /filename\*=UTF-8''([^;]+)/.exec(r.headers.get("content-disposition") ?? "")?.[1];
+    return { blob: await r.blob(), filename: name ? decodeURIComponent(name) : "mix.wav" };
+  }
   uploadStems(file: File, request: {
     intent: StemIntent; tracks: StemTrack[]; keepers?: StemTrack[]; title?: string; caption: string; lyrics?: string;
     duration?: number; bpm?: number; keyscale?: string; timesignature?: string; vocal_language?: string; seed?: number;
@@ -106,10 +114,12 @@ export class ApiClient {
       payload = JSON.stringify(body);
     }
     const r = await fetch(path, { method, headers, body: payload });
-    if (!r.ok) {
-      const err = (await r.json().catch(() => ({}))) as Partial<ErrorBody>;
-      throw new ApiError(r.status, typeof err.detail === "string" ? err.detail : JSON.stringify(err.detail) || r.statusText);
-    }
+    if (!r.ok) throw await this.error(r);
     return (await r.json()) as T;
+  }
+
+  private async error(r: Response): Promise<ApiError> {
+    const err = (await r.json().catch(() => ({}))) as Partial<ErrorBody>;
+    return new ApiError(r.status, typeof err.detail === "string" ? err.detail : JSON.stringify(err.detail) || r.statusText);
   }
 }

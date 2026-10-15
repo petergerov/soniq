@@ -1,9 +1,10 @@
-// Mixer: alle fertigen Spuren eines Songs mit Waveform, Lautstärke, Mute und Solo.
-// Wiedergabe synchron über mehrere WaveSurfer-Instanzen; Solo dämpft alle anderen.
+// Mixer: alle fertigen Spuren eines Songs mit Waveform, Lautstärke, Mute und Solo, dazu die hochgeladene Vorlage
+// (Ersetzen/Begleiten). Wiedergabe synchron über mehrere WaveSurfer-Instanzen; Solo dämpft alle anderen.
+// Herunterladen: jede Spur einzeln, alle als ZIP, und der Mix so, wie er gerade klingt.
 import WaveSurfer from "wavesurfer.js";
-import type { Song, Stem } from "../../../../shared/api.ts";
+import { SOURCE_CHANNEL, type Song, type Stem } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
-import { byId, closest } from "../../core/dom.ts";
+import { byId, closest, saveBlob } from "../../core/dom.ts";
 import { formatDuration } from "../../core/format.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import { displayTitle } from "../library/song-row.ts";
@@ -24,7 +25,10 @@ export interface MixerViewDeps {
 }
 
 interface Channel {
-  stem: Stem;
+  /** Spur-ID oder SOURCE_CHANNEL (Vorlage) */
+  id: string;
+  /** Übersetzungsschlüssel des Namens */
+  label: string;
   ws: WaveSurfer;
   volume: number;
   muted: boolean;
@@ -39,15 +43,20 @@ export class MixerView {
   private readonly playBtn = byId<HTMLButtonElement>("mixerPlay");
   private readonly timeEl = byId("mixerTime");
   private readonly scrub = byId<HTMLInputElement>("mixerScrub");
+  private readonly mixButton = byId<HTMLButtonElement>("mixerMixDl");
+  private readonly zipLink = byId<HTMLAnchorElement>("mixerZip");
   private channels: Channel[] = [];
   private songId: string | null = null;
   private syncing = false;
   private ready = 0;
+  /** Mix wird gerade auf dem Server gemischt und geladen */
+  private mixing = false;
 
   constructor(deps: MixerViewDeps) {
     this.deps = deps;
     byId("mixerBack").addEventListener("click", () => deps.back());
     this.playBtn.addEventListener("click", () => void this.togglePlay());
+    this.mixButton.addEventListener("click", () => void this.downloadMix());
     this.scrub.addEventListener("input", () => {
       const master = this.channels[0]?.ws;
       if (!master) return;
@@ -73,6 +82,8 @@ export class MixerView {
     this.playBtn.disabled = true;
     this.timeEl.textContent = "…";
     this.scrub.value = "0";
+    this.zipLink.hidden = true;
+    this.updateMixButton();
 
     let song = this.deps.findSong(songId);
     if (!song) {
@@ -85,8 +96,12 @@ export class MixerView {
     try { stems = await this.deps.api.stems(songId); }
     catch { this.showEmpty(this.deps.t("mixer_missing")); return; }
 
-    const done = stems.filter((s) => s.status === "done" && s.url);
-    if (!done.length) {
+    // Vorlage zuletzt: beim Ersetzen stumm (darin stecken die ersetzten Instrumente, zum Vergleichen per Solo),
+    // beim Begleiten hörbar (die Aufnahme gehört zum Song, die Spuren begleiten sie nur)
+    const sources = stems.filter((s) => s.status === "done" && s.url)
+      .map((s) => ({ id: s.id, label: `track_${s.track}`, url: s.url!, muted: false }));
+    if (song.source_url) sources.push({ id: SOURCE_CHANNEL, label: "source_track", url: song.source_url, muted: song.params.mode !== "accompany" });
+    if (!sources.length) {
       this.showEmpty(this.deps.t("mixer_no_stems"));
       return;
     }
@@ -96,7 +111,10 @@ export class MixerView {
     const progress = css.getPropertyValue("--wave-progress").trim() || "#a78bfa";
     this.tracksEl.innerHTML = "";
     this.ready = 0;
-    this.channels = done.map((stem) => this.createChannel(stem, wave, progress));
+    this.channels = sources.map((source) => this.createChannel(source, wave, progress));
+    this.zipLink.href = `/api/songs/${songId}/stems.zip`;
+    this.zipLink.hidden = false;
+    this.applyGains();
     this.root.classList.remove("loading");
   }
 
@@ -110,22 +128,24 @@ export class MixerView {
     if (!this.songId) return;
     // Labels an den Kanälen neu setzen
     this.channels.forEach((ch) => {
-      const name = this.tracksEl.querySelector<HTMLElement>(`[data-stem="${ch.stem.id}"] .mixer-name`);
-      if (name) name.textContent = this.deps.t(`track_${ch.stem.track}`);
+      const name = this.tracksEl.querySelector<HTMLElement>(`[data-stem="${ch.id}"] .mixer-name`);
+      if (name) name.textContent = this.deps.t(ch.label);
     });
+    this.updateMixButton();
   }
 
-  private createChannel(stem: Stem, wave: string, progress: string): Channel {
+  private createChannel(source: { id: string; label: string; url: string; muted: boolean }, wave: string, progress: string): Channel {
     const { t } = this.deps;
     const row = document.createElement("div");
-    row.className = "mixer-track";
-    row.dataset.stem = stem.id;
+    row.className = `mixer-track${source.muted ? " is-muted" : ""}`;
+    row.dataset.stem = source.id;
     row.innerHTML = `
       <div class="mixer-label">
-        <span class="mixer-name">${t(`track_${stem.track}`)}</span>
+        <span class="mixer-name">${t(source.label)}</span>
         <div class="mixer-btns">
-          <button type="button" class="sek icon mixer-mute" data-a="mute" aria-pressed="false" title="${t("mixer_mute")}">M</button>
+          <button type="button" class="sek icon mixer-mute" data-a="mute" aria-pressed="${source.muted}" title="${t("mixer_mute")}">M</button>
           <button type="button" class="sek icon mixer-solo" data-a="solo" aria-pressed="false" title="${t("mixer_solo")}">S</button>
+          <a class="sek icon mixer-dl" href="${source.url}?download=1" download title="${t("download")}" aria-label="${t("download")}">↓</a>
         </div>
       </div>
       <div class="mixer-wave"></div>
@@ -139,9 +159,9 @@ export class MixerView {
       container: row.querySelector<HTMLElement>(".mixer-wave")!,
       height: 48, barWidth: 2, barGap: 1, barRadius: 2, cursorWidth: 1,
       waveColor: wave, progressColor: progress, interact: true,
-      url: stem.url!,
+      url: source.url,
     });
-    const ch: Channel = { stem, ws, volume: 1, muted: false, solo: false };
+    const ch: Channel = { id: source.id, label: source.label, ws, volume: 1, muted: source.muted, solo: false };
     ws.on("ready", () => {
       this.ready++;
       if (this.ready === this.channels.length) this.onAllReady();
@@ -227,7 +247,7 @@ export class MixerView {
     const btn = closest<HTMLElement>(e.target, "[data-a]");
     const row = closest<HTMLElement>(e.target, "[data-stem]");
     if (!btn || !row) return;
-    const ch = this.channels.find((c) => c.stem.id === row.dataset.stem);
+    const ch = this.channels.find((c) => c.id === row.dataset.stem);
     if (!ch) return;
     if (btn.dataset.a === "vol-toggle") {
       const box = closest<HTMLElement>(btn, ".mixer-vol");
@@ -256,7 +276,7 @@ export class MixerView {
     const input = closest<HTMLInputElement>(e.target, "input[data-a=vol]");
     const row = closest<HTMLElement>(e.target, "[data-stem]");
     if (!input || !row) return;
-    const ch = this.channels.find((c) => c.stem.id === row.dataset.stem);
+    const ch = this.channels.find((c) => c.id === row.dataset.stem);
     if (!ch) return;
     ch.volume = Number(input.value) / 100;
     this.syncVolUi(row, ch.volume);
@@ -277,15 +297,46 @@ export class MixerView {
     box.style.setProperty("--v", String(volume));
   }
 
-  /** Solo: nur Solo-Spuren hörbar. Sonst Mute. Lautstärke immer multipliziert. */
-  private applyGains(): void {
+  /** Lautstärke je Kanal, wie sie zu hören ist: Solo → nur Solo-Spuren, sonst Mute; Regler immer multipliziert. */
+  private gains(): Map<string, number> {
     const anySolo = this.channels.some((c) => c.solo);
+    return new Map(this.channels.map((ch) => [ch.id, (anySolo ? ch.solo : !ch.muted) ? ch.volume : 0]));
+  }
+
+  private applyGains(): void {
+    const gains = this.gains();
     this.channels.forEach((ch) => {
-      const audible = anySolo ? ch.solo : !ch.muted;
-      ch.ws.setVolume(audible ? ch.volume : 0);
+      ch.ws.setVolume(gains.get(ch.id)!);
       // getWrapper() steckt im Shadow-DOM — closest() erreicht die Spur-Zeile nicht
-      this.tracksEl.querySelector(`[data-stem="${ch.stem.id}"]`)?.classList.toggle("is-silent", !audible);
+      this.tracksEl.querySelector(`[data-stem="${ch.id}"]`)?.classList.toggle("is-silent", !gains.get(ch.id));
     });
+    this.updateMixButton();
+  }
+
+  /** „Mix ↓“: nur wenn etwas zu hören ist; während des Mischens „…“. */
+  private updateMixButton(): void {
+    const { t } = this.deps;
+    const audible = [...this.gains().values()].some((g) => g > 0);
+    this.mixButton.disabled = this.mixing || !audible;
+    this.mixButton.textContent = this.mixing ? "…" : t("mix_dl");
+    this.mixButton.title = audible ? t("mix_dl_tip") : t("mix_dl_silent");
+  }
+
+  /** Der Server mischt die gespeicherten Spuren mit den aktuellen Reglern; die WAV-Datei kommt als Download. */
+  private async downloadMix(): Promise<void> {
+    const songId = this.songId;
+    if (!songId || this.mixing) return;
+    this.mixing = true;
+    this.updateMixButton();
+    try {
+      const { blob, filename } = await this.deps.api.mixdown(songId, this.gains());
+      saveBlob(blob, filename);
+    } catch (e) {
+      alert(`${this.deps.t("error")}: ${(e as Error).message}`);
+    } finally {
+      this.mixing = false;
+      this.updateMixButton();
+    }
   }
 
   private showEmpty(message: string): void {
@@ -293,6 +344,7 @@ export class MixerView {
     this.tracksEl.innerHTML = `<div class="empty">${message}</div>`;
     this.playBtn.disabled = true;
     this.timeEl.textContent = "";
+    this.updateMixButton();
   }
 
   private destroy(): void {

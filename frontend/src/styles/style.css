@@ -511,6 +511,8 @@ body.in-mixer { padding-bottom: 24px; }
 .mixer-card { display: flex; flex-direction: column; gap: 16px; }
 .mixer-head { display: flex; align-items: center; gap: 14px; }
 .mixer-head .col-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mixer-head .download { flex: none; }
+.mixer-head .download:disabled { opacity: .45; cursor: not-allowed; background: transparent; }
 .mixer-transport { display: flex; align-items: center; gap: 12px; padding: 10px 12px;
   border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(255, 255, 255, .02); }
 .mixer-transport .aktion.round { flex: none; }

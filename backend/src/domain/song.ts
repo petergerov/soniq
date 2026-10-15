@@ -48,16 +48,18 @@ export function assignLetters(songsInCreationOrder: readonly { id: string; group
 }
 
 export function toSongDto(r: SongRecord, letters?: Map<string, string>, stems = 0, stemsPending = 0): Song {
+  const params = JSON.parse(r.params) as SongParams;
   return {
     ...r,
     stems,
     stems_pending: stemsPending,
     letter: letters?.get(r.id) ?? "",
-    params: JSON.parse(r.params) as SongParams,
+    params,
     result_meta: r.result_meta ? (JSON.parse(r.result_meta) as SongResultMeta) : null,
     favorite: Boolean(r.favorite),
     hidden: Boolean(r.hidden),
     url: r.file ? `/api/songs/${r.id}/audio` : null,
+    source_url: params.source ? `/api/songs/${r.id}/source` : null,
   };
 }
 

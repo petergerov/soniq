@@ -111,7 +111,10 @@ Each track takes about as long as a whole song of the same length.
   tracks to a single take, for example vocals.
 
 Songs with tracks get a **Tracks** button (play, download each track, all as ZIP) and a **Mixer** (waveform, volume,
-mute and solo per track). Details: [docs/stems.md](../stems.md) (German).
+mute and solo per track). The mixer downloads each track (**↓**), all tracks as **ZIP**, or the **Mix** exactly as it
+sounds with the current settings. Replace and accompany keep your upload as **Original**: playable and downloadable in
+the track list, a channel in the mixer (muted after replacing, for comparing) and part of the ZIP.
+Details: [docs/stems.md](../stems.md) (German).
 
 ## Folders
 

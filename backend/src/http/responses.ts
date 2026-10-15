@@ -85,6 +85,22 @@ export class FileResponse implements HttpResponse {
   }
 }
 
+/** Im Speicher erzeugte Datei als Download (z. B. ein frisch gemischter Mix). */
+export class DownloadResponse implements HttpResponse {
+  private readonly data: Uint8Array;
+  private readonly filename: string;
+
+  constructor(data: Uint8Array, filename: string) {
+    this.data = data;
+    this.filename = filename;
+  }
+
+  async send(res: ServerResponse): Promise<void> {
+    res.writeHead(200, { "content-type": mimeType(this.filename), "content-length": this.data.byteLength, "content-disposition": attachment(this.filename) });
+    res.end(this.data);
+  }
+}
+
 export class ZipResponse implements HttpResponse {
   private readonly zip: StoredZip;
   private readonly filename: string;

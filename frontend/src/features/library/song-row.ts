@@ -192,6 +192,23 @@ function stemRow(stem: Stem, ctx: SongRowContext): string {
       ${stem.url ? `<a class="download mini" href="${stem.url}?download=1" title="${t("download")}">WAV ↓</a>` : ""}</div>`;
 }
 
+/** Kennung der Vorlage im Player (eigene Wiedergabe wie eine Spur). */
+export function sourcePlayId(songId: string): string {
+  return `${songId}:source`;
+}
+
+/** Hochgeladene Vorlage (Ersetzen/Begleiten): abspielen und laden wie eine Spur. */
+function sourceRow(song: Song, ctx: SongRowContext): string {
+  if (!song.source_url) return "";
+  const { t } = ctx;
+  const current = ctx.currentStemId === sourcePlayId(song.id);
+  const ext = (song.params.source?.split(".").pop() || "wav").toUpperCase();
+  return `<div class="stem ${current ? "playing" : ""}">
+      <button class="sek icon" data-a="source-play" aria-label="${t("play")}">${current && ctx.stemPlaying ? "❚❚" : "▶"}</button>
+      <span class="stem-name">${esc(t("source_track"))} <span class="stem-kind">${t("stem_kind_upload")}</span></span>
+      <a class="download mini" href="${song.source_url}?download=1" title="${t("download")}">${ext} ↓</a></div>`;
+}
+
 function extractBlock(song: Song, ctx: SongRowContext): string {
   if (!canExtract(song)) return "";
   const { t } = ctx;
@@ -222,13 +239,13 @@ function computeBadge(c: SynthCompute, t: Translate): string {
 function stemsBlock(song: Song, ctx: SongRowContext): string {
   if (!ctx.stemsOpen) return "";
   if (!ctx.stems) return `<div class="stems">${extractBlock(song, ctx)}<div class="small">…</div></div>`;
-  const ready = ctx.stems.some((s) => s.url);
+  const ready = ctx.stems.some((s) => s.url) || !!song.source_url;   // das ZIP enthält auch die Vorlage
   const deletable = ctx.stems.some((s) => s.status === "done" || s.status === "error");
   const zip = ready
     ? `<a class="download mini stems-zip" href="/api/songs/${song.id}/stems.zip" title="${ctx.t("stems_zip_tip")}">ZIP ↓</a>` : "";
   const clear = deletable
     ? `<button type="button" class="sek mini" data-a="stems-del-all">${ctx.t("stems_del_all")}</button>` : "";
-  return `<div class="stems">${extractBlock(song, ctx)}${ctx.stems.map((s) => stemRow(s, ctx)).join("")}
+  return `<div class="stems">${extractBlock(song, ctx)}${ctx.stems.map((s) => stemRow(s, ctx)).join("")}${sourceRow(song, ctx)}
       <div class="stems-actions">${clear}${zip}</div></div>`;
 }
 
