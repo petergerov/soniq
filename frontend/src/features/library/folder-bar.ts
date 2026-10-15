@@ -1,5 +1,5 @@
 // Ordnerleiste: Ansicht wählen, Ordner anlegen/umbenennen/löschen, ZIP laden, Songs per Ziehen einsortieren.
-import { byId, closest, escapeHtml as esc } from "../../core/dom.ts";
+import { byId, closest, escapeHtml as esc, PressGuard, setHtml } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import type { LibraryStore } from "./library-store.ts";
 import { SongDrag, SONG_DRAG_TYPE } from "./song-drag.ts";
@@ -9,6 +9,7 @@ export class FolderBar {
   private readonly drag: SongDrag;
   private readonly t: Translate;
   private readonly root = byId("folderBar");
+  private readonly press = new PressGuard(this.root);
 
   constructor(store: LibraryStore, drag: SongDrag, t: Translate) {
     this.store = store;
@@ -23,6 +24,7 @@ export class FolderBar {
   }
 
   render(): void {
+    if (this.press.defer(() => this.refresh())) return;   // Klick auf einen Ordner nicht verschlucken (siehe PressGuard)
     const { store, t } = this;
     const current = store.currentFolderInfo;
     // Tastaturfokus nach dem Neuzeichnen behalten
@@ -32,7 +34,7 @@ export class FolderBar {
       return `<span class="chip fold${on ? " on" : ""}" role="button" tabindex="0" aria-pressed="${on}" data-f="${esc(id)}" title="${esc(name)}">${esc(name)} <b>${count}</b></span>`;
     };
     const folders = store.folders;
-    this.root.innerHTML =
+    const html =
       chip("", t("f_all"), folders.all) +
       (store.hasFolders ? chip("none", t("f_none"), folders.none) : "") +
       folders.folders.map((f) => chip(f.id, f.name, f.count)).join("") +
@@ -40,6 +42,7 @@ export class FolderBar {
       `<span class="fold-actions">` +
       (current ? `<button type="button" class="sek mini" data-fa="rename">${t("f_rename")}</button><button type="button" class="sek mini" data-fa="delete">${t("f_delete")}</button>` : "") +
       `<a class="download mini" data-fa="zip" href="${esc(store.downloadUrl())}" title="${t("f_zip_tip")}">${current ? t("f_zip") : t("f_zip_all")}</a></span>`;
+    if (!setHtml(this.root, html)) return;
     if (focused !== undefined) this.root.querySelector<HTMLElement>(`[data-f="${CSS.escape(focused)}"]`)?.focus();
   }
 

@@ -1,7 +1,7 @@
 // Songliste der Bibliothek: zeichnet die Zeilen und setzt Klicks in Befehle um.
 import { extractPreset, type ExtractCount, type Song, type Stem, type StemTrack } from "../../../../shared/api.ts";
 import { confirmDialog } from "../../core/confirm-dialog.ts";
-import { byId, closest, labelIconButtons } from "../../core/dom.ts";
+import { byId, closest, labelIconButtons, PressGuard, setHtml } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import type { LibraryStore } from "./library-store.ts";
 import { MoveMenu } from "./move-menu.ts";
@@ -40,6 +40,7 @@ const DEFAULT_EXTRACT_COUNT: ExtractCount = 4;
 export class SongList {
   private readonly deps: SongListDeps;
   private readonly root = byId("library");
+  private readonly press = new PressGuard(this.root);
   private readonly moveMenu = new MoveMenu();
   /** Songs, deren generierte Lyrics gerade aufgeklappt sind */
   private readonly openLyrics = new Set<string>();
@@ -85,13 +86,15 @@ export class SongList {
   }
 
   render(): void {
+    // Während eines Klicks nicht: sonst verschwindet der Knopf unter dem Zeiger (nachholen, außer beim Ziehen)
+    if (this.press.defer(() => { if (!this.deps.drag.active) this.render(); })) return;
     const { store, t, played, playback } = this.deps;
     const songs = store.songs;
     if (!songs.length) {
-      this.root.innerHTML = `<div class="empty">${t("empty")}</div>`;
+      setHtml(this.root, `<div class="empty">${t("empty")}</div>`);
       return;
     }
-    this.root.innerHTML = songs.map((s, i) => renderSongRow(s, {
+    const html = songs.map((s, i) => renderSongRow(s, {
       t,
       isCurrent: s.id === playback.currentId,
       isPlaying: s.id === playback.currentId && playback.isPlaying(),
@@ -111,8 +114,8 @@ export class SongList {
       synthCompute: store.synthCompute,
       menuOpen: s.id === this.menuOpenId,
     })).join("");
+    if (setHtml(this.root, html)) labelIconButtons(this.root);
     this.root.classList.toggle("crossing", !!this.crossFrom);
-    labelIconButtons(this.root);
   }
 
   private closeMenu(): void {
