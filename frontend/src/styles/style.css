@@ -500,6 +500,7 @@ dialog.setup { width: min(560px, calc(100vw - 32px)); }
 .replace-lead { margin: -4px 0 0; max-width: 52ch; line-height: 1.45; }
 .replace-box { display: flex; flex-direction: column; gap: 10px; }
 .replace-box .seg { margin-top: 2px; }
+.replace-box .sek:disabled { opacity: .45; cursor: not-allowed; }
 .replace-keep { display: flex; flex-direction: column; gap: 4px; }
 .stems-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 .stems-mixer { font-size: 12px; }

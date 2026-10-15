@@ -1,5 +1,6 @@
 // Einzelspuren eines Songs (siehe newfeatures.md). Dateien liegen neben dem Song: <song-id>.<spur>.wav
 import { STEM_TRACKS, type Stem, type StemKind, type StemStatus, type StemTrack } from "../../../shared/api.ts";
+import { GENRE, PIECE_MOOD } from "../../../shared/piece-style.ts";
 
 export interface StemRecord {
   id: string;
@@ -57,8 +58,17 @@ const INSTRUMENT_TAGS = STEM_TRACKS.filter((t) => !VOCAL_TRACKS.includes(t))
  * Gesangsspuren, Instrumente nur die eigenen ("upright bass" bleibt beim Bass). Klang-Wörter wie "acoustic" fallen
  * weg, weil sie Instrumente nach sich ziehen. Gemessen (Vorlage "Acoustic Male", Schlagzeug auf Stille, 3 Seeds):
  * tonaler Anteil 200–3000 Hz im Mittel 0,064 statt 0,140 mit dem ganzen Stil (newfeatures.md, Variante G).
+ *
+ * Analyse-Fließtext (Punkt oder ein Teilstück über 10 Wörter, z. B. `/understand`) wird nicht an den Kommas
+ * zerschnitten: Sätze wie "rapid-fire melodic runs, percussive rasgueado …" haben keine Instrument-Marke und
+ * landeten sonst in jeder Spur (Ersatz von "Cajun Moon": Schlagzeug fast durchgehend, bass gitarrenartig).
+ * Stattdessen bleiben Genre, Stimmungswörter und die eigene Rolle ("supportive acoustic bassline", "cajón").
  */
 export function styleForTrack(track: StemTrack, styleCaption: string): string {
+  return isProseCaption(styleCaption) ? proseStyleForTrack(track, styleCaption) : tagStyleForTrack(track, styleCaption);
+}
+
+function tagStyleForTrack(track: StemTrack, styleCaption: string): string {
   const vocalTrack = VOCAL_TRACKS.includes(track);
   return styleCaption.split(",").map((p) => p.trim()).filter(Boolean).filter((part) => {
     if (VOCAL_TAG.test(part)) return vocalTrack;
@@ -66,6 +76,69 @@ export function styleForTrack(track: StemTrack, styleCaption: string): string {
     if (/^instrumental$/i.test(part)) return !vocalTrack;   // hängt legoCaption bei Instrumentenspuren ohnehin an
     const owner = INSTRUMENT_TAGS.find(([, re]) => re.test(part))?.[0];
     return !owner || owner === track;
+  }).join(", ");
+}
+
+/** true, wenn der Stil ein Absatz ist und kein Komma-Stichwortliste. Ein Punkt nur am Ende zählt nicht. */
+function isProseCaption(style: string): boolean {
+  return style.split(",").some((raw) => {
+    const part = raw.trim().replace(/[.!?]+$/, "");
+    const words = part.split(/\s+/).filter(Boolean);
+    return words.length > 10 || /[.!?]/.test(part);
+  });
+}
+
+/** Kurze Rolle nur dieser Spur. Qualifier davor, damit "guitar chord" oder "the guitar work" nicht matchen. */
+const TRACK_ROLE: Record<StemTrack, RegExp> = {
+  drums: /\b(?:(?:steady|tight|punchy|live|soft|hard|programmed)\s+){0,2}(?:drum\s*kits?|drums)\b/gi,
+  percussion: /\b(?:(?:lively|soft|rhythmic|hand)\s+){0,2}hand\s+percussion\b|\b(?:(?:lively|soft|rhythmic)\s+){0,2}percussion\b|\bcaj[oó]ns?\b|\bshakers?\b|\bcongas?\b|\bbongos?\b|\btambourines?\b/gi,
+  bass: /\b(?:(?:warm|deep|supportive|walking|funky|soft|round|acoustic|electric|upright|double|synth|sub|pulsing)\s+){1,4}bass(?:(?:\s*-?\s*)?lines?)?\b(?!\s*drums?)|\bbass\s*-?\s*lines?\b/gi,
+  guitar: /\b(?:(?:nylon-string|nylon|steel-string|acoustic|electric|lead|rhythm|classical|spanish|fingerstyle)\s+){1,4}guitars?\b/gi,
+  keyboard: /\b(?:(?:electric|acoustic|grand|upright|rhodes|soft|honky[-\s]?tonk)\s+){0,3}(?:pianos?|keyboards?|organs?)\b|\brhodes\b/gi,
+  synth: /\b(?:(?:warm|analog|analogue|digital|soft|lead|pad)\s+){0,2}(?:synths?|synthesizers?)\b/gi,
+  strings: /\b(?:(?:lush|soft|orchestral|soaring)\s+){0,2}(?:string\s+section|strings|violins?|cellos?)\b/gi,
+  brass: /\b(?:(?:bright|soft|muted)\s+){0,2}(?:brass(?:\s+section)?|horns?|trumpets?|trombones?|saxophones?)\b/gi,
+  woodwinds: /\b(?:(?:soft|breathy)\s+){0,2}(?:woodwinds?|flutes?|clarinets?)\b/gi,
+  fx: /\b(?:sound\s+effects?|sfx)\b/gi,
+  vocals: /\b(?:(?:soft|powerful|breathy|raspy|soulful|female|male|lead|operatic|whispered|gentle)\s+){0,3}vocals?\b|\b(?:soprano|alto|tenor|baritone)\s+(?:vocals?|voice)\b|\bsinger-songwriters?\b/gi,
+  backing_vocals: /\b(?:(?:soft|lush|tight)\s+){0,2}backing\s+vocals?\b|\bharmonies\b|\bchoir\b/gi,
+};
+
+interface TextSpan { start: number; end: number; text: string }
+
+function findSpans(re: RegExp, text: string): TextSpan[] {
+  const flags = re.flags.includes("g") ? re.flags : `${re.flags}g`;
+  return [...text.matchAll(new RegExp(re.source, flags))].map((m) => ({
+    start: m.index ?? 0,
+    end: (m.index ?? 0) + m[0].length,
+    text: m[0].replace(/\s+/g, " ").trim(),
+  }));
+}
+
+/** Überlappende Treffer: der längere bleibt ("lively hand percussion" statt "percussion" darin). */
+function keepLongest<T extends TextSpan>(items: T[]): T[] {
+  const sorted = [...items].sort((a, b) => (b.end - b.start) - (a.end - a.start) || a.start - b.start);
+  const kept: T[] = [];
+  for (const span of sorted) {
+    if (kept.some((k) => span.start < k.end && span.end > k.start)) continue;
+    kept.push(span);
+  }
+  return kept.sort((a, b) => a.start - b.start);
+}
+
+function proseStyleForTrack(track: StemTrack, text: string): string {
+  const roles = keepLongest(STEM_TRACKS.flatMap((t) => findSpans(TRACK_ROLE[t], text).map((s) => ({ ...s, track: t }))));
+  const blocked = roles.map(({ start, end }) => ({ start, end, text: "" }));
+  const own = roles.filter((s) => s.track === track);
+  const moods = findSpans(PIECE_MOOD, text).filter((s) => !blocked.some((b) => s.start >= b.start && s.end <= b.end));
+  const genres = findSpans(GENRE, text);
+  const phrases = [...moods, ...genres, ...own].sort((a, b) => a.start - b.start).map((s) => s.text);
+  const seen = new Set<string>();
+  return phrases.filter((p) => {
+    const key = p.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   }).join(", ");
 }
 

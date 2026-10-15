@@ -35,7 +35,7 @@ Nicht bei Spur-für-Spur, Replace oder Begleitung — die haben bereits Einzelsp
 
 **Wo:** eigener Nav-Tab **Replace** → Route `#/replace` (nicht Teil von Create).
 
-Datei hochladen (WAV, MP3, M4A, FLAC, OGG). SONIQ analysiert zuerst Tempo, Tonart, Länge und Stil (`/understand`). Dann zwei Modi:
+Datei hochladen (WAV, MP3, M4A, FLAC, OGG). Die Länge liest der Browser aus der Datei, das Stilfeld bleibt leer (optional ein kurzes Genre, z. B. `flamenco`). **Tempo und Tonart erkennen** ruft `/understand` auf und übernimmt nur BPM, Tonart, Takt und dieses kurze Genre — den Analyse-Absatz nicht. Dann zwei Modi:
 
 ### Instrumente ersetzen
 
@@ -47,7 +47,7 @@ Upload ist ein **Mix**. Man wählt:
 Ablauf im Hintergrund:
 
 1. Jeder Keeper: **`extract`** aus dem Upload  
-2. Jeder Ersatz: **`lego`**, Backing = Summe der herausgelösten Keeper (+ schon fertige Ersetzungen), Reihenfolge Rhythmus zuerst  
+2. Jeder Ersatz: **`lego`**, Backing = Summe der herausgelösten Keeper (+ schon fertige Ersetzungen), Reihenfolge Rhythmus zuerst. Die Caption ist nicht der ganze Analyse-Absatz: bei Fließtext bleiben Genre, Stimmung und die Rolle dieser Spur (z. B. „flamenco“ und „supportive acoustic bassline“), damit Schlagzeug nicht die Gitarren-Läufe nachspielt. Komma-Stichworte wie beim Spur-für-Spur-Stil bleiben wie bisher.  
 3. Mix = Keeper + neue Spuren (peak-normalisiert). Der Upload wird gespeichert, steckt aber **nicht** im Mix — die alten Instrumente der Ersatz-Gruppe sind weg.
 
 **Warum erst extract, dann lego?** `lego` direkt auf dem vollen Mix folgt dem Song nicht (Experiment). `extract` folgt dem Song; `lego` auf einer Summe sauberer Spuren rastet ein.

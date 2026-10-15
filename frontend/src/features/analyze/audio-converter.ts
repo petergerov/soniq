@@ -57,9 +57,14 @@ export async function toServerReadableAudio(file: File): Promise<File> {
 
 /** Immer WAV (Ersetzen/Begleiten mischt die Aufnahme mit neuen Spuren). */
 export async function toWavAudio(file: File): Promise<File> {
+  return (await wavWithDuration(file)).file;
+}
+
+/** WAV plus Länge in Sekunden, gelesen beim Dekodieren — ohne Sprachmodell. */
+export async function wavWithDuration(file: File): Promise<{ file: File; duration: number }> {
   const decoded = await decode(file);
   const audio = await resample(decoded, targetRate(decoded.duration, decoded.sampleRate));
   const channels = Array.from({ length: CHANNELS }, (_, i) => audio.getChannelData(i));
   const name = file.name.replace(/\.[^.]*$/, "") + ".wav";
-  return new File([encodeWav(channels, audio.sampleRate)], name, { type: "audio/wav" });
+  return { file: new File([encodeWav(channels, audio.sampleRate)], name, { type: "audio/wav" }), duration: decoded.duration };
 }

@@ -176,15 +176,17 @@ the analysis), then:
     extracted and kept. No **"All"** — that is a new arrangement and belongs to track-by-track (B), using
     style/tempo/key from the analysis.
   - **New accompaniment** (upload is already a single take): choose which instruments to add. No extract.
-- Style / prompt for the new tracks (filled from the analysis of the file, editable).
+- Style for the new tracks, optional and editable (a few words such as `flamenco`). Dropping a file does not
+  run `/understand`. **Detect tempo and key** does, and keeps BPM, key, time signature and a short genre.
 - Result is a new library entry ("Replacement for …" / "Accompaniment for …") with the original, extracted
   keepers, replacements, and the mix.
 
 **Flow, replace instruments** (chosen set R, keepers K = the other tracks the user wants to keep):
-1. Analysis of the upload (`/understand`, exists): BPM, key, caption, length.
+1. Length from the file. BPM, key and a short genre only if the user runs **Detect tempo and key**.
 2. `extract` each keeper K (feature A). Honest label: re-generated, not a lossless split.
 3. For each replacement X in R, in order (rhythm first): `lego` with backing = **sum of extracted keepers +
-   replacements so far**. Caption = track description + style; BPM, key, time signature, length from step 1.
+   replacements so far**. Caption = `legoCaption` (track description + the style parts that belong to that
+   track); BPM, key, time signature and length from step 1. Extract uses that same short style.
 4. Mix = extracted keepers + new replacements (peak normalized). The upload is stored but not in the mix, so
    the old X is gone.
 5. Optional later: `repainting_start` / `repainting_end` for a part of the song only.
@@ -220,6 +222,19 @@ convincing** (user, 2026-10-14).
 → Do not `lego` a replacement on the full mix. **Extract keepers, then `lego` the new track on their sum**
 (user, 2026-10-15). "Replace all" is out (that is B). "Original + new X" is out (old X stays, and the new
 track does not follow).
+
+**Analysis prose in the lego caption (2026-10-15).** `/understand` returns a paragraph, not comma tags.
+`styleForTrack` used to split only on commas, so clauses with no instrument name ("rapid-fire melodic runs",
+"percussive rasgueado strumming") were copied into every replacement. "Cajun Moon" (flamenco guitar, keep
+guitar, replace drums / percussion / bass): the new drums played almost the whole time (96 % active, 6.2
+onsets/s, 7.7 % tonal) against the extracted drums of the same file (45 %, 2.5 onsets/s, 0.1 % tonal);
+the new bass had 8.3 % of its energy above 400 Hz (extracted bass 0.07 %) and no phrase gaps.
+When the style contains a sentence (or a comma-part longer than 10 words), the caption keeps genre, piece
+mood, and that track's own role only — drums become "drums, drum kit, steady groove, energetic, fiery,
+flamenco, instrumental", bass adds "supportive acoustic bassline", percussion adds "lively hand percussion,
+cajón". Comma tag lists (track-by-track, "Acoustic Male") stay on the old filter. `guidance_scale` stays
+at `LEGO_GUIDANCE` 5. A listening pass of the cleaned captions was not run (the probe batch stopped when
+the model server restarted).
 
 **Still to try** (accompaniment only): isolated take as upload, add drums/bass/keyboard with `lego` one after
 the other (like B) and once with `complete`. Compare.

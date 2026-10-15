@@ -238,8 +238,12 @@
       <span class="small" id="replaceNewLbl" data-i18n="replace_new">Neu erzeugen</span>
       <div id="replaceNew" class="chips track-chips"></div>
       <label class="field"><span class="lbl" data-i18n="style">Stil</span>
-        <textarea id="replaceStyle" rows="2" data-i18n-ph="replace_style_ph" placeholder="Stil der neuen Spuren"></textarea>
+        <textarea id="replaceStyle" rows="2" data-i18n-ph="replace_style_ph" placeholder="optional, z. B. flamenco"></textarea>
       </label>
+      <div class="extract-bar">
+        <button type="button" id="replaceDetect" class="sek" disabled data-i18n="replace_detect">Tempo und Tonart erkennen</button>
+        <span id="replaceMeta" class="small"></span>
+      </div>
       <div class="extract-bar">
         <button type="button" id="replaceGo" class="aktion" data-i18n="replace_go">Ersetzen</button>
         <span id="replaceHint" class="small"></span>

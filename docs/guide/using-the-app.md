@@ -108,7 +108,8 @@ Each track takes about as long as a whole song of the same length.
 - **Stem Separation** (library, ⋮ menu of a song): pull 2, 4 or 6 tracks out of a finished song. The model re-generates
   them, so they follow the song but are no exact split of the mix.
 - **Replace / accompany** (tab **Replace**): upload a file and replace chosen instruments, or add new accompaniment
-  tracks to a single take, for example vocals.
+  tracks to a single take, for example vocals. The upload is ready at once; length comes from the file. **Detect tempo
+  and key** is optional and fills BPM, key, time signature and a short genre, not the full description.
 
 Songs with tracks get a **Tracks** button (play, download each track, all as ZIP) and a **Mixer** (waveform, volume,
 mute and solo per track). The mixer downloads each track (**↓**), all tracks as **ZIP**, or the **Mix** exactly as it
