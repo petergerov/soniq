@@ -8,6 +8,10 @@ import { formatDuration } from "../../core/format.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import { displayTitle } from "../library/song-row.ts";
 
+const SPEAKER_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="w1" d="M16 9a3.5 3.5 0 0 1 0 6"/><path class="w2" d="M18.5 6.5a7 7 0 0 1 0 11"/><path class="mx" d="M17 9l5 6M22 9l-5 6"/>
+</svg>`;
+
 export interface MixerViewDeps {
   api: ApiClient;
   t: Translate;
@@ -52,6 +56,11 @@ export class MixerView {
     });
     this.tracksEl.addEventListener("click", (e) => this.onTrackClick(e));
     this.tracksEl.addEventListener("input", (e) => this.onTrackInput(e));
+    document.addEventListener("pointerdown", (e) => {
+      if (!this.channels.length) return;
+      if (closest(e.target, ".mixer-vol.is-open")) return;
+      this.closeVolPopovers();
+    });
   }
 
   /** Mixer öffnen bzw. Song wechseln. */
@@ -120,9 +129,10 @@ export class MixerView {
         </div>
       </div>
       <div class="mixer-wave"></div>
-      <label class="mixer-vol"><span class="visually-hidden">${t("mixer_volume")}</span>
+      <div class="mixer-vol" data-level="high" style="--v:1">
+        <button type="button" class="sek icon mixer-vol-btn" data-a="vol-toggle" title="${t("mixer_volume")}" aria-label="${t("mixer_volume")}" aria-expanded="false">${SPEAKER_SVG}</button>
         <input type="range" min="0" max="100" value="100" data-a="vol" aria-label="${t("mixer_volume")}">
-      </label>`;
+      </div>`;
     this.tracksEl.appendChild(row);
 
     const ws = WaveSurfer.create({
@@ -219,6 +229,17 @@ export class MixerView {
     if (!btn || !row) return;
     const ch = this.channels.find((c) => c.stem.id === row.dataset.stem);
     if (!ch) return;
+    if (btn.dataset.a === "vol-toggle") {
+      const box = closest<HTMLElement>(btn, ".mixer-vol");
+      const open = !box?.classList.contains("is-open");
+      this.closeVolPopovers();
+      if (open && box) {
+        box.classList.add("is-open");
+        btn.setAttribute("aria-expanded", "true");
+        box.querySelector<HTMLInputElement>("input[data-a=vol]")?.focus();
+      }
+      return;
+    }
     if (btn.dataset.a === "mute") {
       ch.muted = !ch.muted;
       btn.setAttribute("aria-pressed", String(ch.muted));
@@ -238,7 +259,22 @@ export class MixerView {
     const ch = this.channels.find((c) => c.stem.id === row.dataset.stem);
     if (!ch) return;
     ch.volume = Number(input.value) / 100;
+    this.syncVolUi(row, ch.volume);
     this.applyGains();
+  }
+
+  private closeVolPopovers(): void {
+    this.tracksEl.querySelectorAll<HTMLElement>(".mixer-vol.is-open").forEach((box) => {
+      box.classList.remove("is-open");
+      box.querySelector(".mixer-vol-btn")?.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  private syncVolUi(row: HTMLElement, volume: number): void {
+    const box = row.querySelector<HTMLElement>(".mixer-vol");
+    if (!box) return;
+    box.dataset.level = volume === 0 ? "off" : volume < 0.5 ? "low" : "high";
+    box.style.setProperty("--v", String(volume));
   }
 
   /** Solo: nur Solo-Spuren hörbar. Sonst Mute. Lautstärke immer multipliziert. */
