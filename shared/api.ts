@@ -157,6 +157,27 @@ const TRACK_HINTS: readonly [RegExp, StemTrack][] = [
 export function tracksFromText(text: string): StemTrack[] {
   return TRACK_HINTS.filter(([re]) => re.test(text)).map(([, track]) => track);
 }
+
+/** Stem Separation: Anzahl statt einzelner Spurennamen. */
+export const EXTRACT_COUNTS = [2, 4, 6] as const;
+export type ExtractCount = (typeof EXTRACT_COUNTS)[number];
+
+const EXTRACT_VOCAL: Record<ExtractCount, readonly StemTrack[]> = {
+  2: ["drums", "vocals"],
+  4: ["drums", "bass", "guitar", "vocals"],
+  6: ["drums", "bass", "guitar", "keyboard", "vocals", "backing_vocals"],
+};
+
+const EXTRACT_INSTRUMENTAL: Record<ExtractCount, readonly StemTrack[]> = {
+  2: ["drums", "bass"],
+  4: ["drums", "bass", "guitar", "keyboard"],
+  6: ["drums", "percussion", "bass", "guitar", "keyboard", "synth"],
+};
+
+/** Feste Spur-Sets für 2 / 4 / 6 Stems (ohne manuelle Spurwahl). */
+export function extractPreset(count: ExtractCount, instrumental: boolean): StemTrack[] {
+  return [...(instrumental ? EXTRACT_INSTRUMENTAL : EXTRACT_VOCAL)[count]];
+}
 /** generated = Spur für Spur erzeugt, extracted = aus dem Song herausgelöst, replacement / accompaniment = zu einer hochgeladenen Datei */
 export type StemKind = "generated" | "extracted" | "replacement" | "accompaniment";
 export type StemStatus = "queued" | "running" | "done" | "error";
@@ -229,11 +250,23 @@ export interface AnalyzeResult {
   duration: number;
 }
 
+/** Synthese-Backend aus dem ace-server-Log (Stem Separation / DiT). */
+export type SynthComputeMode = "gpu" | "cpu" | "unknown";
+export interface SynthCompute {
+  mode: SynthComputeMode;
+  /** Rohname z. B. MTL0, CUDA0, CPU */
+  device: string;
+  /** Kurzlabel z. B. Metal, CUDA, Vulkan, CPU */
+  kind: string;
+}
+
 export interface HealthInfo {
   ok: boolean;
   error?: string;
   health?: unknown;
   props?: { models?: Record<string, string[]> } & Record<string, unknown>;
+  /** CPU oder GPU des Synth-Servers (für Stem Separation) */
+  synth_compute?: SynthCompute;
 }
 
 export interface UpdateStatus {

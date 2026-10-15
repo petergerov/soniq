@@ -75,6 +75,7 @@ songList = new SongList({
   loadStems: (songId) => api.stems(songId),
   extractStems: (songId, tracks) => api.extractStems(songId, tracks),
   cancelExtract: (songId) => api.cancelExtract(songId),
+  deleteAllStems: (songId) => api.deleteAllStems(songId),
   openMixer: (song) => router.go("mixer", song.id),
   // Eine Spur spielt der Player wie einen eigenen Song (eigene Gruppe: keine A/B-Knöpfe)
   playStem: (song, stem) => playSong({ ...song, id: stem.id, group_id: `stem:${stem.id}`, letter: "", url: stem.url, title: `${displayTitle(song)} · ${t(`track_${stem.track}`)}` }),
@@ -104,7 +105,12 @@ store.onChange(() => {
 });
 
 // Einstellungen + Status
-const health = new HealthIndicator(api, t);
+const health = new HealthIndicator(api, t, (h) => {
+  if (h.synth_compute) {
+    store.synthCompute = h.synth_compute;
+    songList.refresh();
+  }
+});
 // Fertige App ohne Modelle: Einrichtung zeigen
 const setup = new SetupDialog(api, t, () => void health.check());
 const updates = new UpdatePanel(api, t);

@@ -1,5 +1,6 @@
 // Songliste der Bibliothek: zeichnet die Zeilen und setzt Klicks in Befehle um.
-import { tracksFromText, type Song, type Stem, type StemTrack } from "../../../../shared/api.ts";
+import { extractPreset, type ExtractCount, type Song, type Stem, type StemTrack } from "../../../../shared/api.ts";
+import { confirmDialog } from "../../core/confirm-dialog.ts";
 import { byId, closest, labelIconButtons } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import type { LibraryStore } from "./library-store.ts";
@@ -29,9 +30,12 @@ export interface SongListDeps {
   playStem: (song: Song, stem: Stem) => void;
   extractStems: (songId: string, tracks: StemTrack[]) => Promise<Stem[]>;
   cancelExtract: (songId: string) => Promise<Stem[]>;
+  deleteAllStems: (songId: string) => Promise<Stem[]>;
   /** Mixer öffnen (Waveforms, Mute, Solo) */
   openMixer: (song: Song) => void;
 }
+
+const DEFAULT_EXTRACT_COUNT: ExtractCount = 4;
 
 export class SongList {
   private readonly deps: SongListDeps;
@@ -47,8 +51,10 @@ export class SongList {
   private readonly openStems = new Set<string>();
   private readonly stemCache = new Map<string, Stem[]>();
   private readonly stemLoading = new Set<string>();
-  /** Gewählte Spuren zum Herauslösen, je Song */
-  private readonly extractPicks = new Map<string, StemTrack[]>();
+  /** Gewählte Stem-Anzahl zum Herauslösen, je Song */
+  private readonly extractCounts = new Map<string, ExtractCount>();
+  /** Song-ID mit offenem ⋮-Menü */
+  private menuOpenId: string | null = null;
 
   constructor(deps: SongListDeps) {
     this.deps = deps;
@@ -101,14 +107,29 @@ export class SongList {
       currentStemId: playback.currentId,
       stemPlaying: playback.isPlaying(),
       stemsAvailable: store.stemsAvailable,
-      extractTracks: this.extractTracks(s),
+      extractCount: this.extractCount(s),
+      synthCompute: store.synthCompute,
+      menuOpen: s.id === this.menuOpenId,
     })).join("");
     this.root.classList.toggle("crossing", !!this.crossFrom);
     labelIconButtons(this.root);
   }
 
+  private closeMenu(): void {
+    if (!this.menuOpenId) return;
+    this.menuOpenId = null;
+    this.render();
+  }
+
   private async handleAction(action: string, song: Song, button: HTMLElement): Promise<void> {
     const { store, t } = this.deps;
+    const fromMenu = !!button.closest(".song-menu");
+    if (action === "menu") {
+      this.menuOpenId = this.menuOpenId === song.id ? null : song.id;
+      return this.render();
+    }
+    // Menüpunkt gewählt → schließen, dann Aktion
+    if (fromMenu && this.menuOpenId) this.menuOpenId = null;
     switch (action) {
       case "play": return this.deps.play(song);
       case "reuse": return this.deps.reuse(song);
@@ -128,16 +149,27 @@ export class SongList {
         if (stem?.url) this.deps.playStem(song, stem);
         return;
       }
-      case "extract-track": {
-        const track = button.dataset.track as StemTrack | undefined;
-        if (!track || song.stems_pending > 0) return;
-        const next = new Set(this.extractTracks(song));
-        if (!next.delete(track)) next.add(track);
-        this.extractPicks.set(song.id, [...next]);
+      case "stems-del-all": {
+        const ok = await confirmDialog({
+          title: t("stems_del_all"),
+          message: t("stems_del_all_q"),
+          confirmLabel: t("stems_del_all"),
+          cancelLabel: t("cancel"),
+          danger: true,
+        });
+        if (!ok) return;
+        this.stemCache.set(song.id, await this.deps.deleteAllStems(song.id));
+        await this.deps.store.refresh();
+        return;
+      }
+      case "extract-count": {
+        const n = Number(button.dataset.count);
+        if (n !== 2 && n !== 4 && n !== 6 || song.stems_pending > 0) return;
+        this.extractCounts.set(song.id, n);
         return this.render();
       }
       case "extract-go": {
-        const tracks = this.extractTracks(song);
+        const tracks = this.tracksForExtract(song);
         if (!tracks.length) return;
         this.stemCache.set(song.id, await this.deps.extractStems(song.id, tracks));
         this.openStems.add(song.id);
@@ -150,6 +182,8 @@ export class SongList {
         return;
       case "mixer":
         return this.deps.openMixer(song);
+      case "download":
+        return; // <a href> lädt selbst; Menü ist schon zu
       case "fav": return store.toggleFavorite(song);
       case "hide": return store.toggleHidden(song);
       case "retry": return store.retry(song.id);
@@ -162,12 +196,18 @@ export class SongList {
     }
   }
 
-  private extractTracks(song: Song): StemTrack[] {
-    const saved = this.extractPicks.get(song.id);
-    if (saved) return saved;
-    const guessed = tracksFromText(`${song.params.style ?? ""} ${song.caption}`);
-    const hasVocals = !!(song.lyrics && song.lyrics !== "[Instrumental]");
-    return guessed.length ? guessed : (hasVocals ? ["drums", "bass", "guitar", "vocals"] : ["drums", "bass", "guitar", "keyboard"]);
+  private extractCount(song: Song): ExtractCount {
+    return this.extractCounts.get(song.id) ?? DEFAULT_EXTRACT_COUNT;
+  }
+
+  private tracksForExtract(song: Song): StemTrack[] {
+    const instrumental = !song.lyrics || song.lyrics === "[Instrumental]";
+    const taken = new Set(
+      (this.stemCache.get(song.id) ?? [])
+        .filter((s) => s.kind === "extracted" && s.status !== "error")
+        .map((s) => s.track),
+    );
+    return extractPreset(this.extractCount(song), instrumental).filter((t) => !taken.has(t));
   }
 
   /** Erster Klick wählt A, zweiter Klick auf einen anderen Song kreuzt; nochmal A (oder Escape) bricht ab. */
@@ -223,8 +263,18 @@ export class SongList {
       const input = closest<HTMLInputElement>(e.target, ".t-edit");
       if (input) void this.commitRename(input);
     });
+    document.addEventListener("pointerdown", (e) => {
+      if (!this.menuOpenId) return;
+      if (closest(e.target, ".song-menu-wrap.open")) return;
+      this.closeMenu();
+    });
     document.addEventListener("keydown", (e) => {
-      if (e.key !== "Escape" || !this.crossFrom) return;
+      if (e.key !== "Escape") return;
+      if (this.menuOpenId) {
+        this.closeMenu();
+        return;
+      }
+      if (!this.crossFrom) return;
       this.crossFrom = null;
       this.render();
     });

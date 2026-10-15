@@ -289,10 +289,22 @@ button { font: inherit; cursor: pointer; }
 .t-edit { font: inherit; font-weight: 600; color: var(--text); background: var(--bg);
   border: 1px solid var(--accent); border-radius: 8px; padding: 2px 8px; width: 100%; max-width: 300px; }
 .song .m { color: var(--faint); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.song .actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; opacity: .75; transition: opacity .15s; }
-.song:hover .actions, .song:focus-within .actions, .song.playing .actions { opacity: 1; }
-.song .actions .del { margin-left: 8px; }
-.song .actions .del:hover { color: var(--error); border-color: rgba(248, 113, 113, .45); background: var(--error-tint); }
+.song .actions { display: flex; gap: 4px; flex-wrap: nowrap; justify-content: flex-end; align-items: center; opacity: .75; transition: opacity .15s; }
+.song:hover .actions, .song:focus-within .actions, .song.playing .actions, .song.menu-open .actions { opacity: 1; }
+.song-menu-wrap { position: relative; flex: none; }
+.song-menu-wrap.open .song-menu-btn { color: var(--text); background: var(--surface-3); border-color: var(--line-strong); }
+.song-menu { display: none; position: absolute; right: 0; top: calc(100% + 4px); z-index: 8; min-width: 220px;
+  padding: 6px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface-2);
+  box-shadow: 0 16px 40px rgba(20, 10, 40, .55); }
+.song-menu-wrap.open .song-menu { display: flex; flex-direction: column; gap: 2px; }
+.song-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; margin: 0; padding: 8px 10px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--text); font: inherit; font-size: 13px; text-align: left; text-decoration: none; cursor: pointer; }
+.song-menu-item svg { flex: none; color: var(--muted); }
+.song-menu-item:hover { background: var(--accent-tint); }
+.song-menu-item.on { color: var(--accent-soft); }
+.song-menu-item.danger { color: var(--error); }
+.song-menu-item.danger:hover { background: var(--error-tint); }
+.song-menu-item.danger svg { color: var(--error); }
 .song .s { margin-top: 3px; font-size: 11px; font-weight: 500; color: var(--faint); }
 .song .s:empty { display: none; }
 .song .s.run { color: var(--accent-soft); }
@@ -331,6 +343,7 @@ button { font: inherit; cursor: pointer; }
 .song.is-hidden:hover { opacity: .8; }
 .song .actions .on[data-a=hide] { color: var(--error); border-color: rgba(248, 113, 113, .45); }
 .song .actions .on[data-a=fav] { color: #fbbf24; border-color: rgba(251, 191, 36, .45); background: rgba(251, 191, 36, .1); }
+.song .actions .on[data-a=cross] { color: var(--accent-soft); border-color: rgba(167, 139, 250, .45); background: var(--accent-tint); }
 
 /* Ordner der Bibliothek */
 .folderbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
@@ -385,6 +398,12 @@ dialog { border: 1px solid var(--line-strong); border-radius: 20px; background: 
   width: min(480px, calc(100vw - 32px)); padding: 24px; box-shadow: 0 30px 80px rgba(0, 0, 0, .7); }
 dialog::backdrop { background: rgba(16, 12, 28, .55); backdrop-filter: blur(4px); }
 dialog .col-title { margin-bottom: 18px; font-size: 17px; }
+
+dialog.confirm-dlg { width: min(400px, calc(100vw - 32px)); padding: 22px 24px 20px; }
+.confirm-msg { margin: 0 0 22px; line-height: 1.5; color: var(--muted); font-size: 14px; }
+.confirm-dlg .submit { margin-top: 0; }
+.aktion.danger { background: linear-gradient(135deg, #e11d48, #be123c); color: #fff; border: 0; }
+.aktion.danger:hover { filter: brightness(1.08); }
 
 /* Generieren: feste Leiste am Formularende */
 .genbar { position: sticky; bottom: calc(var(--player-h, 0px) + 12px);   /* über dem schwebenden Player */
@@ -459,6 +478,10 @@ dialog.setup { width: min(560px, calc(100vw - 32px)); }
 .track-chips .chip:disabled { opacity: .35; cursor: not-allowed; }
 
 /* Spurenliste an einem Song */
+.extract-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.extract-device { flex: none; font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line-strong); }
+.extract-device.gpu { color: var(--accent-soft); border-color: rgba(167, 139, 250, .4); background: var(--accent-tint); }
+.extract-device.cpu { color: var(--muted); background: var(--surface-2); }
 .song .stems { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; margin: 8px 0 2px 58px; padding: 10px 12px;
   border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(255, 255, 255, .015); }
 .stem { display: flex; align-items: center; gap: 10px; min-height: 30px; }

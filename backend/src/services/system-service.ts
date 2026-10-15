@@ -7,9 +7,11 @@ import { AppError } from "../domain/errors.ts";
 import type { MusicEngineFactory } from "../domain/music-engine.ts";
 import { psQuote, type ProcessLauncher } from "../infrastructure/process-launcher.ts";
 import type { SettingsRepository } from "../infrastructure/settings-repository.ts";
+import { readSynthCompute } from "../infrastructure/synth-compute.ts";
 
 export interface SystemServiceDeps {
   root: string;
+  dataDir: string;
   platform: NodeJS.Platform;
   packaged: boolean;
   settings: SettingsRepository;
@@ -30,10 +32,12 @@ export class SystemService {
   }
 
   async health(): Promise<HealthInfo> {
+    const synth_compute = readSynthCompute(this.deps.dataDir);
     try {
-      return await this.deps.engineFactory(this.deps.settings.get()).health();
+      const info = await this.deps.engineFactory(this.deps.settings.get()).health();
+      return { ...info, synth_compute };
     } catch (e) {
-      return { ok: false, error: (e as Error).message || (e as Error).name };
+      return { ok: false, error: (e as Error).message || (e as Error).name, synth_compute };
     }
   }
 

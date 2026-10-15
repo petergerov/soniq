@@ -1,6 +1,6 @@
 // Zustand der Bibliothek (Songs, Ordner, Filter) und alle Befehle, die ihn ändern.
 // Fragt regelmäßig beim Server nach: zügig, solange gerechnet wird, sonst selten.
-import type { FolderOverview, QueueInfo, Song } from "../../../../shared/api.ts";
+import type { FolderOverview, QueueInfo, Song, SynthCompute } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { storage } from "../../core/storage.ts";
 import { termsOf } from "../generator/random-content.ts";
@@ -23,6 +23,8 @@ export class LibraryStore {
   runningIds: string[] = [];
   /** Spuren-Modell vorhanden? (Herauslösen / Ersetzen) */
   stemsAvailable = true;
+  /** Synth-Backend: CPU oder GPU (Stem Separation) */
+  synthCompute: SynthCompute = { mode: "unknown", device: "", kind: "" };
   currentFolder: FolderView = storage.get("folder") ?? "";
   favoritesOnly = false;
   /** Ausgeblendete Songs (Fehlversuche) trotzdem zeigen */

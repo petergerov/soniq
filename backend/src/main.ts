@@ -100,9 +100,15 @@ async function main(): Promise<void> {
   const folderService = new FolderService(folders, songs);
   const settingsService = new SettingsService({ settings, songs, storage, modelsDir: config.modelsDir, packaged: config.packaged });
   const analysis = new AnalysisService(settings, engineFactory);
-  const system = new SystemService({ root: config.root, platform: config.platform, packaged: config.packaged, settings, engineFactory, launcher });
+  const system = new SystemService({
+    root: config.root, dataDir: config.dataDir, platform: config.platform, packaged: config.packaged,
+    settings, engineFactory, launcher,
+  });
   // Fertige App: Modellserver startet das Backend selbst, die Einrichtung lädt Modelle und testet den Grafikchip
-  const engine = new EngineSupervisor({ bin: config.engineBin, modelsDir: config.modelsDir, dataDir: config.dataDir, synthPort: config.synthPort, lmPort: config.lmPort, log });
+  const engine = new EngineSupervisor({
+    bin: config.engineBin, modelsDir: config.modelsDir, dataDir: config.dataDir,
+    synthPort: config.synthPort, lmPort: config.lmPort, engineConf, log,
+  });
   const setup = new SetupService({
     packaged: config.packaged, catalog: loadCatalog(config.root), modelsDir: config.modelsDir, engineConf, engine, synthPort: config.synthPort, log,
   });

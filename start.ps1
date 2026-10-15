@@ -4,12 +4,13 @@ Set-Location $ROOT
 
 # MODE=split  -> Sprachmodell auf CPU (Port 8086), Synthese auf der Grafikkarte (Port 8085)
 # MODE=single -> alles auf einem Server (Port 8085)
-$MODE = "single"; $LM_FILE = ""; $VAE_CHUNK = ""
+$MODE = "single"; $LM_FILE = ""; $VAE_CHUNK = ""; $KEEP_LOADED = ""
 if (Test-Path $CONF) {
     foreach ($line in Get-Content $CONF) {
-        if ($line -match '^MODE=(.+)$')      { $MODE = $Matches[1].Trim() }
-        if ($line -match '^LM_FILE=(.+)$')   { $LM_FILE = $Matches[1].Trim() }
-        if ($line -match '^VAE_CHUNK=(.+)$') { $VAE_CHUNK = $Matches[1].Trim() }
+        if ($line -match '^MODE=(.+)$')        { $MODE = $Matches[1].Trim() }
+        if ($line -match '^LM_FILE=(.+)$')     { $LM_FILE = $Matches[1].Trim() }
+        if ($line -match '^VAE_CHUNK=(.+)$')   { $VAE_CHUNK = $Matches[1].Trim() }
+        if ($line -match '^KEEP_LOADED=(.+)$') { $KEEP_LOADED = $Matches[1].Trim() }
     }
 }
 New-Item -ItemType Directory -Force -Path $DATA | Out-Null
@@ -17,6 +18,12 @@ New-Item -ItemType Directory -Force -Path $DATA | Out-Null
 # Gemeinsame Server-Optionen; VAE_CHUNK (vom Installer nach Grafikspeicher gesetzt) kachelt den VAE-Decoder
 $SERVER_ARGS = @("--models", "`"$MODELS`"", "--max-batch", "1")
 if ($VAE_CHUNK) { $SERVER_ARGS += @("--vae-chunk", $VAE_CHUNK) }
+# Synth: Modelle im VRAM halten bei genug Speicher (schnellere Stem Separation)
+$SYNTH_ARGS = @($SERVER_ARGS)
+$chunkNum = 0; [void][int]::TryParse($VAE_CHUNK, [ref]$chunkNum)
+if ($KEEP_LOADED -eq "1" -or $KEEP_LOADED -eq "true" -or (-not $KEEP_LOADED -and (-not $VAE_CHUNK -or $chunkNum -ge 512))) {
+    $SYNTH_ARGS += "--keep-loaded"
+}
 
 $ACE = Ace-Server
 $NODE = Node-Exe
@@ -58,7 +65,7 @@ if (Port-Laeuft $SYNTH_PORT) {
     Write-Host "Synthesis server is already running (port $SYNTH_PORT)."
 } else {
     Write-Host "Starting synthesis server (graphics card)..."
-    Start-Hintergrund $ACE (@("--host", "127.0.0.1", "--port", $SYNTH_PORT) + $SERVER_ARGS) (Join-Path $DATA "ace-server.log") | Out-Null
+    Start-Hintergrund $ACE (@("--host", "127.0.0.1", "--port", $SYNTH_PORT) + $SYNTH_ARGS) (Join-Path $DATA "ace-server.log") | Out-Null
 }
 
 # --- Web-App ----------------------------------------------------------------

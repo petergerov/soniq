@@ -11,6 +11,13 @@ export interface EngineValues {
   lmFile: string;
   /** acestep.cpp-Version, mit der der Grafik-Selbsttest lief */
   testedRev: string;
+  /** Latent-Frames pro VAE-Kachel (--vae-chunk); leer = Server-Vorgabe */
+  vaeChunk: string;
+  /**
+   * Modelle zwischen Requests im VRAM halten (--keep-loaded).
+   * undefined = automatisch (auf macOS an, sonst aus), damit Stem Separation nicht jedes Mal neu lädt.
+   */
+  keepLoaded: boolean | undefined;
 }
 
 export class EngineConf {
@@ -23,7 +30,15 @@ export class EngineConf {
   get(): EngineValues {
     const conf = readKeyValueFile(this.path);
     const mode = conf.MODE === "single" || conf.MODE === "split" ? conf.MODE : undefined;
-    return { mode, lmFile: conf.LM_FILE ?? "", testedRev: conf.TESTED_REV ?? "" };
+    const kl = (conf.KEEP_LOADED ?? "").toLowerCase();
+    const keepLoaded = kl === "1" || kl === "true" ? true : kl === "0" || kl === "false" ? false : undefined;
+    return {
+      mode,
+      lmFile: conf.LM_FILE ?? "",
+      testedRev: conf.TESTED_REV ?? "",
+      vaeChunk: conf.VAE_CHUNK ?? "",
+      keepLoaded,
+    };
   }
 
   /** Setzt die drei Werte; weitere Zeilen (z. B. VAE_CHUNK unter Linux) bleiben erhalten. */

@@ -38,6 +38,12 @@ export function registerStemRoutes(router: Router, s: StemRouteServices): void {
       const file = await s.stems.audio(params.id!, queryBool(url, "download"));
       return new FileResponse(file.path, { downloadName: file.downloadName });
     })
+    .delete("/api/stems/:id", ({ params }) => s.stems.remove(params.id!))
+    .delete("/api/songs/:id/stems", ({ params }) => {
+      s.jobs.cancel(params.id!);
+      s.extract.cancel(params.id!);
+      return s.stems.removeAll(params.id!);
+    })
     .post("/api/stems/upload", async ({ req }) => {
       const form = await readFormData(req, MAX_UPLOAD_BYTES + 64 * 1024, () => new AppError("too_large", "too_big"));
       const audio = form.get("audio");

@@ -76,10 +76,12 @@ lade_conf() {   # engine.conf als key=value lesen, nicht ausführen
   MODE=split
   LM_FILE=""
   VAE_CHUNK=""
+  KEEP_LOADED=""
   [ -f "$CONF" ] || return 0
   MODE=$(sed -n 's/^MODE=//p' "$CONF" | tail -1)
   LM_FILE=$(sed -n 's/^LM_FILE=//p' "$CONF" | tail -1)
   VAE_CHUNK=$(sed -n 's/^VAE_CHUNK=//p' "$CONF" | tail -1)
+  KEEP_LOADED=$(sed -n 's/^KEEP_LOADED=//p' "$CONF" | tail -1)
   [ -n "$MODE" ] || MODE=split
 }
 

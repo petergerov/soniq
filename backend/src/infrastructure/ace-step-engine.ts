@@ -7,7 +7,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import type { HealthInfo, Settings } from "../../../shared/api.ts";
 import type { SongResultMeta } from "../../../shared/api.ts";
 import {
-  DIT_MODELS, EngineError, STEM_MODEL, STEM_STEPS,
+  DIT_MODELS, EngineError, LEGO_GUIDANCE, STEM_MODEL, STEM_STEPS,
   type AnalysisResult, type GeneratedAudio, type MusicEngine, type ProgressReporter, type StemRequest,
 } from "../domain/music-engine.ts";
 import { DEFAULT_OUTPUT_FORMAT, OUTPUT_FORMATS, type AceOutputFormat } from "../domain/output-format.ts";
@@ -122,7 +122,8 @@ export class AceStepEngine implements MusicEngine {
       Object.entries(params).filter(([k, v]) => ACE_FIELDS.has(k) && v !== null && v !== undefined && v !== ""),
     );
     req.use_cot_caption ??= false;
-    req.lm_mode = writeLyrics ? "inspire" : "format";   // beide ohne Audio-Codes, viel schneller als "generate"
+    // Lyrics schreibt "generate" verlässlich (Audio-Codes werden hier nicht gebraucht); sonst "format" ohne Codes, ~3 s
+    req.lm_mode = writeLyrics ? "generate" : "format";
     if (this.lmModel) req.lm_model = this.lmModel;
     const job = await this.startJob(this.lmBase, "/lm", { body: JSON.stringify(req), headers: { "content-type": "application/json" } }, signal);
     const enriched = firstItem(await (await this.waitForJob(this.lmBase, job, "Sprachmodell", performance.now(), progress, signal)).json());
@@ -132,7 +133,8 @@ export class AceStepEngine implements MusicEngine {
   async stem(r: StemRequest, progress: ProgressReporter, signal: AbortSignal): Promise<Uint8Array> {
     const req: Json = {
       synth_model: STEM_MODEL, task_type: r.task, track: r.track, caption: r.caption, lyrics: r.lyrics || "[Instrumental]",
-      inference_steps: STEM_STEPS, guidance_scale: 1.0, shift: 1.0,   // Vorgaben für das Base-Modell
+      inference_steps: STEM_STEPS, shift: 1.0,   // Vorgaben für das Base-Modell
+      guidance_scale: r.task === "lego" ? LEGO_GUIDANCE : 1.0,   // lego: CFG hält die Spur frei von anderen Instrumenten
       output_format: "wav32",   // Gleitkomma: Spuren werden danach addiert, ohne Rundung dazwischen
     };
     for (const k of ["bpm", "keyscale", "timesignature", "duration", "seed"] as const) if (r[k] !== undefined && r[k] !== null && r[k] !== "") req[k] = r[k];

@@ -190,6 +190,11 @@ starte_server() {
 
   local SERVER_ARGS=(--models "$MODELS" --max-batch 1)
   [ -n "$VAE_CHUNK" ] && SERVER_ARGS+=(--vae-chunk "$VAE_CHUNK")
+  # Synth: Modelle im VRAM halten wenn genug Speicher (KEEP_LOADED=1) oder große VAE-Kacheln
+  local SYNTH_ARGS=("${SERVER_ARGS[@]}")
+  if [ "$KEEP_LOADED" = "1" ] || [ "$KEEP_LOADED" = "true" ] || { [ -z "$KEEP_LOADED" ] && { [ -z "$VAE_CHUNK" ] || [ "${VAE_CHUNK:-0}" -ge 512 ] 2>/dev/null; }; }; then
+    SYNTH_ARGS+=(--keep-loaded)
+  fi
 
   # 1. Sprachmodell-Server (bei split auf CPU)
   if [ "$MODE" = "split" ]; then
@@ -215,10 +220,10 @@ starte_server() {
     echo "  Starting synthesis server..."
     if command -v setsid >/dev/null 2>&1; then
       setsid "$ENGINE/build/ace-server" --host 127.0.0.1 --port "$SYNTH_PORT" \
-        "${SERVER_ARGS[@]}" > "$DATA/ace-server.log" 2>&1 &
+        "${SYNTH_ARGS[@]}" > "$DATA/ace-server.log" 2>&1 &
     else
       nohup "$ENGINE/build/ace-server" --host 127.0.0.1 --port "$SYNTH_PORT" \
-        "${SERVER_ARGS[@]}" > "$DATA/ace-server.log" 2>&1 &
+        "${SYNTH_ARGS[@]}" > "$DATA/ace-server.log" 2>&1 &
     fi
     disown 2>/dev/null || true
   fi

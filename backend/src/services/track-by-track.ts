@@ -7,7 +7,7 @@ import type { SongParams, SongResultMeta, StemTrack } from "../../../shared/api.
 import type { MusicEngine, ProgressReporter } from "../domain/music-engine.ts";
 import { newId } from "../domain/ids.ts";
 import { INSTRUMENTAL, nowIso } from "../domain/song.ts";
-import { orderTracks, stemFileName, TRACK_PROMPTS, VOCAL_TRACKS } from "../domain/stem.ts";
+import { legoCaption, orderTracks, stemFileName, VOCAL_TRACKS } from "../domain/stem.ts";
 import type { SongStorage } from "../infrastructure/song-storage.ts";
 import type { StemRepository } from "../infrastructure/stem-repository.ts";
 import { encodeWav, limitPeak, mix, parseWav, silence, type Pcm, type WavDepth } from "../infrastructure/wav.ts";
@@ -78,7 +78,7 @@ export class TrackByTrack {
         stems.markRunning(id);
         const label = `${i + 1}/${ids.length} ${track}`;
         const wav = await engine.stem({
-          task: "lego", track, source: encodeWav(limitPeak(sum), 32), caption: `${TRACK_PROMPTS[track]}, ${params.caption}`,
+          task: "lego", track, source: encodeWav(limitPeak(sum), 32), caption: legoCaption(track, params.caption),
           lyrics: VOCAL_TRACKS.includes(track) ? meta.lyrics ?? INSTRUMENTAL : INSTRUMENTAL,
           bpm: meta.bpm, keyscale: meta.keyscale, timesignature: meta.timesignature, duration: meta.duration,
           seed: params.seed >= 0 ? params.seed + i : undefined,

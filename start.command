@@ -42,8 +42,12 @@ if laeuft "$SYNTH_PORT"; then
   echo "Synthesis server is already running (port $SYNTH_PORT)."
 else
   echo "Starting synthesis server (Metal)..."
-  nohup "$ENGINE/build/ace-server" --host 127.0.0.1 --port "$SYNTH_PORT" \
-    --models "$MODELS" --max-batch 1 > "$DATA/ace-server.log" 2>&1 &
+  SYNTH_ARGS=(--host 127.0.0.1 --port "$SYNTH_PORT" --models "$MODELS" --max-batch 1)
+  KEEP="${KEEP_LOADED}"
+  [ -z "$KEEP" ] && KEEP=1   # Apple Silicon: Modelle zwischen Stem-Requests im Speicher halten
+  { [ "$KEEP" = "1" ] || [ "$KEEP" = "true" ]; } && SYNTH_ARGS+=(--keep-loaded)
+  [ -n "$VAE_CHUNK" ] && SYNTH_ARGS+=(--vae-chunk "$VAE_CHUNK")
+  nohup "$ENGINE/build/ace-server" "${SYNTH_ARGS[@]}" > "$DATA/ace-server.log" 2>&1 &
   disown
 fi
 

@@ -1,6 +1,6 @@
 // Herauslösen (newfeatures.md, Feature A): aus einem fertigen Song einzelne Spuren mit `extract`.
 // Der Song bleibt "done" und spielbar; Fortschritt steht in message und in der Spurenliste.
-import type { StemTrack } from "../../../shared/api.ts";
+import type { SongParams, StemTrack } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
 import type { MusicEngine, ProgressReporter, StemRequest } from "../domain/music-engine.ts";
 import { INSTRUMENTAL, nowIso } from "../domain/song.ts";
@@ -33,6 +33,9 @@ export class ExtractTracks {
     const song = songs.find(songId);
     if (!song) throw new AppError("not_found");
     if (!song.file || song.status !== "done") throw new AppError("bad_request", "song_not_ready");
+    // Nur Stereo-Mix (voll erzeugter Song) — Spur-für-Spur / Replace haben schon Einzelspuren
+    const mode = (JSON.parse(song.params) as SongParams).mode;
+    if (mode && mode !== "full") throw new AppError("bad_request", "extract_mix_only");
     const taken = new Set(stems.forSong(songId).filter((s) => s.kind === "extracted" && s.status !== "error").map((s) => s.track));
     const fresh = tracks.filter((t) => !taken.has(t));
     if (!fresh.length) throw new AppError("bad_request", "no_new_tracks");

@@ -11,6 +11,9 @@ frontend/dist/
 # Persönliche Daten: Songs, Datenbank, Logs, Installationsergebnis
 data/
 
+# Lokale Arbeitsdateien (Analysen, Test-Audio): groß und nicht fürs Repo
+tmp/
+
 # Python (docs/guide/capture.py) / macOS
 __pycache__/
 *.pyc

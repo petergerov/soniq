@@ -5,7 +5,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { openSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
-import type { EngineMode } from "./engine-conf.ts";
+import type { EngineConf, EngineMode } from "./engine-conf.ts";
 
 export interface EngineSupervisorDeps {
   bin: string;
@@ -13,6 +13,7 @@ export interface EngineSupervisorDeps {
   dataDir: string;
   synthPort: number;
   lmPort: number;
+  engineConf: EngineConf;
   log: (message: string) => void;
 }
 
@@ -49,8 +50,8 @@ export class EngineSupervisor {
   async start(mode: EngineMode): Promise<void> {
     await this.stop();
     const { synthPort, lmPort } = this.deps;
-    await this.launch(synthPort, "ace-server.log", {});
-    if (mode === "split") await this.launch(lmPort, "ace-lm.log", { GGML_BACKEND: "CPU" });
+    await this.launch(synthPort, "ace-server.log", {}, true);
+    if (mode === "split") await this.launch(lmPort, "ace-lm.log", { GGML_BACKEND: "CPU" }, false);
   }
 
   async stop(): Promise<void> {
@@ -66,7 +67,7 @@ export class EngineSupervisor {
     }));
   }
 
-  private async launch(port: number, logName: string, env: Record<string, string>): Promise<void> {
+  private async launch(port: number, logName: string, env: Record<string, string>, synth: boolean): Promise<void> {
     if (await healthy(port)) {
       // z. B. von einem abgestürzten Vorgänger übrig: weiterverwenden statt am belegten Port zu scheitern
       this.deps.log(`Model server on port ${port} is already running, using it`);
@@ -74,7 +75,14 @@ export class EngineSupervisor {
     }
     const logPath = join(this.deps.dataDir, logName);
     const out = openSync(logPath, "a");
-    const child = spawn(this.deps.bin, ["--host", "127.0.0.1", "--port", String(port), "--models", this.deps.modelsDir, "--max-batch", "1"], {
+    // Synth: --keep-loaded auf macOS (unified memory), damit Stem Separation Modelle nicht jedes Mal neu lädt
+    const args = ["--host", "127.0.0.1", "--port", String(port), "--models", this.deps.modelsDir, "--max-batch", "1"];
+    if (synth) {
+      const conf = this.deps.engineConf.get();
+      if (conf.keepLoaded ?? process.platform === "darwin") args.push("--keep-loaded");
+      if (conf.vaeChunk) args.push("--vae-chunk", conf.vaeChunk);
+    }
+    const child = spawn(this.deps.bin, args, {
       stdio: ["ignore", out, out], env: { ...process.env, ...env },
     });
     this.children.push(child);

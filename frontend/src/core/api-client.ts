@@ -42,6 +42,7 @@ export class ApiClient {
     return this.send("POST", `/api/songs/${songId}/stems`, { tracks });
   }
   cancelExtract(songId: string): Promise<Stem[]> { return this.send("POST", `/api/songs/${songId}/stems/cancel`); }
+  deleteAllStems(songId: string): Promise<Stem[]> { return this.send("DELETE", `/api/songs/${songId}/stems`); }
   uploadStems(file: File, request: {
     intent: StemIntent; tracks: StemTrack[]; keepers?: StemTrack[]; title?: string; caption: string; lyrics?: string;
     duration?: number; bpm?: number; keyscale?: string; timesignature?: string; vocal_language?: string; seed?: number;

@@ -12,7 +12,7 @@ Grobe Dauer: etwa **75 Sekunden pro Spur und Minute Musik**.
 
 **Wo:** Create → Erzeugung „Spur für Spur“, Instrumente wählen.
 
-**Was passiert:** Ein neuer Song entsteht Instrument für Instrument. Jede Spur wird mit ACE-Step **`lego`** erzeugt — die Begleitung ist die Summe der bereits fertigen Spuren (die erste Spur auf Stille). Der Mix ist genau die Summe der Einzelspuren; es gibt kein nachträgliches Trennen.
+**Was passiert:** Ein neuer Song entsteht Instrument für Instrument. Jede Spur wird mit ACE-Step **`lego`** erzeugt — die Begleitung ist die Summe der bereits fertigen Spuren (die erste Spur auf Stille). Pro Spur geht nur der Spur-Prompt plus bereinigter Stil in die Caption (fremde Instrumente/Gesang werden aus dem Song-Text gestrichen), sonst würde die erste Spur auf Stille oft einen Mini-Mix erzeugen. Der Mix ist genau die Summe der Einzelspuren; es gibt kein nachträgliches Trennen.
 
 **Ergebnis:** Bibliothek-Eintrag mit Fertig-Mix und einzelnen Spuren (`kind: generated`).
 
@@ -20,9 +20,10 @@ Grobe Dauer: etwa **75 Sekunden pro Spur und Minute Musik**.
 
 ## Spuren herauslösen (Extract)
 
-**Wo:** Bibliothek → bei einem Song **Tracks** öffnen → Instrumente wählen und herauslösen.
+**Wo:** Bibliothek → bei einem **Stereo-Mix** (Erzeugung „Ganzer Song“) **Stem Separation** öffnen → **2 / 4 / 6** Stems wählen und herauslösen.  
+Nicht bei Spur-für-Spur, Replace oder Begleitung — die haben bereits Einzelspuren.
 
-**Was passiert:** Für jede gewählte Spur ruft SONIQ ACE-Step **`extract`** auf (Quell-Audio = der fertige Song). Die Spur wird **neu generiert** und folgt dem Song — das ist **kein** verlustfreier Stem-Split.
+**Was passiert:** Keine Voranalyse und keine manuelle Spurwahl — feste Sets (z. B. 4 = drums/bass/guitar/vocals). Für jede Spur ruft SONIQ ACE-Step **`extract`** auf dem **Synth-Server (GPU: Metal / CUDA / Vulkan)** auf. Auf Apple Silicon hält der Server die Modelle mit `--keep-loaded` im Speicher, damit 2/4/6 Spuren nicht jedes Mal DiT/VAE neu laden. Die Spur wird **neu generiert** und folgt dem Song — das ist **kein** verlustfreier Stem-Split.
 
 **Ergebnis:** Spuren am gleichen Song (`kind: extracted`), abspielbar, downloadbar, als ZIP, und im Mixer.
 
@@ -84,6 +85,6 @@ Keine neue Synthese — es werden die gespeicherten WAV-Dateien geladen. Der nor
 - Dateien: `<song-id>.<track>.wav` im Song-Ordner.  
 - Tabelle `stems`: `id`, `song_id`, `track`, `kind`, `status`, Reihenfolge, Zeiten. Song löschen löscht die Spuren.  
 - Engine: Multipart `POST /synth` mit `synth_model` = Base-Modell.  
-- API u. a.: `GET /api/songs/:id/stems`, `…/stems.zip`, `GET /api/stems/:id/audio`, `POST /api/songs/:id/stems` (extract), `POST /api/stems/upload` (replace/accompany).
+- API u. a.: `GET /api/songs/:id/stems`, `…/stems.zip`, `GET /api/stems/:id/audio`, `DELETE /api/stems/:id`, `DELETE /api/songs/:id/stems`, `POST /api/songs/:id/stems` (extract), `POST /api/stems/upload` (replace/accompany).
 
 Plan, Experimente und Status der Umsetzung: [`newfeatures.md`](../newfeatures.md).

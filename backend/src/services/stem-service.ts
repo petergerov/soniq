@@ -55,6 +55,23 @@ export class StemService {
     return { archiveName, entries };
   }
 
+  /** Eine fertige oder fehlgeschlagene Spur löschen (nicht während queued/running). */
+  async remove(stemId: string): Promise<Stem[]> {
+    const stem = this.deps.stems.find(stemId);
+    if (!stem) throw new AppError("not_found");
+    if (stem.status === "queued" || stem.status === "running") throw new AppError("bad_request", "stem_busy");
+    if (stem.file) await this.deps.storage.remove(stem.file);
+    this.deps.stems.delete(stemId);
+    return this.list(stem.song_id);
+  }
+
+  /** Alle Spuren eines Songs löschen (Dateien + DB). Aufrufer bricht laufendes Extract vorher ab. */
+  async removeAll(songId: string): Promise<Stem[]> {
+    if (!this.deps.songs.find(songId)) throw new AppError("not_found");
+    await this.removeForSong(songId);
+    return this.list(songId);
+  }
+
   /** Beim Löschen eines Songs: Spuren samt Dateien entfernen (die Vorlage löscht der Aufrufer). */
   async removeForSong(songId: string): Promise<void> {
     for (const stem of this.deps.stems.forSong(songId)) if (stem.file) await this.deps.storage.remove(stem.file);

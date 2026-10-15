@@ -120,6 +120,21 @@ Used by all three features; built once, in the first step that needs them.
 3. Save each track, mix = sum of all tracks (peak normalized) as the song's normal file. Playing, A/B compare,
    download, presets and reuse keep working unchanged.
 
+**Clean tracks (2026-10-15).** With the whole song style in every track's caption, the first track (drums on
+silence) came out as a mini mix with bass and vocals ("Acoustic Male" preset: "… upright bass … male vocals").
+Measured with that preset, 30 s, several seeds:
+- Caption (`legoCaption` / `styleForTrack` in `domain/stem.ts`): only the style parts that fit the track: mood, genre
+  and scene stay; vocal parts (also "singer-songwriter", voice ranges, "choir") only for vocal tracks; instrument parts
+  only for their own track ("upright bass" stays with the bass); sound words of the style slider (acoustic, organic,
+  electronic, synthetic) are dropped; instrument tracks end with "instrumental" (works better than "no vocals").
+  Drums, tonal share 200–3000 Hz, mean of 3 seeds: whole style 0.140, filter with "no vocals" 0.096, this 0.064.
+- `guidance_scale` 5 for `lego` (`LEGO_GUIDANCE` in `domain/music-engine.ts`; 1.0 = CFG off was the default):
+  bass on drums, energy above 400 Hz, 2 seeds: 1.0 → 0.076, 3.0 → 0.033, 5.0 → 0.011 (a good bass: 0.019);
+  the caption variants made almost no difference. About 45 % more time per track. `extract` stays at 1.0 (untested).
+- Lyrics for the vocal track: the plan uses `lm_mode: "generate"` (see step 2 notes), `"inspire"` often returned
+  `[Instrumental]`.
+End to end (drums, bass, guitar, vocals, 30 s): drums 0.018 (tonal), bass 0.005 (above 400 Hz), 4:13 in total.
+
 **To try in this step** (guitar was off-beat in the experiment): always send `timesignature`; more steps for
 melodic tracks; an order with keyboard or guitar before bass; describe the rhythm in the caption ("on the beat",
 "eighth notes"). Measure with `rhythm.py`, then listen.
@@ -216,8 +231,9 @@ settings. Deleting a song deletes its tracks.
 
 Step 2 in the code: `services/track-by-track.ts`. `POST /api/generate` takes `mode: "tracks"` and `tracks: [...]`
 (vocal tracks are dropped for instrumental songs, an error if the base model is missing). The plan uses the language
-model without audio codes: `lm_mode: "inspire"` when lyrics have to be written (~15 s, the caption and length it
-returns are ignored), otherwise `"format"` (~3 s) — the normal `generate` takes ~37 s. Tracks and mix are always WAV
+model: `lm_mode: "generate"` when lyrics have to be written (like a whole song, ~10 s per 30 s of music; `"inspire"`
+would be faster but chose `[Instrumental]` in 3 of 4 tries with the "Acoustic Male" preset), otherwise `"format"`
+(~3 s, no audio codes). Tracks and mix are always WAV
 (bit depth from the settings, 16 bit when MP3 is set). Progress "2/5 bass · 1:23"; cancel keeps finished tracks,
 retry starts over. The time estimate counts each track as one pass (`units` in `queue-estimate.ts`).
 Measured: 30 s song with drums, bass, vocals in 2:18.

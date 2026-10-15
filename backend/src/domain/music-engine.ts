@@ -46,9 +46,9 @@ export interface StemRequest {
 export interface MusicEngine {
   readonly name: string;
   /**
-   * Nur das Sprachmodell, ohne Audio-Codes: plant Tempo, Tonart, Takt, Länge.
-   * writeLyrics: auch Lyrics schreiben (Modus "inspire", ~15 s; ändert dabei Länge und Beschreibung), sonst
-   * Modus "format" (~3 s, Lyrics bleiben wie übergeben).
+   * Nur das Sprachmodell: plant Tempo, Tonart, Takt, Länge.
+   * writeLyrics: auch Lyrics schreiben (Modus "generate" wie beim ganzen Song, ~10 s je 30 s Musik; "inspire" wäre
+   * schneller, entschied sich im Test aber oft für "[Instrumental]"), sonst Modus "format" (~3 s, ohne Audio-Codes).
    */
   plan(params: Record<string, unknown>, writeLyrics: boolean, progress: ProgressReporter, signal: AbortSignal): Promise<SongResultMeta>;
   /** Eine Einzelspur mit dem Spuren-Modell (Base); liefert WAV (Float 32). */
@@ -69,3 +69,10 @@ export const DIT_MODELS = { standard: "acestep-v15-sft-Q8_0.gguf", xl: "acestep-
 export const STEM_MODEL = "acestep-v15-base-Q8_0.gguf";
 /** Empfehlung von acestep.cpp für das Base-Modell (docs/ARCHITECTURE.md, Beispiel lego) */
 export const STEM_STEPS = 50;
+/**
+ * CFG-Stärke für lego (neue Einzelspur): mit 1.0 (CFG aus, Vorgabe von acestep.cpp) mischt das Modell oft andere
+ * Instrumente in die Spur. Gemessen an einer Bass-Spur auf Schlagzeug (Energie über 400 Hz, 2 Seeds): 1.0 → 0,076,
+ * 3.0 → 0,033, 5.0 → 0,011 (Referenz guter Bass: 0,019). Kostet etwa 45 % mehr Rechenzeit je Spur.
+ * extract bleibt bei 1.0 (nicht getestet).
+ */
+export const LEGO_GUIDANCE = 5.0;

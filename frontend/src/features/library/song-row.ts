@@ -1,5 +1,5 @@
 // HTML einer Songzeile. Reine Darstellung: kennt weder API noch Ereignisse.
-import { STEM_TRACKS, type Song, type Stem, type StemTrack } from "../../../../shared/api.ts";
+import { EXTRACT_COUNTS, type ExtractCount, type Song, type Stem, type SynthCompute } from "../../../../shared/api.ts";
 import { escapeHtml as esc } from "../../core/dom.ts";
 import { formatDuration, generationTime } from "../../core/format.ts";
 import type { Translate } from "../../i18n/i18n.ts";
@@ -26,8 +26,12 @@ export interface SongRowContext {
   stemPlaying: boolean;
   /** Spuren-Modell da? Sonst ist Herauslösen gesperrt */
   stemsAvailable: boolean;
-  /** Gewählte Spuren im Extract-Picker */
-  extractTracks: readonly StemTrack[];
+  /** Gewählte Stem-Anzahl (2 / 4 / 6) */
+  extractCount: ExtractCount;
+  /** Synth CPU/GPU für Stem Separation */
+  synthCompute: SynthCompute;
+  /** Überlaufmenü (⋮) dieser Zeile ist offen */
+  menuOpen: boolean;
 }
 
 const ICON_FOLDER = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`;
@@ -35,6 +39,8 @@ const ICON_CROSS = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" 
 const ICON_THUMB_DOWN = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 14V3"/><path d="M9 18.5L10 14H4.7a2 2 0 0 1-2-2.3l1.2-7A2 2 0 0 1 5.9 3H17v11l-4 7a2.4 2.4 0 0 1-4-2.5z"/></svg>`;
 const ICON_STEMS = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h13"/></svg>`;
 const ICON_REUSE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M12 3l7 7h-4v10h-6V10H5l7-7z"/></svg>`;
+const ICON_DOTS = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>`;
+const ICON_MIXER = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 8h10"/><path d="M18 8h2"/><circle cx="16" cy="8" r="2"/><path d="M4 16h2"/><path d="M10 16h10"/><circle cx="8" cy="16" r="2"/></svg>`;
 
 export function shortCaption(song: Song): string {
   return song.caption.split(",").slice(0, 3).join(",");
@@ -104,23 +110,46 @@ function stateLine(song: Song, ctx: SongRowContext): string {
   }
 }
 
+function menuItem(action: string, label: string, opts: { icon?: string; on?: boolean; danger?: boolean } = {}): string {
+  const cls = ["song-menu-item", opts.on && "on", opts.danger && "danger"].filter(Boolean).join(" ");
+  return `<button type="button" class="${cls}" data-a="${action}" role="menuitem">${opts.icon ?? ""}${esc(label)}</button>`;
+}
+
 function actionButtons(song: Song, lyrics: string, ctx: SongRowContext): string {
   const { t } = ctx;
   const done = song.status === "done";
   const active = song.status === "queued" || song.status === "running";
-  return [
+  const hasMixer = done && song.stems > 0;
+  const crossTip = t(ctx.crossing === "from" ? "cross_cancel" : ctx.crossing === "pick" ? "cross_pick" : "cross");
+  // Sichtbar: Favorit, Kreuzen, Einstellungen übernehmen, Mixer — Rest hinter ⋮
+  const primary = [
     done && `<button class="sek icon ${song.favorite ? "on" : ""}" data-a="fav" title="${t("fav")}">${song.favorite ? "★" : "☆"}</button>`,
-    done && `<button class="sek icon hide ${song.hidden ? "on" : ""}" data-a="hide" title="${t(song.hidden ? "unhide" : "hide")}">${ICON_THUMB_DOWN}</button>`,
-    done && `<a class="download icon fmt" href="${song.url}?download=1" title="${t("download")}">${song.file?.endsWith(".wav") ? "WAV" : "MP3"}</a>`,
-    lyrics && `<button class="sek icon txt ${ctx.lyricsOpen ? "on" : ""}" data-a="lyrics" title="${t("show_lyrics")}">TXT</button>`,
-    hasStems(song) && `<button class="sek icon ${ctx.stemsOpen ? "on" : ""}" data-a="stems" title="${t("stems_tip")}">${ICON_STEMS}</button>`,
-    ctx.hasFolders && `<button class="sek icon" data-a="move" title="${t("move")}">${ICON_FOLDER}</button>`,
-    `<button class="sek icon" data-a="more" title="${t("more")}">＋</button>`,
-    `<button class="sek icon cross ${ctx.crossing === "from" ? "on" : ""}" data-a="cross" title="${t(ctx.crossing === "from" ? "cross_cancel" : ctx.crossing === "pick" ? "cross_pick" : "cross")}">${ICON_CROSS}</button>`,
+    done && `<button class="sek icon cross ${ctx.crossing === "from" ? "on" : ""}" data-a="cross" title="${esc(crossTip)}">${ICON_CROSS}</button>`,
     `<button class="sek icon" data-a="reuse" title="${t("reuse")}">${ICON_REUSE}</button>`,
-    (song.status === "error" || song.status === "cancelled") && `<button class="sek icon" data-a="retry" title="${t("retry")}">↻</button>`,
-    `<button class="sek icon del" data-a="del" title="${active ? t("cancel") : t("del")}">✕</button>`,
+    hasMixer && `<button class="sek icon" data-a="mixer" title="${t("mixer_open_tip")}">${ICON_MIXER}</button>`,
+  ].filter(Boolean);
+
+  const overflow = [
+    done && menuItem("hide", t(song.hidden ? "unhide" : "hide"), { icon: ICON_THUMB_DOWN, on: song.hidden }),
+    done && song.url && `<a class="song-menu-item" href="${song.url}?download=1" role="menuitem" data-a="download" download>${esc(t("download"))}</a>`,
+    lyrics && menuItem("lyrics", t("show_lyrics"), { on: ctx.lyricsOpen }),
+    // Stereo-Mix: „Stem Separation“; sonst „Spuren“ (bereits Einzelspuren)
+    canExtract(song)
+      ? menuItem("stems", t("stem_separation"), { icon: ICON_STEMS, on: ctx.stemsOpen })
+      : hasStems(song) && menuItem("stems", t("stems_tip"), { icon: ICON_STEMS, on: ctx.stemsOpen }),
+    ctx.hasFolders && menuItem("move", t("move"), { icon: ICON_FOLDER }),
+    menuItem("more", t("more")),
+    (song.status === "error" || song.status === "cancelled") && menuItem("retry", t("retry")),
+    menuItem("del", active ? t("cancel") : t("del"), { danger: true }),
   ].filter(Boolean).join("");
+
+  return [
+    ...primary,
+    `<div class="song-menu-wrap${ctx.menuOpen ? " open" : ""}">
+      <button type="button" class="sek icon song-menu-btn" data-a="menu" title="${t("song_menu")}" aria-label="${t("song_menu")}" aria-expanded="${ctx.menuOpen}" aria-haspopup="menu">${ICON_DOTS}</button>
+      <div class="song-menu" role="menu">${overflow}</div>
+    </div>`,
+  ].join("");
 }
 
 function titleBlock(song: Song, ctx: SongRowContext): string {
@@ -142,6 +171,13 @@ export function hasStems(song: Song): boolean {
   return song.stems > 0 || song.stems_pending > 0 || (song.params.mode === "tracks" && song.status !== "queued") || song.status === "done";
 }
 
+/** Herauslösen nur aus dem Stereo-Mix — nicht bei Spur-für-Spur / Replace / Begleitung */
+export function canExtract(song: Song): boolean {
+  if (song.status !== "done" || !song.file) return false;
+  const mode = song.params.mode;
+  return !mode || mode === "full";
+}
+
 function stemRow(stem: Stem, ctx: SongRowContext): string {
   const { t } = ctx;
   const current = stem.id === ctx.currentStemId;
@@ -156,38 +192,48 @@ function stemRow(stem: Stem, ctx: SongRowContext): string {
 }
 
 function extractBlock(song: Song, ctx: SongRowContext): string {
-  if (song.status !== "done" || !song.file) return "";
+  if (!canExtract(song)) return "";
   const { t } = ctx;
   const pending = song.stems_pending > 0;
-  const chips = STEM_TRACKS.map((track) => {
-    const on = ctx.extractTracks.includes(track);
-    return `<button type="button" class="chip ${on ? "on" : ""}" data-a="extract-track" data-track="${track}" aria-pressed="${on}" ${pending || !ctx.stemsAvailable ? "disabled" : ""}>${t(`track_${track}`)}</button>`;
+  const done = (ctx.stems ?? []).some((s) => s.kind === "extracted" && s.status !== "error");
+  if (done && !pending) return "";
+  const chips = EXTRACT_COUNTS.map((n) => {
+    const on = ctx.extractCount === n;
+    return `<button type="button" class="chip ${on ? "on" : ""}" data-a="extract-count" data-count="${n}" aria-pressed="${on}" ${pending || !ctx.stemsAvailable ? "disabled" : ""}>${t("extract_n", n)}</button>`;
   }).join("");
   const action = pending
     ? `<button type="button" class="sek" data-a="extract-cancel">${t("extract_cancel")}</button>`
-    : `<button type="button" class="sek" data-a="extract-go" ${!ctx.stemsAvailable || !ctx.extractTracks.length ? "disabled" : ""}>${t("extract_go")}</button>`;
+    : `<button type="button" class="sek" data-a="extract-go" ${!ctx.stemsAvailable ? "disabled" : ""}>${t("extract_go")}</button>`;
+  const compute = computeBadge(ctx.synthCompute, t);
   return `<div class="extract">
-      <div class="small">${t(ctx.stemsAvailable ? "extract_honest" : "gen_tracks_missing")}</div>
+      <div class="extract-head"><div class="small">${t(ctx.stemsAvailable ? "extract_honest" : "gen_tracks_missing")}</div>${compute}</div>
       <div class="chips track-chips">${chips}</div>
-      <div class="extract-bar">${action}<span class="small">${ctx.stemsAvailable ? t("extract_hint", ctx.extractTracks.length) : ""}</span></div>
+      <div class="extract-bar">${action}<span class="small">${ctx.stemsAvailable ? t("extract_hint", ctx.extractCount) : ""}</span></div>
     </div>`;
+}
+
+function computeBadge(c: SynthCompute, t: Translate): string {
+  if (c.mode === "unknown") return "";
+  const label = c.mode === "gpu" ? t("extract_gpu", c.kind || c.device) : t("extract_cpu");
+  return `<span class="extract-device ${c.mode}" title="${esc(c.device || label)}">${esc(label)}</span>`;
 }
 
 function stemsBlock(song: Song, ctx: SongRowContext): string {
   if (!ctx.stemsOpen) return "";
   if (!ctx.stems) return `<div class="stems">${extractBlock(song, ctx)}<div class="small">…</div></div>`;
   const ready = ctx.stems.some((s) => s.url);
+  const deletable = ctx.stems.some((s) => s.status === "done" || s.status === "error");
   const zip = ready
     ? `<a class="download mini stems-zip" href="/api/songs/${song.id}/stems.zip" title="${ctx.t("stems_zip_tip")}">ZIP ↓</a>` : "";
-  const mixer = ready
-    ? `<button type="button" class="sek mini stems-mixer" data-a="mixer" title="${ctx.t("mixer_open_tip")}">${ctx.t("mixer_open")}</button>` : "";
+  const clear = deletable
+    ? `<button type="button" class="sek mini" data-a="stems-del-all">${ctx.t("stems_del_all")}</button>` : "";
   return `<div class="stems">${extractBlock(song, ctx)}${ctx.stems.map((s) => stemRow(s, ctx)).join("")}
-      <div class="stems-actions">${mixer}${zip}</div></div>`;
+      <div class="stems-actions">${clear}${zip}</div></div>`;
 }
 
 export function renderSongRow(song: Song, ctx: SongRowContext): string {
   const lyrics = generatedLyrics(song);
-  const classes = ["song", ctx.isCurrent && "playing", ctx.startsGroup && "new-group", ctx.crossing === "from" && "cross-from", song.hidden && "is-hidden"].filter(Boolean).join(" ");
+  const classes = ["song", ctx.isCurrent && "playing", ctx.startsGroup && "new-group", ctx.crossing === "from" && "cross-from", song.hidden && "is-hidden", ctx.menuOpen && "menu-open"].filter(Boolean).join(" ");
   return `<div class="${classes}" data-id="${song.id}" draggable="${ctx.hasFolders && !ctx.editing}">
       ${leftSlot(song, ctx)}
       <div style="min-width:0">${titleBlock(song, ctx)}<div class="m" title="${ctx.t("meta_tip")}">${esc(metaLine(song))}</div>${stateLine(song, ctx)}</div>

@@ -5,7 +5,7 @@ import type { SongParams, SongResultMeta, StemKind, StemTrack } from "../../../s
 import type { MusicEngine, ProgressReporter } from "../domain/music-engine.ts";
 import { newId } from "../domain/ids.ts";
 import { INSTRUMENTAL, nowIso } from "../domain/song.ts";
-import { formatElapsed, orderTracks, sourceFileName, stemFileName, TRACK_PROMPTS, VOCAL_TRACKS } from "../domain/stem.ts";
+import { formatElapsed, legoCaption, orderTracks, sourceFileName, stemFileName, VOCAL_TRACKS } from "../domain/stem.ts";
 import type { SongStorage } from "../infrastructure/song-storage.ts";
 import type { StemRepository } from "../infrastructure/stem-repository.ts";
 import { encodeWav, limitPeak, mix, parseWav, type Pcm, type WavDepth } from "../infrastructure/wav.ts";
@@ -78,7 +78,7 @@ export class ReplaceAccompany {
       const pcm = await this.one(songId, {
         task: "lego", track, kind: "replacement", position: keepers.length + i,
         source: encodeWav(backing, 32), sourceName: "backing.wav",
-        caption: `${TRACK_PROMPTS[track]}, ${params.caption}`,
+        caption: legoCaption(track, params.caption),
         lyrics: VOCAL_TRACKS.includes(track) ? meta.lyrics ?? INSTRUMENTAL : INSTRUMENTAL,
         meta, seed: params.seed >= 0 ? params.seed + keepers.length + i : undefined,
         label: `${keepers.length + i + 1}/${total} ${track}`, elapsed, depth, engine, progress, signal,
@@ -114,7 +114,7 @@ export class ReplaceAccompany {
       const pcm = await this.one(songId, {
         task: "lego", track, kind: "accompaniment", position: i,
         source: encodeWav(limitPeak(i === 0 ? backing : mix(added)), 32), sourceName: "backing.wav",
-        caption: `${TRACK_PROMPTS[track]}, ${params.caption}`,
+        caption: legoCaption(track, params.caption),
         lyrics: VOCAL_TRACKS.includes(track) ? meta.lyrics ?? INSTRUMENTAL : INSTRUMENTAL,
         meta, seed: params.seed >= 0 ? params.seed + i : undefined,
         label: `${i + 1}/${tracks.length} ${track}`, elapsed, depth, engine, progress, signal,

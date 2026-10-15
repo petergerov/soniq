@@ -1,4 +1,5 @@
 // Zustand des Modellservers oben rechts. Bei "alles ok" bleibt die Anzeige leer.
+import type { HealthInfo } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { byId } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";
@@ -9,10 +10,12 @@ export class HealthIndicator {
   private readonly api: ApiClient;
   private readonly t: Translate;
   private readonly el = byId("status");
+  private readonly onHealth?: (h: HealthInfo) => void;
 
-  constructor(api: ApiClient, t: Translate) {
+  constructor(api: ApiClient, t: Translate, onHealth?: (h: HealthInfo) => void) {
     this.api = api;
     this.t = t;
+    this.onHealth = onHealth;
   }
 
   start(): void {
@@ -24,6 +27,7 @@ export class HealthIndicator {
     const { el, t } = this;
     try {
       const h = await this.api.health();
+      this.onHealth?.(h);
       el.className = "box small " + (h.ok ? "" : "err");
       el.textContent = h.ok ? "" : t("offline");
       el.title = h.error || (h.props ? `${t("models")}: ${Object.values(h.props.models ?? {}).flat().join(", ")}` : t("model_server"));
