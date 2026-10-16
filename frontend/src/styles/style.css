@@ -592,6 +592,8 @@ body.in-mixer { padding-bottom: 24px; }
 .mixer-ver-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .mixer-ver-counts { display: flex; gap: 4px; }
 .mixer-ver-counts .chip { min-width: 32px; justify-content: center; text-align: center; }
+.mixer-ver-seed { display: inline-flex; align-items: center; gap: 6px; }
+.mixer-ver-seed input { width: 120px; }
 .mixer-ver-actions { display: flex; gap: 8px; margin-left: auto; }
 @media (max-width: 720px) {
   .mixer-track { grid-template-columns: 1fr auto; grid-template-rows: auto auto; }

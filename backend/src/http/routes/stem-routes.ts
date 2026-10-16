@@ -51,8 +51,8 @@ export function registerStemRoutes(router: Router, s: StemRouteServices): void {
     })
     .delete("/api/stems/:id", ({ params }) => s.stems.remove(params.id!))
     .post("/api/stems/:id/versions", async ({ req, params }) => {
-      const { count, ...recipe } = parseNewVersion(await readJson(req));
-      s.versions.enqueue(params.id!, recipe, count);
+      const { count, seed, ...recipe } = parseNewVersion(await readJson(req));
+      s.versions.enqueue(params.id!, recipe, count, seed);
       s.jobs.wake();
       return s.stems.list(s.stems.songOf(params.id!));
     })

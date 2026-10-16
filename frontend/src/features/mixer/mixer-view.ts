@@ -73,6 +73,8 @@ interface Editor {
   chips: Set<string>;
   text: string;
   count: number;
+  /** Seed der ersten Version; leer = zufällig */
+  seed: string;
 }
 
 export class MixerView {
@@ -347,11 +349,16 @@ export class MixerView {
     // Die hörbare Version und laufende lassen sich nicht löschen (erst umschalten bzw. abbrechen)
     const deletable = ch.track && !on && take.status !== "queued" && take.status !== "running" && ch.takes.length > 1;
     const del = deletable ? `<button type="button" class="sek icon mini" data-a="ver-del" title="${t("ver_del")}" aria-label="${t("ver_del")}">✕</button>` : "";
+    // Nachbauen: Wünsche und Seed dieser Version ins ✦-Feld (nur Versionen mit gespeichertem Seed)
+    const seed = take.recipe?.seed;
+    const redo = ch.track && seed !== undefined
+      ? `<button type="button" class="sek icon mini" data-a="ver-redo" title="${esc(t("ver_redo", seed))}" aria-label="${esc(t("ver_redo", seed))}">↻</button>` : "";
+    const tip = [take.recipe?.caption, seed !== undefined ? `Seed ${seed}` : ""].filter(Boolean).join("\n");
     take.lane.querySelector(".mixer-lane-head")!.innerHTML = `
       <button type="button" class="mixer-take" data-a="activate" role="radio" aria-checked="${on}" ${take.status === "done" ? "" : "disabled"}
         title="${t("ver_activate")}"><span class="mixer-dot" aria-hidden="true"></span>v${take.version}</button>
-      <span class="mixer-take-desc" title="${esc(take.recipe?.caption ?? "")}">${esc(desc)}</span>${state}
-      <span class="mixer-lane-btns">${dl}${del}</span>`;
+      <span class="mixer-take-desc" title="${esc(tip)}">${esc(desc)}</span>${state}
+      <span class="mixer-lane-btns">${redo}${dl}${del}</span>`;
   }
 
   /** "wird erzeugt … · 0:42": die Laufzeit aus der Song-Meldung ("1/2 drums v3 · 0:42") */
@@ -489,6 +496,9 @@ export class MixerView {
       case "ver-del":
         if (take) void this.deleteTake(take);
         return;
+      case "ver-redo":
+        if (take?.recipe) this.openEditor(ch, take.recipe);
+        return;
       case "ver-open":
         this.toggleEditor(ch);
         return;
@@ -605,15 +615,20 @@ export class MixerView {
   // ——— Neue Version (✦) ———
 
   private toggleEditor(ch: Channel): void {
-    const same = this.editor?.key === ch.key;
+    if (this.editor?.key === ch.key) this.closeEditor();
+    else this.openEditor(ch);
+  }
+
+  /** ✦-Feld öffnen, leer oder mit den Wünschen und dem Seed einer vorhandenen Version (zum Nachbauen). */
+  private openEditor(ch: Channel, from?: StemRecipe): void {
     this.closeEditor();
-    if (same || !ch.track) return;
+    if (!ch.track) return;
     this.editor = {
-      key: ch.key, axes: Object.fromEntries(VARIATION_AXES.map((a) => [a, 0])) as Record<VariationAxis, number>,
-      chips: new Set(), text: "", count: 1,
+      key: ch.key, axes: Object.fromEntries(VARIATION_AXES.map((a) => [a, from?.axes[a] ?? 0])) as Record<VariationAxis, number>,
+      chips: new Set(from?.chips ?? []), text: from?.text ?? "", count: 1, seed: from?.seed !== undefined ? String(from.seed) : "",
     };
     this.renderEditor();
-    ch.row.querySelector<HTMLElement>(".mixer-ver .chip")?.focus();
+    ch.row.querySelector<HTMLElement>(from ? "[data-a=ver-go]" : ".mixer-ver .chip")?.focus();
   }
 
   private closeEditor(): void {
@@ -650,6 +665,8 @@ export class MixerView {
       <div class="mixer-ver-preview small"><span class="mixer-ver-prompt-lbl">${esc(t("ver_prompt"))}</span> <span class="mixer-ver-prompt"></span></div>
       <div class="mixer-ver-bar">
         <span class="small">${esc(t("ver_count"))}</span><span class="mixer-ver-counts">${counts}</span>
+        <label class="small mixer-ver-seed" title="${esc(t("ver_seed_tip"))}">Seed
+          <input type="number" min="0" step="1" value="${esc(ed.seed)}" placeholder="${esc(t("seed_ph"))}"></label>
         <span class="small mixer-ver-eta"></span>
         <span class="mixer-ver-actions">
           <button type="button" class="sek" data-a="ver-reset">${esc(t("ver_reset"))}</button>
@@ -711,7 +728,9 @@ export class MixerView {
         VARIATION_AXES.forEach((a) => { ed.axes[a] = 0; });
         ed.chips.clear();
         ed.text = "";
+        ed.seed = "";
         ch.row.querySelector<HTMLInputElement>(".mixer-ver-text")!.value = "";
+        ch.row.querySelector<HTMLInputElement>(".mixer-ver-seed input")!.value = "";
         break;
       case "ver-close":
         this.closeEditor();
@@ -729,6 +748,9 @@ export class MixerView {
     const ed = this.editor!;
     if (target.matches(".mixer-ver-text")) {
       ed.text = target.value;
+    } else if (target.matches(".mixer-ver-seed input")) {
+      ed.seed = target.value;
+      return;
     } else if (target.dataset.axis && ch.track) {
       const axis = target.dataset.axis as VariationAxis;
       ed.axes[axis] = Number(target.value);
@@ -768,7 +790,8 @@ export class MixerView {
     btn.disabled = true;
     try {
       const axes = Object.fromEntries(VARIATION_AXES.filter((a) => ed.axes[a]).map((a) => [a, ed.axes[a]]));
-      const stems = await this.deps.api.createVersions(base.id, { axes, chips: [...ed.chips], text: ed.text.trim(), count: ed.count });
+      const seed = ed.seed.trim() === "" ? undefined : Number(ed.seed);
+      const stems = await this.deps.api.createVersions(base.id, { axes, chips: [...ed.chips], text: ed.text.trim(), count: ed.count, seed });
       this.closeEditor();
       ch.row.classList.add("is-open");
       this.syncStems(stems);

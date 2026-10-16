@@ -7,6 +7,9 @@ import { HttpError } from "./request.ts";
 
 type Input = Record<string, unknown>;
 
+/** Größter Seed einer Spur-Version: der Server nutzt die unteren 32 Bit */
+const MAX_SEED = 2 ** 32 - 1;
+
 function invalid(field: string, expected: string): never {
   throw new HttpError(422, `${field}: ${expected}`);
 }
@@ -128,7 +131,11 @@ export function parseNewVersion(input: Input): NewVersionRequest {
   if (!Array.isArray(chips) || !chips.every((c) => typeof c === "string")) invalid("chips", "list of strings expected");
   const text = str(input, "text").trim();
   if (text.length > MAX_VERSION_TEXT) invalid("text", `at most ${MAX_VERSION_TEXT} characters`);
-  return { axes, chips: [...new Set(chips as string[])], text, count: num(input, "count", 1, { integer: true, min: 1, max: MAX_VERSION_COUNT }) };
+  const seed = num(input, "seed", -1, { integer: true, min: -1, max: MAX_SEED });
+  return {
+    axes, chips: [...new Set(chips as string[])], text, count: num(input, "count", 1, { integer: true, min: 1, max: MAX_VERSION_COUNT }),
+    ...(seed >= 0 ? { seed } : {}),
+  };
 }
 
 /** `gains=<id>:<0…1>,…` des Mixers (Spur-IDs und "source"); fehlende Kanäle sind stumm. */

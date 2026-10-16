@@ -1,9 +1,9 @@
 // Neue Version einer Spur (Mixer › Neue Version): `lego` auf der Summe der übrigen Spuren (in ihrer aktiven Version,
 // beim Begleiten dazu die Aufnahme), mit den Wünschen in der Caption. Die alte Version bleibt erhalten; die neue wird
 // hörbar, sobald sie fertig ist. Läuft wie das Herauslösen in der Warteschlange, der Song bleibt "done".
-import { activeTakes, type SongParams, type SongResultMeta, type StemTrack, type VersionRecipe } from "../../../shared/api.ts";
+import { activeTakes, type SongParams, type SongResultMeta, type StemRecipe, type StemTrack, type VersionRecipe } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
-import { newId } from "../domain/ids.ts";
+import { newId, randomSeed } from "../domain/ids.ts";
 import type { MusicEngine, ProgressReporter } from "../domain/music-engine.ts";
 import { INSTRUMENTAL, nowIso } from "../domain/song.ts";
 import { formatElapsed, stemFileName, versionCaption, VOCAL_TRACKS, type StemRecord } from "../domain/stem.ts";
@@ -26,8 +26,11 @@ export class StemVersions {
     this.deps = deps;
   }
 
-  /** `count` neue Versionen der Spur einreihen (verschiedene Seeds); die Caption steht ab jetzt fest. */
-  enqueue(stemId: string, recipe: VersionRecipe, count: number): void {
+  /**
+   * `count` neue Versionen der Spur einreihen; Caption und Seed stehen ab jetzt fest und bleiben im Rezept, damit sich
+   * eine Version nachbauen lässt. Ohne `seed` würfelt jede Version einen eigenen, sonst zählen die Seeds ab `seed` hoch.
+   */
+  enqueue(stemId: string, recipe: VersionRecipe, count: number, seed?: number): void {
     const { stems, songs } = this.deps;
     if (!this.deps.stemsAvailable()) throw new AppError("bad_request", "stems_model_missing");
     const stem = stems.find(stemId);
@@ -37,11 +40,11 @@ export class StemVersions {
     const track = stem.track as StemTrack;
     const params = JSON.parse(song.params) as SongParams;
     const caption = versionCaption(track, recipe, song.caption || params.caption || "");
-    const json = JSON.stringify({ ...recipe, caption });
     const first = stems.maxVersion(song.id, track) + 1;
     const at = nowIso();
     for (let i = 0; i < count; i++) {
-      stems.insert({ id: newId(), songId: song.id, track, kind: "version", position: stem.position, createdAt: at, version: first + i, recipe: json });
+      const recipeJson = JSON.stringify({ ...recipe, caption, seed: seed === undefined ? randomSeed() : (seed + i) % 2 ** 32 });
+      stems.insert({ id: newId(), songId: song.id, track, kind: "version", position: stem.position, createdAt: at, version: first + i, recipe: recipeJson });
     }
   }
 
@@ -77,13 +80,15 @@ export class StemVersions {
           const params = JSON.parse(song.params) as SongParams;
           const meta = song.result_meta ? JSON.parse(song.result_meta) as SongResultMeta : null;
           const backing = await this.backing(songId, track, params, meta?.duration || params.duration || 0);
-          const caption = (JSON.parse(job.recipe ?? "{}") as { caption?: string }).caption || track;
+          const recipe = JSON.parse(job.recipe ?? "{}") as Partial<StemRecipe>;
+          const caption = recipe.caption || track;
           const wav = await engine.stem({
             task: "lego", track, source: encodeWav(backing, 32), sourceName: "backing.wav", caption,
             lyrics: VOCAL_TRACKS.includes(track) ? meta?.lyrics || song.lyrics || INSTRUMENTAL : INSTRUMENTAL,
             bpm: meta?.bpm || params.bpm || null, keyscale: meta?.keyscale || params.keyscale || null,
             timesignature: meta?.timesignature ? String(meta.timesignature) : params.timesignature || null,
             duration: meta?.duration || params.duration || null,
+            seed: recipe.seed,   // fehlt nur bei alten Einträgen: dann würfelt der Server
           }, () => progress(`${label} · ${elapsed()}`), signal);
           const file = stemFileName(songId, track, "version", job.version);
           await storage.save(file, encodeWav(parseWav(wav), depth));

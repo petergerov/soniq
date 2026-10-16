@@ -219,11 +219,15 @@ export interface VersionRecipe {
 export interface StemRecipe extends VersionRecipe {
   /** Caption, die an die Engine ging */
   caption: string;
+  /** Seed dieser Version (fehlt bei Versionen, die vor dem Speichern des Seeds entstanden sind) */
+  seed?: number;
 }
 
 export interface NewVersionRequest extends VersionRecipe {
   /** Anzahl Versionen mit verschiedenen Seeds (1–3) */
   count: number;
+  /** Seed der ersten Version, weitere zählen hoch; fehlt = zufällig */
+  seed?: number;
 }
 
 export const VARIATION_AXES = ["intensity", "body", "character", "density", "room"] as const;

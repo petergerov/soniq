@@ -111,6 +111,11 @@ umschalten geht deshalb sofort, auch während der Wiedergabe. Eine neue Version 
 Mix ↓ und ZIP nehmen je Spur nur die hörbare Version, ältere lädt man einzeln (↓ in der Zeile). Nicht hörbare Versionen
 lassen sich löschen (✕). Der Song-Mix in der Bibliothek bleibt unverändert.
 
+**Seed und Nachbauen:** Jede Version bekommt beim Einreihen ihren Seed fest zugeteilt (zufällig oder aus dem Seed-Feld im
+✦-Feld, bei mehreren Versionen hochgezählt) und speichert ihn im Rezept; der Tooltip der Beschreibung zeigt Caption und
+Seed. ↻ an einer Version übernimmt Wünsche und Seed ins ✦-Feld. Gleich klingt die neue Version nur, wenn auch die übrigen
+Spuren (das Backing) und das Spuren-Modell dieselben sind. Versionen von vor dieser Änderung haben keinen Seed und kein ↻.
+
 ---
 
 ## Technik kurz
@@ -123,8 +128,8 @@ lassen sich löschen (✕). Der Song-Mix in der Bibliothek bleibt unverändert.
 
 - Jobs laufen in der **gleichen Queue** wie Songs, nacheinander. Abbrechen stoppt die aktuelle Spur und verwirft den Rest.  
 - Dateien: `<song-id>.<track>.wav` im Song-Ordner.  
-- Tabelle `stems`: `id`, `song_id`, `track`, `kind` (auch `version`), `status`, Reihenfolge, Zeiten, `version`, `active` (je Spur genau eine hörbar), `recipe` (Wünsche + Caption). Song löschen löscht die Spuren. Dateien neuer Versionen: `<song-id>.v<n>.<spur>.wav`.  
+- Tabelle `stems`: `id`, `song_id`, `track`, `kind` (auch `version`), `status`, Reihenfolge, Zeiten, `version`, `active` (je Spur genau eine hörbar), `recipe` (Wünsche, Caption, Seed). Song löschen löscht die Spuren. Dateien neuer Versionen: `<song-id>.v<n>.<spur>.wav`.  
 - Engine: Multipart `POST /synth` mit `synth_model` = Base-Modell.  
-- API u. a.: `GET /api/songs/:id/stems`, `…/stems.zip`, `GET /api/stems/:id/audio`, `DELETE /api/stems/:id`, `DELETE /api/songs/:id/stems`, `POST /api/songs/:id/stems` (extract), `POST /api/stems/upload` (replace/accompany), `GET /api/songs/:id/source` (Original), `GET /api/songs/:id/mix?gains=<spur-id>:<0…1>,…,source:<0…1>` (Mix als WAV; fehlende Kanäle sind stumm), `POST /api/stems/:id/versions` (neue Version: `axes`, `chips`, `text`, `count`), `PUT /api/stems/:id/active` (Version hörbar machen).
+- API u. a.: `GET /api/songs/:id/stems`, `…/stems.zip`, `GET /api/stems/:id/audio`, `DELETE /api/stems/:id`, `DELETE /api/songs/:id/stems`, `POST /api/songs/:id/stems` (extract), `POST /api/stems/upload` (replace/accompany), `GET /api/songs/:id/source` (Original), `GET /api/songs/:id/mix?gains=<spur-id>:<0…1>,…,source:<0…1>` (Mix als WAV; fehlende Kanäle sind stumm), `POST /api/stems/:id/versions` (neue Version: `axes`, `chips`, `text`, `count`, optional `seed`), `PUT /api/stems/:id/active` (Version hörbar machen).
 
 Plan, Experimente und Status der Umsetzung: [`newfeatures.md`](../newfeatures.md).
