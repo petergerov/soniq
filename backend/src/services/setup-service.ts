@@ -6,7 +6,7 @@ import { totalmem } from "node:os";
 import { join } from "node:path";
 import type { LmSize, SetupRequest, SetupStatus } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
-import { baseFile, fixedFiles, lmFile, lmFileName, LM_SIZES, recommendedLm, requiredFiles, xlFile } from "../domain/model-plan.ts";
+import { baseFile, fixedFiles, lmFile, lmFileName, LM_SIZES, recommendedLm, requiredFiles, xlBaseFile, xlFile } from "../domain/model-plan.ts";
 import type { EngineConf, EngineMode } from "../infrastructure/engine-conf.ts";
 import type { EngineSupervisor } from "../infrastructure/engine-supervisor.ts";
 import { isFileSync } from "../infrastructure/files.ts";
@@ -64,6 +64,7 @@ export class SetupService {
     const ramGb = Math.round(totalmem() / 2 ** 30);
     const xl = xlFile(catalog);
     const stems = baseFile(catalog);
+    const xlStems = xlBaseFile(catalog);
     return {
       packaged: this.deps.packaged,
       needed: this.needed(),
@@ -74,6 +75,7 @@ export class SetupService {
       lm_options: LM_SIZES.map((size) => ({ size, mb: lmFile(catalog, size)?.mb ?? 0, present: this.has(lmFileName(size)) })),
       xl: { mb: xl?.mb ?? 0, present: !!xl && this.has(xl.name) },
       stems: { mb: stems?.mb ?? 0, present: !!stems && this.has(stems.name) },
+      stems_xl: { mb: xlStems?.mb ?? 0, present: !!xlStems && this.has(xlStems.name) },
       base_mb: fixedFiles(catalog).filter((f) => !this.has(f.name)).reduce((sum, f) => sum + f.mb, 0),
       file: this.file,
       done_mb: Math.round(this.doneBytes / MB),
@@ -86,7 +88,7 @@ export class SetupService {
   start(request: SetupRequest): SetupStatus {
     if (!this.deps.packaged) throw new AppError("bad_request", "setup_unavailable");
     if (this.busy) throw new AppError("conflict", "setup_busy");
-    const required = requiredFiles(this.deps.catalog, request.lm, request.xl, request.stems === true);
+    const required = requiredFiles(this.deps.catalog, request.lm, request.xl, request.stems === true, request.stems_xl === true);
     const missing = required.filter((f) => !this.has(f.name));
     // Neue Einrichtung: schon vorhandene Dateien (z. B. hineinkopiert) einmal per Prüfsumme kontrollieren.
     // Beim späteren Nachladen von XL sind sie schon geprüft.
@@ -110,6 +112,11 @@ export class SetupService {
   /** Spuren-Modell nachladen (Einstellungen › Spuren-Modell); danach startet der Modellserver neu und kennt es. */
   addStems(): SetupStatus {
     return this.start({ lm: this.currentLm(), xl: false, stems: true });
+  }
+
+  /** XL-Spuren-Modell nachladen (Einstellungen › Spuren-Modell); danach startet der Modellserver neu und kennt es. */
+  addXlStems(): SetupStatus {
+    return this.start({ lm: this.currentLm(), xl: false, stems_xl: true });
   }
 
   /** Eingerichtetes Sprachmodell (für das Nachladen einzelner Modelle) */

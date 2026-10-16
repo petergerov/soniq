@@ -267,6 +267,9 @@ export interface QueueInfo {
 
 export type DitModel = "standard" | "xl";
 
+/** Spuren-Modell (lego, extract, complete): "standard" = Base mit 2 Mrd. Parametern, "xl" = XL-Base mit 4 Mrd. */
+export type StemModel = "standard" | "xl";
+
 /** Dateiformat der erzeugten Songs. */
 export type OutputFormat = "wav16" | "wav24" | "wav32" | "mp3-320" | "mp3-192" | "mp3-128";
 
@@ -277,6 +280,7 @@ export interface Settings {
   poll_interval: number;
   timeout_minutes: number;
   dit: DitModel;
+  stem_model: StemModel;
   output_format: OutputFormat;
   songs_dir: string;
 }
@@ -286,6 +290,8 @@ export interface SettingsView extends Settings {
   dit_xl_available: boolean;
   /** Spuren-Modell (Base) liegt im Modellordner: Spur für Spur, Herauslösen, Ersetzen möglich */
   stems_available: boolean;
+  /** XL-Spuren-Modell liegt im Modellordner (in den Einstellungen wählbar) */
+  stems_xl_available: boolean;
   /** Fertige App: XL lässt sich über die Einrichtung nachladen statt über den Installer */
   packaged: boolean;
 }
@@ -353,6 +359,8 @@ export interface SetupStatus {
   xl: { mb: number; present: boolean };
   /** Spuren-Modell (Base): Spur für Spur, Herauslösen, Ersetzen */
   stems: { mb: number; present: boolean };
+  /** XL-Spuren-Modell (XL-Base), nur über Einstellungen › Spuren-Modell nachladbar */
+  stems_xl: { mb: number; present: boolean };
   /** Noch fehlende feste Dateien (VAE, Text-Embedding, Klangmodell) in MB */
   base_mb: number;
   /** Datei, die gerade geladen wird */
@@ -368,6 +376,8 @@ export interface SetupRequest {
   xl: boolean;
   /** Spuren-Modell mitladen */
   stems?: boolean;
+  /** XL-Spuren-Modell mitladen */
+  stems_xl?: boolean;
 }
 
 export interface ErrorBody {

@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import { readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { loadConfig, type AppConfig } from "./config/app-config.ts";
-import { STEM_MODEL, type MusicEngineFactory } from "./domain/music-engine.ts";
+import { effectiveStemModel, STEM_MODELS, type MusicEngineFactory } from "./domain/music-engine.ts";
 import { HttpServer } from "./http/http-server.ts";
 import { registerFolderRoutes } from "./http/routes/folder-routes.ts";
 import { registerPresetRoutes } from "./http/routes/preset-routes.ts";
@@ -78,13 +78,15 @@ async function main(): Promise<void> {
   const engineConf = new EngineConf(config.engineConfPath);
   const settings = new SettingsRepository(db, engineConf, config);
   const storage = new SongStorage(config.defaultSongsDir, () => settings.get().songs_dir);
-  const engineFactory: MusicEngineFactory = (s) => new AceStepEngine(s);
+  const modelInstalled = (file: string) => existsSync(join(config.modelsDir, file));
+  // Fehlt das gewählte Spuren-Modell, aber das andere liegt im Ordner, rechnen die Spuren mit dem anderen
+  const engineFactory: MusicEngineFactory = (s) => new AceStepEngine({ ...s, stem_model: effectiveStemModel(s.stem_model, modelInstalled) });
   const launcher = createProcessLauncher(config.platform);
 
   // Services
   const stems = new StemRepository(db);
   const stemService = new StemService({ stems, songs, storage });
-  const stemsAvailable = () => existsSync(join(config.modelsDir, STEM_MODEL));
+  const stemsAvailable = () => Object.values(STEM_MODELS).some(modelInstalled);
   const trackByTrack = new TrackByTrack({ stems, storage, removeStems: (id) => stemService.removeForSong(id) });
   const extract = new ExtractTracks({ stems, songs, storage, stemsAvailable });
   const versions = new StemVersions({ stems, songs, storage, stemsAvailable });

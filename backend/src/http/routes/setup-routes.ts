@@ -20,5 +20,9 @@ export function registerSetupRoutes(router: Router, setup: SetupService): void {
       requireLangHeader(ctx);
       return setup.addStems();
     })
+    .post("/api/setup/stems-xl", (ctx) => {
+      requireLangHeader(ctx);
+      return setup.addXlStems();
+    })
     .post("/api/setup/cancel", () => setup.cancel());
 }

@@ -78,6 +78,7 @@ export class ApiClient {
   startSetup(request: SetupRequest): Promise<SetupStatus> { return this.send("POST", "/api/setup", request); }
   addXl(): Promise<SetupStatus> { return this.send("POST", "/api/setup/xl"); }
   addStems(): Promise<SetupStatus> { return this.send("POST", "/api/setup/stems"); }
+  addXlStems(): Promise<SetupStatus> { return this.send("POST", "/api/setup/stems-xl"); }
   cancelSetup(): Promise<SetupStatus> { return this.send("POST", "/api/setup/cancel"); }
 
   folders(): Promise<FolderOverview> { return this.send("GET", "/api/folders"); }

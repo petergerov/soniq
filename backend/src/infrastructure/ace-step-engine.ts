@@ -7,7 +7,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import type { HealthInfo, Settings } from "../../../shared/api.ts";
 import type { SongResultMeta } from "../../../shared/api.ts";
 import {
-  DIT_MODELS, EngineError, LEGO_GUIDANCE, STEM_MODEL, STEM_STEPS,
+  DIT_MODELS, EngineError, LEGO_GUIDANCE, STEM_MODELS, STEM_STEPS,
   type AnalysisResult, type GeneratedAudio, type MusicEngine, type ProgressReporter, type StemRequest,
 } from "../domain/music-engine.ts";
 import { DEFAULT_OUTPUT_FORMAT, OUTPUT_FORMATS, type AceOutputFormat } from "../domain/output-format.ts";
@@ -58,6 +58,7 @@ export class AceStepEngine implements MusicEngine {
   private readonly timeoutSeconds: number;
   private readonly lmModel: string;
   private readonly ditModel: string;
+  private readonly stemModel: string;
   private readonly outputFormat: AceOutputFormat;
 
   constructor(settings: Settings) {
@@ -69,6 +70,7 @@ export class AceStepEngine implements MusicEngine {
     // Liegen mehrere Sprachmodelle im Ordner, nähme der Server sonst das erste (alphabetisch)
     this.lmModel = settings.lm_model;
     this.ditModel = DIT_MODELS[settings.dit] ?? DIT_MODELS.standard;
+    this.stemModel = STEM_MODELS[settings.stem_model] ?? STEM_MODELS.standard;
     this.outputFormat = OUTPUT_FORMATS[settings.output_format] ?? OUTPUT_FORMATS[DEFAULT_OUTPUT_FORMAT];
   }
 
@@ -132,7 +134,7 @@ export class AceStepEngine implements MusicEngine {
 
   async stem(r: StemRequest, progress: ProgressReporter, signal: AbortSignal): Promise<Uint8Array> {
     const req: Json = {
-      synth_model: STEM_MODEL, task_type: r.task, track: r.track, caption: r.caption, lyrics: r.lyrics || "[Instrumental]",
+      synth_model: this.stemModel, task_type: r.task, track: r.track, caption: r.caption, lyrics: r.lyrics || "[Instrumental]",
       inference_steps: STEM_STEPS, shift: 1.0,   // Vorgaben für das Base-Modell
       guidance_scale: r.task === "lego" ? LEGO_GUIDANCE : 1.0,   // lego: CFG hält die Spur frei von anderen Instrumenten
       output_format: "wav32",   // Gleitkomma: Spuren werden danach addiert, ohne Rundung dazwischen

@@ -6,6 +6,11 @@ Alle drei Erzeugungs-Funktionen brauchen das **Spuren-Modell** `acestep-v15-base
 (Windows `.\install.ps1 -Stems`, Linux `./arch_linux.sh --stems`); in der Mac-App **Einstellungen › Spuren-Modell laden**
 oder das Häkchen in der ersten Einrichtung. Danach sind die Funktionen ohne Neuladen der Seite frei.
 
+Optional gibt es das **XL-Spuren-Modell** `acestep-v15-xl-base` (~5,3 GB, 4 statt 2 Mrd. Parameter, rechnet etwa doppelt
+so lange): `install --xl-stems` (Windows `-XlStems`) bzw. in der Mac-App **Einstellungen › XL-Spuren-Modell laden**. Unter
+**Einstellungen › Spuren-Modell** wählt man dann Standard oder XL (`Settings.stem_model`, `STEM_MODELS` in
+`domain/music-engine.ts`). Fehlt die Datei des gewählten Modells, aber das andere ist da, rechnen die Spuren mit dem anderen.
+
 Grobe Dauer: etwa **75 Sekunden pro Spur und Minute Musik**.
 
 ---

@@ -1,4 +1,4 @@
-// Einstellungs-Dialog (Zahnrad): Server-Adressen, Timeout, Klangmodell, Ausgabeformat, Song-Ordner.
+// Einstellungs-Dialog (Zahnrad): Server-Adressen, Timeout, Klangmodell, Spuren-Modell, Ausgabeformat, Song-Ordner.
 import type { OutputFormat } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { byId } from "../../core/dom.ts";
@@ -11,6 +11,7 @@ interface SettingsControls extends HTMLFormControlsCollection {
   timeout_minutes: HTMLInputElement;
   songs_dir: HTMLInputElement;
   dit: HTMLSelectElement;
+  stem_model: HTMLSelectElement;
   output_format: HTMLSelectElement;
 }
 
@@ -23,6 +24,9 @@ export class SettingsDialog {
   private readonly t: Translate;
   private readonly onGetXl: () => void;
   private readonly onGetStems: () => void;
+  private readonly onGetXlStems: () => void;
+  /** Liegt beim Öffnen ein Spuren-Modell im Ordner? Sonst wird die Auswahl nicht gespeichert. */
+  private stemsAvailable = false;
   private readonly dialog = byId<HTMLDialogElement>("settingsDlg");
   private readonly f = byId<HTMLFormElement>("settingsForm").elements as SettingsControls;
 
@@ -31,17 +35,23 @@ export class SettingsDialog {
    * @param onSaved  nach dem Speichern (z. B. Serverstatus neu prüfen)
    * @param onGetXl  fertige App: XL-Klangmodell nachladen (über die Einrichtung)
    * @param onGetStems fertige App: Spuren-Modell nachladen (über die Einrichtung)
+   * @param onGetXlStems fertige App: XL-Spuren-Modell nachladen (über die Einrichtung)
    */
-  constructor(api: ApiClient, t: Translate, onOpen: () => void, onSaved: () => void, onGetXl: () => void, onGetStems: () => void) {
+  constructor(api: ApiClient, t: Translate, onOpen: () => void, onSaved: () => void, onGetXl: () => void, onGetStems: () => void, onGetXlStems: () => void) {
     this.api = api;
     this.t = t;
     this.onOpen = onOpen;
     this.onSaved = onSaved;
     this.onGetXl = onGetXl;
     this.onGetStems = onGetStems;
+    this.onGetXlStems = onGetXlStems;
     byId("stemsGet").addEventListener("click", () => {
       this.dialog.close();
       this.onGetStems();
+    });
+    byId("stemsGetXl").addEventListener("click", () => {
+      this.dialog.close();
+      this.onGetXlStems();
     });
     byId("ditGetXl").addEventListener("click", () => {
       this.dialog.close();
@@ -70,6 +80,13 @@ export class SettingsDialog {
     setPackagedApp(s.packaged);
     byId("stemsState").textContent = s.stems_available ? this.t("stems_model_ok") : s.packaged ? "" : stemsMissingText(this.t);
     byId("stemsGet").hidden = s.stems_available || !s.packaged;
+    // Auswahl Standard/XL, sobald ein Spuren-Modell da ist; XL nur wählbar, wenn seine Datei da ist
+    this.stemsAvailable = s.stems_available;
+    this.f.stem_model.value = s.stem_model;
+    this.f.stem_model.hidden = !s.stems_available;
+    this.f.stem_model.querySelector<HTMLOptionElement>('option[value="xl"]')!.disabled = !s.stems_xl_available;
+    byId("stemsXlHint").hidden = !s.stems_available || s.stems_xl_available || s.packaged;
+    byId("stemsGetXl").hidden = !s.stems_available || s.stems_xl_available || !s.packaged;
     this.onOpen();
     this.dialog.showModal();
   }
@@ -82,6 +99,7 @@ export class SettingsDialog {
         timeout_minutes: Number(this.f.timeout_minutes.value) || DEFAULT_TIMEOUT,
         songs_dir: this.f.songs_dir.value.trim(),
         dit: this.f.dit.value === "xl" ? "xl" : "standard",
+        ...(this.stemsAvailable ? { stem_model: this.f.stem_model.value === "xl" ? "xl" : "standard" } : {}),
         output_format: this.f.output_format.value as OutputFormat,   // Optionen im HTML, der Server prüft den Wert
       });
       this.onSaved();

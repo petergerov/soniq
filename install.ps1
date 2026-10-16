@@ -7,9 +7,10 @@
 #            -NoStart     App am Ende nicht starten
 #            -XL          zusätzlich das XL-Klangmodell laden (5,3 GB, in den Einstellungen wählbar)
 #            -Stems       zusätzlich das Spuren-Modell laden (2,5 GB: Spur für Spur, Herauslösen, Ersetzen)
+#            -XlStems     zusätzlich das XL-Spuren-Modell laden (5,3 GB, in den Einstellungen wählbar)
 #            -Build       Modellserver selbst kompilieren statt fertige Binaries zu laden
 #                         (braucht Visual Studio Build Tools + CUDA Toolkit)
-param([switch]$Yes, [string]$LM = "", [switch]$NoStart, [switch]$Build, [switch]$XL, [switch]$Stems)
+param([switch]$Yes, [string]$LM = "", [switch]$NoStart, [switch]$Build, [switch]$XL, [switch]$Stems, [switch]$XlStems)
 
 . (Join-Path $PSScriptRoot "scripts\common.ps1")
 Set-Location $ROOT
@@ -125,12 +126,17 @@ if (-not $Stems -and -not $Yes) {
     if ($a -match '^[jJyY]') { $Stems = [switch]$true }
 }
 if ($Stems) { Write-Host "  -> plus track model" }
+# Optional: XL-Spuren-Modell. Nur mit -XlStems; ist es schon da, bleibt es.
+$XL_STEMS_FILE = "acestep-v15-xl-base-Q8_0.gguf"
+if (Test-Path (Join-Path $MODELS $XL_STEMS_FILE)) { $XlStems = [switch]$true }
+if ($XlStems) { Write-Host "  -> plus XL track model" }
 
 # Dateien + Größe in MB (für die Speicherplatz-Prüfung)
 $FILES = [ordered]@{}
 $WANT = @("vae-BF16.gguf", "Qwen3-Embedding-0.6B-Q8_0.gguf", "acestep-v15-sft-Q8_0.gguf", $LM_FILE)
 if ($XL) { $WANT += $XL_FILE }
 if ($Stems) { $WANT += $STEMS_FILE }
+if ($XlStems) { $WANT += $XL_STEMS_FILE }
 foreach ($f in $WANT) {
     if (-not $MODEL_SHA[$f]) { Abbruch "File $f is missing in the model table (scripts\common.sh)." }
     $FILES[$f] = $MODEL_MB[$f]

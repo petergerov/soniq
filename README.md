@@ -29,14 +29,16 @@ The installer
 7. sets up the icons for **start / stop** and starts the app.
 
 It can be run again at any time; finished steps are skipped.
-Options: `--yes` (no questions), `--lm 0.6B|1.7B|4B`, `--xl`, `--stems`, `--no-start`.
+Options: `--yes` (no questions), `--lm 0.6B|1.7B|4B`, `--xl`, `--stems`, `--xl-stems`, `--no-start`.
 
 **XL sound model (optional):** The installer asks whether to also download the larger sound model ACE-Step 1.5 XL (4 instead of 2 billion parameters, 5.3 GB). According to the developers it sounds better; it takes about twice as long and needs more memory (16 GB RAM or 12 GB graphics memory and up). The smaller model stays the default; you can switch to XL afterwards under Gear › Sound model. Measured on an M4 with 16 GB: a 30-second song took 49 s with Standard and 99 s with XL. Not tested much yet, feedback welcome.
 
 **Track model (optional):** The installer also asks whether to download the track model (`acestep-v15-base`, 2.5 GB).
 It is needed for track by track, Stem Separation and Replace / accompany ([docs/stems.md](docs/stems.md)); without it
 these stay greyed out. Add it later with `./install.command --stems` (Windows `.\install.ps1 -Stems`, Linux
-`./arch_linux.sh --stems`); the Mac app downloads it under Gear › Track model.
+`./arch_linux.sh --stems`); the Mac app downloads it under Gear › Track model. There is also an XL track model
+(`acestep-v15-xl-base`, 5.3 GB, about twice as long per track): `--xl-stems` (Windows `-XlStems`) or in the Mac app
+under Gear › Track model; switch between Standard and XL there.
 
 ## Usage
 
@@ -89,7 +91,7 @@ The script:
 - Start: `./arch_linux.sh` (or `./start.sh`)
 - Stop: `./arch_linux.sh --stop` (or `./stop.sh`, or the “Stop servers” button in the web interface)
 - Status: `./arch_linux.sh --status`
-- Options: `--yes` (no questions), `--yay` (install packages via the AUR helper yay), `--backend [auto|rocm|hip|vulkan|cuda|cpu]`, `--lm [0.6B|1.7B|4B]`, `--xl`, `--stems`, `--rebuild`, `--no-browser`
+- Options: `--yes` (no questions), `--yay` (install packages via the AUR helper yay), `--backend [auto|rocm|hip|vulkan|cuda|cpu]`, `--lm [0.6B|1.7B|4B]`, `--xl`, `--stems`, `--xl-stems`, `--rebuild`, `--no-browser`
 
 **Multiple graphics cards:** By default the script uses the first card and prefers the dedicated one (`HIP_VISIBLE_DEVICES=0`, `DRI_PRIME=1`, `GGML_VK_VISIBLE_DEVICES=0`). If you need a different card, set the variable yourself before starting, for example `GGML_VK_VISIBLE_DEVICES=1 ./arch_linux.sh --start`. Your own values are not overwritten.
 

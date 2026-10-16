@@ -72,6 +72,15 @@ export class SetupDialog {
     }
   }
 
+  /** Fertige App, Einstellungen › Spuren-Modell: XL-Base nachladen; Fortschritt wie bei der Einrichtung. */
+  async addXlStems(): Promise<void> {
+    try {
+      this.show(await this.api.addXlStems());
+    } catch (e) {
+      alert((e as Error).message);
+    }
+  }
+
   /** Texte neu setzen (nach Sprachwechsel). */
   refreshTexts(): void {
     if (this.status && this.dialog.open) this.show(this.status);

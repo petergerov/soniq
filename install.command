@@ -7,17 +7,19 @@
 #            --lm SIZE    Sprachmodell erzwingen: 0.6B, 1.7B oder 4B
 #            --xl         zusätzlich das XL-Klangmodell laden (5,3 GB, in den Einstellungen wählbar)
 #            --stems      zusätzlich das Spuren-Modell laden (2,5 GB: Spur für Spur, Herauslösen, Ersetzen)
+#            --xl-stems   zusätzlich das XL-Spuren-Modell laden (5,3 GB, in den Einstellungen wählbar)
 #            --no-start   App am Ende nicht starten
 source "$(dirname "$0")/scripts/common.sh"
 cd "$ROOT" || exit 1
 
-AUTO=0; START=1; LM_SIZE=""; XL=0; STEMS=0
+AUTO=0; START=1; LM_SIZE=""; XL=0; STEMS=0; XL_STEMS=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --yes) AUTO=1 ;;
     --no-start) START=0 ;;
     --xl) XL=1 ;;
     --stems) STEMS=1 ;;
+    --xl-stems) XL_STEMS=1 ;;
     --lm) LM_SIZE="$2"; shift ;;
   esac
   shift
@@ -103,11 +105,16 @@ if [ "$STEMS" != 1 ] && [ "$AUTO" != 1 ]; then
   [[ "$a" =~ ^[yY] ]] && STEMS=1
 fi
 [ "$STEMS" = 1 ] && echo "  → plus track model"
+# Optional: XL-Spuren-Modell. Nur mit --xl-stems; ist es schon da, bleibt es.
+XL_STEMS_FILE=$(echo "$MODEL_FILES" | grep 'xl-base' | cut -d: -f1)
+[ -f "$MODELS/$XL_STEMS_FILE" ] && XL_STEMS=1
+[ "$XL_STEMS" = 1 ] && echo "  → plus XL track model"
 
 # Benötigte Dateien (Name:MB:SHA-256 aus common.sh): die drei festen, das gewählte Sprachmodell, auf Wunsch XL und Spuren-Modell
-FILES=$(echo "$MODEL_FILES" | grep -v 'acestep-5Hz-lm-\|xl-sft\|v15-base' ; echo "$MODEL_FILES" | grep "^$LM_FILE:")
+FILES=$(echo "$MODEL_FILES" | grep -v 'acestep-5Hz-lm-\|xl-sft\|v15-base\|xl-base' ; echo "$MODEL_FILES" | grep "^$LM_FILE:")
 [ "$XL" = 1 ] && FILES=$(echo "$FILES"; echo "$MODEL_FILES" | grep 'xl-sft')
 [ "$STEMS" = 1 ] && FILES=$(echo "$FILES"; echo "$MODEL_FILES" | grep 'v15-base')
+[ "$XL_STEMS" = 1 ] && FILES=$(echo "$FILES"; echo "$MODEL_FILES" | grep 'xl-base')
 NEED_MB=0
 for e in $FILES; do
   IFS=: read -r f mb _ <<< "$e"

@@ -85,7 +85,7 @@ R, V, U and Ctrl/⌘ + Enter work on the Create page only.
 | 4 | **TXT** | show the lyrics the model wrote (only for songs with vocals) |
 | 5 | **Folder** | move to a folder |
 | 6 | **Plus** | another version with a new seed |
-| 7 | **Arrow** | copy the settings back into the form |
+| 7 | **Arrow** | copy the settings back into the form, with a new random seed (to get the very same song again, enter the old seed under Advanced) |
 |   | **Thumb down** | hide a miss: it disappears from the list but is kept. The crossed-out eye next to the search shows hidden songs again; there the same button brings a song back. |
 |   | **Crossed arrows** | cross two songs: click it on the first song, then on a second one. The form gets the style of the first and the scene of the second. Esc cancels. |
 | 8 | **Cross** | delete, or cancel a running song |
@@ -101,6 +101,8 @@ Click a title to rename it. The line below shows **BPM · IT** (iterations) **·
 
 Three features work with single instrument tracks (stems). They need the **track model** (2.5 GB): the installer asks
 for it (or `install --stems`), the Mac app downloads it under **Gear › Track model**. Without it they are greyed out.
+There is also an **XL track model** (5.3 GB, 4 instead of 2 billion parameters, about twice as long): add it with
+`install --xl-stems` or, in the Mac app, under **Gear › Track model**, then pick XL there.
 Each track takes about as long as a whole song of the same length.
 
 - **Track by track** (Create › Generation): a new song built instrument by instrument, each track fitting the ones

@@ -1,5 +1,5 @@
 // Abstraktion des Modellservers. Die Services kennen nur diese Schnittstelle, nicht acestep.cpp selbst.
-import type { HealthInfo, Settings, SongResultMeta, StemTrack } from "../../../shared/api.ts";
+import type { HealthInfo, Settings, SongResultMeta, StemModel, StemTrack } from "../../../shared/api.ts";
 
 /** Fehler des Modellservers, der so im UI angezeigt werden darf. */
 export class EngineError extends Error {
@@ -65,8 +65,17 @@ export type MusicEngineFactory = (settings: Settings) => MusicEngine;
 /** Klangmodelle (DiT): SFT mit 50 Schritten. Standard mit 2 Mrd. Parametern, optional XL mit 4 Mrd. */
 export const DIT_MODELS = { standard: "acestep-v15-sft-Q8_0.gguf", xl: "acestep-v15-xl-sft-Q8_0.gguf" } as const;
 
-/** Spuren-Modell: nur das Base-Modell ist für lego, extract und complete trainiert (SFT und Turbo nicht). */
-export const STEM_MODEL = "acestep-v15-base-Q8_0.gguf";
+/**
+ * Spuren-Modelle: nur die Base-Modelle sind für lego, extract und complete trainiert (SFT und Turbo nicht).
+ * Standard mit 2 Mrd. Parametern, optional XL-Base mit 4 Mrd. (rechnet etwa doppelt so lange).
+ */
+export const STEM_MODELS = { standard: "acestep-v15-base-Q8_0.gguf", xl: "acestep-v15-xl-base-Q8_0.gguf" } as const;
+
+/** Gewähltes Spuren-Modell; fehlt seine Datei, aber das andere ist da, nimmt es das andere. */
+export function effectiveStemModel(choice: StemModel, installed: (file: string) => boolean): StemModel {
+  const other: StemModel = choice === "xl" ? "standard" : "xl";
+  return !installed(STEM_MODELS[choice]) && installed(STEM_MODELS[other]) ? other : choice;
+}
 /** Empfehlung von acestep.cpp für das Base-Modell (docs/ARCHITECTURE.md, Beispiel lego) */
 export const STEM_STEPS = 50;
 /**

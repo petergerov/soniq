@@ -114,6 +114,7 @@ With `git clone` (step 1) the warning never appears in the first place.
 ./install.command --lm 4B      # force a language model: 0.6B, 1.7B or 4B
 ./install.command --xl         # also download the XL sound model
 ./install.command --stems      # also download the track model (single tracks)
+./install.command --xl-stems   # also download the XL track model
 ./install.command --no-start   # don't start the app at the end
 ```
 

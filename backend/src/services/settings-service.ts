@@ -1,9 +1,9 @@
 // Einstellungen prüfen und speichern; ein neuer Song-Ordner nimmt die vorhandenen Songs mit.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import type { DitModel, Settings, SettingsView } from "../../../shared/api.ts";
+import type { DitModel, Settings, SettingsView, StemModel } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
-import { DIT_MODELS, STEM_MODEL } from "../domain/music-engine.ts";
+import { DIT_MODELS, effectiveStemModel, STEM_MODELS } from "../domain/music-engine.ts";
 import { isOutputFormat } from "../domain/output-format.ts";
 import type { SettingsRepository } from "../infrastructure/settings-repository.ts";
 import type { SongRepository } from "../infrastructure/song-repository.ts";
@@ -27,7 +27,16 @@ export class SettingsService {
   }
 
   view(): SettingsView {
-    return { ...this.deps.settings.get(), songs_dir_default: this.deps.storage.defaultDirectory, dit_xl_available: this.xlAvailable(), stems_available: existsSync(join(this.deps.modelsDir, STEM_MODEL)), packaged: this.deps.packaged };
+    const s = this.deps.settings.get();
+    return {
+      ...s,
+      stem_model: effectiveStemModel(s.stem_model, (f) => this.has(f)),   // das Modell, mit dem die Spuren tatsächlich rechnen
+      songs_dir_default: this.deps.storage.defaultDirectory,
+      dit_xl_available: this.has(DIT_MODELS.xl),
+      stems_available: Object.values(STEM_MODELS).some((f) => this.has(f)),
+      stems_xl_available: this.has(STEM_MODELS.xl),
+      packaged: this.deps.packaged,
+    };
   }
 
   async update(input: Record<string, unknown>): Promise<Settings> {
@@ -40,19 +49,26 @@ export class SettingsService {
       values[field] = n;
     }
     if ("dit" in values) values.dit = this.validDit(values.dit);
+    if ("stem_model" in values) values.stem_model = this.validStemModel(values.stem_model);
     if ("output_format" in values && !isOutputFormat(values.output_format)) throw new AppError("invalid", "bad_format");
     if ("songs_dir" in values) values.songs_dir = await this.changeSongsDir(String(values.songs_dir ?? "").trim());
     return this.deps.settings.save(values as Partial<Settings>);
   }
 
-  private xlAvailable(): boolean {
-    return existsSync(join(this.deps.modelsDir, DIT_MODELS.xl));
+  private has(file: string): boolean {
+    return existsSync(join(this.deps.modelsDir, file));
   }
 
   private validDit(value: unknown): DitModel {
     const dit: DitModel = value === "xl" ? "xl" : "standard";
-    if (dit === "xl" && !this.xlAvailable()) throw new AppError("bad_request", "xl_missing");
+    if (dit === "xl" && !this.has(DIT_MODELS.xl)) throw new AppError("bad_request", "xl_missing");
     return dit;
+  }
+
+  private validStemModel(value: unknown): StemModel {
+    const model: StemModel = value === "xl" ? "xl" : "standard";
+    if (model === "xl" && !this.has(STEM_MODELS.xl)) throw new AppError("bad_request", "stems_xl_missing");
+    return model;
   }
 
   /** Prüft und legt den Ordner an, verschiebt vorhandene Songs. Gibt den zu speichernden Wert zurück. */

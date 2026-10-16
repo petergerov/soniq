@@ -238,7 +238,7 @@ export class GeneratorForm {
     setSelect(this.f.keyscale, p.keyscale, true);
     setSelect(this.f.timesignature, p.timesignature);
     this.f.vocal_language.value = p.vocal_language || DEFAULTS.language;
-    this.f.seed.value = String(p.seed);
+    this.f.seed.value = "";   // neuer Seed: mit dem alten käme bei gleichen Einstellungen derselbe Song (Spur für Spur bitgenau)
     byId<HTMLDetailsElement>("advBox").open = true;
     scrollToTop();
   }

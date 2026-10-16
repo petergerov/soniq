@@ -8,6 +8,8 @@ const LM_PREFIX = "acestep-5Hz-lm-";
 const XL_MARK = "xl-sft";
 /** Optionales Spuren-Modell (lego, extract, complete); gehört nicht zur Grundausstattung */
 const BASE_MARK = "v15-base";
+/** Optionales XL-Spuren-Modell (4 Mrd. Parameter), nur über Einstellungen › Spuren-Modell */
+const XL_BASE_MARK = "xl-base";
 
 export function isLmSize(value: unknown): value is LmSize {
   return LM_SIZES.includes(value as LmSize);
@@ -39,16 +41,23 @@ export function baseFile(catalog: ModelCatalog): ModelFile | undefined {
   return catalog.files.find((f) => f.name.includes(BASE_MARK));
 }
 
-/** Dateien, die jede Einrichtung braucht: VAE, Text-Embedding, Klangmodell. */
-export function fixedFiles(catalog: ModelCatalog): ModelFile[] {
-  return catalog.files.filter((f) => !f.name.startsWith(LM_PREFIX) && !f.name.includes(XL_MARK) && !f.name.includes(BASE_MARK));
+/** XL-Spuren-Modell (XL-Base) für Einzelspuren. */
+export function xlBaseFile(catalog: ModelCatalog): ModelFile | undefined {
+  return catalog.files.find((f) => f.name.includes(XL_BASE_MARK));
 }
 
-/** Die festen Dateien (VAE, Text-Embedding, Klangmodell), das gewählte Sprachmodell und auf Wunsch XL und Spuren-Modell. */
-export function requiredFiles(catalog: ModelCatalog, size: LmSize, withXl: boolean, withStems = false): ModelFile[] {
+/** Dateien, die jede Einrichtung braucht: VAE, Text-Embedding, Klangmodell. */
+export function fixedFiles(catalog: ModelCatalog): ModelFile[] {
+  const optional = [XL_MARK, BASE_MARK, XL_BASE_MARK];
+  return catalog.files.filter((f) => !f.name.startsWith(LM_PREFIX) && !optional.some((mark) => f.name.includes(mark)));
+}
+
+/** Die festen Dateien (VAE, Text-Embedding, Klangmodell), das gewählte Sprachmodell und auf Wunsch XL und die Spuren-Modelle. */
+export function requiredFiles(catalog: ModelCatalog, size: LmSize, withXl: boolean, withStems = false, withXlStems = false): ModelFile[] {
   const fixed = fixedFiles(catalog);
   const lm = lmFile(catalog, size);
   const xl = withXl ? xlFile(catalog) : undefined;
   const stems = withStems ? baseFile(catalog) : undefined;
-  return [...fixed, ...(lm ? [lm] : []), ...(xl ? [xl] : []), ...(stems ? [stems] : [])];
+  const xlStems = withXlStems ? xlBaseFile(catalog) : undefined;
+  return [...fixed, ...[lm, xl, stems, xlStems].filter((f): f is ModelFile => !!f)];
 }

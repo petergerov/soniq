@@ -17,6 +17,7 @@
 #   --lm [0.6B|1.7B|4B]    Sprachmodellgröße festlegen
 #   --xl                   Zusätzlich das XL-Klangmodell herunterladen (5,3 GB)
 #   --stems                Zusätzlich das Spuren-Modell herunterladen (2,5 GB: Spur für Spur, Herauslösen, Ersetzen)
+#   --xl-stems             Zusätzlich das XL-Spuren-Modell herunterladen (5,3 GB, in den Einstellungen wählbar)
 #   --no-browser           Browser beim Start nicht automatisch öffnen
 #   --help, -h             Diese Hilfe anzeigen
 
@@ -31,6 +32,7 @@ ACTION="run"       # run, install_only, start, stop, status, uninstall
 LM_SIZE=""
 XL=0
 STEMS=0
+XL_STEMS=0
 REBUILD=0
 BACKEND="auto"
 OPEN_BROWSER=1
@@ -50,6 +52,7 @@ while [ $# -gt 0 ]; do
     --lm) LM_SIZE="$2"; shift ;;
     --xl) XL=1 ;;
     --stems) STEMS=1 ;;
+    --xl-stems) XL_STEMS=1 ;;
     --no-browser) OPEN_BROWSER=0 ;;
     --help|-h)
       echo "SONIQ – Arch Linux Setup & Launcher"
@@ -631,14 +634,18 @@ installiere() {
     [[ "$a" =~ ^[jJyY] ]] && STEMS=1
   fi
   [ "$STEMS" = 1 ] && echo "  → plus track model"
+  # Optional: XL-Spuren-Modell. Nur mit --xl-stems; ist es schon da, bleibt es.
+  [ -f "$MODELS/acestep-v15-xl-base-Q8_0.gguf" ] && XL_STEMS=1
+  [ "$XL_STEMS" = 1 ] && echo "  → plus XL track model"
 
   # 7. Modelle herunterladen
   schritt "7. Downloading models"
   mkdir -p "$MODELS"
   local FILES
-  FILES=$(echo "$MODEL_FILES" | grep -v 'acestep-5Hz-lm-\|xl-sft\|v15-base' ; echo "$MODEL_FILES" | grep "^$LM_FILE:")
+  FILES=$(echo "$MODEL_FILES" | grep -v 'acestep-5Hz-lm-\|xl-sft\|v15-base\|xl-base' ; echo "$MODEL_FILES" | grep "^$LM_FILE:")
   [ "$XL" = 1 ] && FILES=$(echo "$FILES"; echo "$MODEL_FILES" | grep 'xl-sft')
   [ "$STEMS" = 1 ] && FILES=$(echo "$FILES"; echo "$MODEL_FILES" | grep 'v15-base')
+  [ "$XL_STEMS" = 1 ] && FILES=$(echo "$FILES"; echo "$MODEL_FILES" | grep 'xl-base')
 
   local NEED_MB=0
   for e in $FILES; do
