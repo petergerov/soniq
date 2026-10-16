@@ -16,6 +16,12 @@ Grobe Dauer: etwa **75 Sekunden pro Spur und Minute Musik**.
 
 **Was passiert:** Ein neuer Song entsteht Instrument für Instrument. Jede Spur wird mit ACE-Step **`lego`** erzeugt — die Begleitung ist die Summe der bereits fertigen Spuren (die erste Spur auf Stille). Pro Spur geht nur der Spur-Prompt plus bereinigter Stil in die Caption (fremde Instrumente/Gesang werden aus dem Song-Text gestrichen), sonst würde die erste Spur auf Stille oft einen Mini-Mix erzeugen. Der Mix ist genau die Summe der Einzelspuren; es gibt kein nachträgliches Trennen.
 
+**Lyrics:** Sind Gesangsspuren gewählt und keine Lyrics eingegeben, schreibt das Sprachmodell sie vorab (Plan). Dafür
+bekommt es nur den Stil (Stichworte), nicht eine lange Beschreibung: Eine Analyse-Beschreibung wie „an energetic
+instrumental piece … guitar solos“ führte sonst zu Lyrics ohne gesungenen Text (nur `[Instrumental Section …]`), und die
+Gesangsspuren wurden wortlos. Hat der Plan weniger als vier gesungene Zeilen, fragt SONIQ mit anderem Seed erneut;
+nach drei Versuchen bricht der Song ab, bevor Spuren entstehen („Keine Lyrics vom Modell“), dann Lyrics selbst eingeben.
+
 **Ergebnis:** Bibliothek-Eintrag mit Fertig-Mix und einzelnen Spuren (`kind: generated`).
 
 ---

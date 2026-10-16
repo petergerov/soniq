@@ -85,7 +85,7 @@ function tagStyleForTrack(track: StemTrack, styleCaption: string): string {
 }
 
 /** true, wenn der Stil ein Absatz ist und kein Komma-Stichwortliste. Ein Punkt nur am Ende zählt nicht. */
-function isProseCaption(style: string): boolean {
+export function isProseCaption(style: string): boolean {
   return style.split(",").some((raw) => {
     const part = raw.trim().replace(/[.!?]+$/, "");
     const words = part.split(/\s+/).filter(Boolean);

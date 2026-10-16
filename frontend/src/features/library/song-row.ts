@@ -53,6 +53,7 @@ export function shortError(message: string | null, t: Translate): string {
   if (/nicht erreichbar/i.test(msg)) return t("err_offline");
   if (/Codes/i.test(msg)) return t("err_codes");
   if (/Zeitüberschreitung/i.test(msg)) return t("err_timeout");
+  if (/keine Lyrics/i.test(msg)) return t("err_no_lyrics");
   return t("err_details");
 }
 
