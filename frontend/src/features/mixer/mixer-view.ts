@@ -9,7 +9,7 @@ import WaveSurfer from "wavesurfer.js";
 import { activeTakes, SOURCE_CHANNEL, VARIATION_AXES, type Song, type Stem, type StemRecipe, type StemStatus, type StemTrack, type VariationAxis } from "../../../../shared/api.ts";
 import { AXIS_MAX, chipsFor, MAX_VERSION_COUNT, MAX_VERSION_TEXT, variationTags, type VariationChip } from "../../../../shared/track-variation.ts";
 import type { ApiClient } from "../../core/api-client.ts";
-import { confirmDialog } from "../../core/confirm-dialog.ts";
+import { confirmDialog, errorDialog } from "../../core/dialogs.ts";
 import { byId, closest, escapeHtml as esc, saveBlob } from "../../core/dom.ts";
 import { formatDuration } from "../../core/format.ts";
 import { stemsMissingText } from "../../core/stems-hint.ts";
@@ -534,7 +534,7 @@ export class MixerView {
       ch.activeId = before;
       this.renderChannel(ch);
       this.applyGains();
-      alert(`${this.deps.t("error")}: ${(e as Error).message}`);
+      void errorDialog(this.deps.t, e);
     }
   }
 
@@ -547,7 +547,7 @@ export class MixerView {
     try {
       this.syncStems(await this.deps.api.deleteStem(take.id));
     } catch (e) {
-      alert(`${t("error")}: ${(e as Error).message}`);
+      void errorDialog(t, e);
     }
   }
 
@@ -605,7 +605,7 @@ export class MixerView {
       const { blob, filename } = await this.deps.api.mixdown(songId, this.gains());
       saveBlob(blob, filename);
     } catch (e) {
-      alert(`${this.deps.t("error")}: ${(e as Error).message}`);
+      void errorDialog(this.deps.t, e);
     } finally {
       this.mixing = false;
       this.updateMixButton();
@@ -798,7 +798,7 @@ export class MixerView {
       this.schedulePoll();
     } catch (e) {
       btn.disabled = false;
-      alert(`${this.deps.t("error")}: ${(e as Error).message}`);
+      void errorDialog(this.deps.t, e);
     }
   }
 

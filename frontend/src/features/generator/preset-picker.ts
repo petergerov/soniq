@@ -1,6 +1,7 @@
 // Vorlagen: aktuelle Einstellungen unter einem Namen speichern und mit einem Klick laden (gespeichert auf dem Server).
 import type { Preset, PresetValues } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
+import { confirmDialog, errorDialog, promptDialog } from "../../core/dialogs.ts";
 import { byId } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 
@@ -45,19 +46,25 @@ export class PresetPicker {
   }
 
   private async save(): Promise<void> {
-    const name = prompt(this.deps.t("preset_name_q"), this.select.value)?.trim();
+    const { t } = this.deps;
+    const name = await promptDialog({
+      title: t("preset_save_title"), message: t("preset_save_tip"), label: t("preset_name_q"), value: this.select.value, confirmLabel: t("preset_save"), cancelLabel: t("cancel"),
+    });
     if (!name) return;
     try {
       this.presets = await this.deps.api.savePreset(name, this.deps.read());
       this.render(name);
     } catch (err) {
-      alert(`${this.deps.t("error")}: ${(err as Error).message}`);
+      await errorDialog(t, err);
     }
   }
 
   private async remove(): Promise<void> {
     const name = this.select.value;
-    if (!name || !confirm(this.deps.t("preset_del_q", name))) return;
+    const { t } = this.deps;
+    if (!name) return;
+    const ok = await confirmDialog({ title: t("preset_del"), message: t("preset_del_q", name), confirmLabel: t("del"), cancelLabel: t("cancel"), danger: true });
+    if (!ok) return;
     this.presets = await this.deps.api.deletePreset(name);
     this.render("");
   }

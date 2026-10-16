@@ -3,6 +3,7 @@
 import { STEM_TRACKS, type AnalyzeResult, type StemIntent, type StemTrack } from "../../../../shared/api.ts";
 import { pieceStyle } from "../../../../shared/piece-style.ts";
 import type { ApiClient } from "../../core/api-client.ts";
+import { errorDialog } from "../../core/dialogs.ts";
 import { byId } from "../../core/dom.ts";
 import { setPackagedApp, stemsMissingText } from "../../core/stems-hint.ts";
 import type { Translate } from "../../i18n/i18n.ts";
@@ -200,7 +201,7 @@ export class ReplaceView {
       });
       this.deps.onQueued();
     } catch (err) {
-      alert(`${this.deps.t("error")}: ${(err as Error).message}`);
+      void errorDialog(this.deps.t, err);
     }
     setTimeout(() => { this.go.disabled = false; this.render(); }, 600);
   }

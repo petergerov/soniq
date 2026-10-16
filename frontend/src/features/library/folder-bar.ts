@@ -1,4 +1,5 @@
 // Ordnerleiste: Ansicht wählen, Ordner anlegen/umbenennen/löschen, ZIP laden, Songs per Ziehen einsortieren.
+import { confirmDialog, errorDialog, promptDialog } from "../../core/dialogs.ts";
 import { byId, closest, escapeHtml as esc, PressGuard, setHtml } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import type { LibraryStore } from "./library-store.ts";
@@ -50,13 +51,18 @@ export class FolderBar {
     const { store, t } = this;
     const current = store.currentFolderInfo;
     if (action === "new") {
-      const name = prompt(t("f_name_q"));
-      if (name?.trim()) await store.createFolder(name);
+      const name = await promptDialog({ title: t("f_new"), label: t("f_name_q"), confirmLabel: t("f_create"), cancelLabel: t("cancel") });
+      if (name) await store.createFolder(name);
     } else if (action === "rename" && current) {
-      const name = prompt(t("f_name_q"), current.name);
-      if (name?.trim()) await store.renameFolder(current.id, name);
+      const name = await promptDialog({
+        title: t("f_rename"), label: t("f_name_q"), value: current.name, confirmLabel: t("f_rename"), cancelLabel: t("cancel"),
+      });
+      if (name && name !== current.name) await store.renameFolder(current.id, name);
     } else if (action === "delete" && current) {
-      if (confirm(t("f_delete_q", current.name))) await store.deleteFolder(current.id);
+      const ok = await confirmDialog({
+        title: t("f_delete"), message: t("f_delete_q", current.name), confirmLabel: t("del"), cancelLabel: t("cancel"), danger: true,
+      });
+      if (ok) await store.deleteFolder(current.id);
     } else if (action === "zip" && !store.songs.some((s) => s.status === "done")) {
       e.preventDefault();   // nichts zum Herunterladen
     }
@@ -67,7 +73,7 @@ export class FolderBar {
       const chip = closest<HTMLElement>(e.target, "[data-f]");
       if (chip) return this.store.setFolder(chip.dataset.f!);
       const action = closest<HTMLElement>(e.target, "[data-fa]")?.dataset.fa;
-      this.handleAction(action, e).catch((err: Error) => alert(`${this.t("error")}: ${err.message}`));
+      this.handleAction(action, e).catch((err: Error) => void errorDialog(this.t, err));
     });
   }
 
@@ -87,7 +93,7 @@ export class FolderBar {
       e.preventDefault();
       this.drag.end();
       const songId = e.dataTransfer!.getData(SONG_DRAG_TYPE);
-      this.store.move(songId, chip.dataset.f!).catch((err: Error) => alert(err.message));
+      this.store.move(songId, chip.dataset.f!).catch((err: Error) => void errorDialog(this.t, err));
     });
   }
 }

@@ -2,6 +2,7 @@
 import type { Song } from "../../shared/api.ts";
 import "./styles/style.css";
 import { ApiClient } from "./core/api-client.ts";
+import { errorDialog } from "./core/dialogs.ts";
 import { byId, enableKeyboardButtons } from "./core/dom.ts";
 import { formatDuration } from "./core/format.ts";
 import { Router } from "./core/router.ts";
@@ -59,7 +60,7 @@ const folderBar = new FolderBar(store, drag, t);
 let songList: SongList;
 const playSong = (song: Song, options?: PlayOptions) => {
   if (played.mark(song.id)) songList.render();
-  player.play(song, options).catch((e: Error) => alert(`${t("error")}: ${e.message}`));
+  player.play(song, options).catch((e: Error) => errorDialog(t, e));
 };
 const player = new AudioPlayer({
   t,
@@ -83,10 +84,10 @@ songList = new SongList({
   openMixer: (song) => router.go("mixer", song.id),
 });
 router.onChange((state) => {
-  if (state.route === "mixer" && state.songId) void mixer.open(state.songId).catch((e: Error) => alert(`${t("error")}: ${e.message}`));
+  if (state.route === "mixer" && state.songId) void mixer.open(state.songId).catch((e: Error) => errorDialog(t, e));
   else mixer.close();
 });
-if (router.current === "mixer" && router.songId) void mixer.open(router.songId).catch((e: Error) => alert(`${t("error")}: ${e.message}`));
+if (router.current === "mixer" && router.songId) void mixer.open(router.songId).catch((e: Error) => errorDialog(t, e));
 bindKeyboardShortcuts({
   form, playback: player, songs: () => store.songs, play: playSong, nextVersion: () => player.nextVersion(),
   formVisible: () => router.current === "generate",

@@ -1,6 +1,7 @@
 // Formular zum Erzeugen: liest die Eingaben, schickt den Auftrag, übernimmt Werte aus Songs und Analysen.
 import type { AnalyzeResult, GenerateRequest, PresetValues, Song } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
+import { errorDialog } from "../../core/dialogs.ts";
 import { byId, restartAnimation, scrollToTop } from "../../core/dom.ts";
 import { setPackagedApp } from "../../core/stems-hint.ts";
 import { storage } from "../../core/storage.ts";
@@ -402,7 +403,7 @@ export class GeneratorForm {
         await this.deps.api.generate(this.read());
         this.deps.onQueued();
       } catch (err) {
-        alert(`${this.deps.t("error")}: ${(err as Error).message}`);
+        void errorDialog(this.deps.t, err);
       }
       setTimeout(() => { this.button.disabled = false; }, 600);
     });

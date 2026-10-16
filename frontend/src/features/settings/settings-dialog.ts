@@ -1,6 +1,7 @@
 // Einstellungs-Dialog (Zahnrad): Server-Adressen, Timeout, Klangmodell, Spuren-Modell, Ausgabeformat, Song-Ordner.
 import type { OutputFormat } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
+import { errorDialog } from "../../core/dialogs.ts";
 import { byId } from "../../core/dom.ts";
 import { setPackagedApp, stemsMissingText } from "../../core/stems-hint.ts";
 import type { Translate } from "../../i18n/i18n.ts";
@@ -104,7 +105,7 @@ export class SettingsDialog {
       });
       this.onSaved();
     } catch (err) {
-      alert((err as Error).message);
+      await errorDialog(this.t, err);
       void this.open();   // Eingaben korrigieren lassen
     }
   }

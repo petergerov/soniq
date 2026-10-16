@@ -1,6 +1,6 @@
 // Songliste der Bibliothek: zeichnet die Zeilen und setzt Klicks in Befehle um.
 import { extractPreset, type ExtractCount, type Song, type Stem, type StemTrack } from "../../../../shared/api.ts";
-import { confirmDialog } from "../../core/confirm-dialog.ts";
+import { confirmDialog, errorDialog } from "../../core/dialogs.ts";
 import { byId, closest, labelIconButtons, PressGuard, setHtml } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import type { LibraryStore } from "./library-store.ts";
@@ -157,7 +157,7 @@ export class SongList {
       case "more": return store.generateAnother(song);
       case "del": {
         const active = song.status === "queued" || song.status === "running";
-        if (!active && !confirm(t("del_q"))) return;
+        if (!active && !(await confirmDialog({ title: t("del_q"), confirmLabel: t("del"), cancelLabel: t("cancel"), danger: true }))) return;
         return store.remove(song.id);
       }
     }
@@ -193,7 +193,7 @@ export class SongList {
     const id = input.dataset.id!;
     if (this.editingId !== id) return;   // per Escape schon abgebrochen
     this.editingId = null;
-    await this.deps.store.rename(id, input.value.trim()).catch((e: Error) => alert(e.message));
+    await this.deps.store.rename(id, input.value.trim()).catch((e: Error) => errorDialog(this.deps.t, e));
   }
 
   private openMoveMenu(button: HTMLElement, song: Song): void {
@@ -201,7 +201,7 @@ export class SongList {
     const current = song.folder_id || "none";
     const items = [{ id: "none", label: t("f_none") }, ...store.folders.folders.map((f) => ({ id: f.id, label: f.name }))]
       .map((i) => ({ ...i, selected: i.id === current }));
-    this.moveMenu.open(button, items, (folder) => void store.move(song.id, folder).catch((e: Error) => alert(e.message)));
+    this.moveMenu.open(button, items, (folder) => void store.move(song.id, folder).catch((e: Error) => errorDialog(this.deps.t, e)));
   }
 
   private bindEvents(): void {
@@ -211,7 +211,7 @@ export class SongList {
       const id = button?.closest<HTMLElement>(".song")?.dataset.id;
       const song = id ? this.deps.store.find(id) : undefined;
       if (!button || !song) return;
-      this.handleAction(button.dataset.a!, song, button).catch((err: Error) => alert(`${this.deps.t("error")}: ${err.message}`));
+      this.handleAction(button.dataset.a!, song, button).catch((err: Error) => void errorDialog(this.deps.t, err));
     });
     // Text in den Lyrics soll markierbar bleiben, Knöpfe sollen klicken statt ziehen
     root.addEventListener("mousedown", (e) => {

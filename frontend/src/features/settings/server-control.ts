@@ -1,5 +1,6 @@
 // "Server stoppen" = Skript "stop" ausführen lassen (als fertige App: die App beendet sich).
 import type { ApiClient } from "../../core/api-client.ts";
+import { confirmDialog } from "../../core/dialogs.ts";
 import { byId } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 
@@ -26,7 +27,10 @@ export class ServerControl {
   private async stop(): Promise<void> {
     const queue = await this.api.queue().catch(() => null);
     const busy = !!queue && (queue.running.length > 0 || queue.queued > 0);
-    if (!confirm(this.t(busy ? "stop_q_busy" : "stop_q"))) return;
+    const ok = await confirmDialog({
+      title: this.t("stop"), message: this.t(busy ? "stop_q_busy" : "stop_q"), confirmLabel: this.t("stop"), cancelLabel: this.t("cancel"), danger: true,
+    });
+    if (!ok) return;
     this.beforeStop();
     try {
       const { packaged } = await this.api.shutdown();

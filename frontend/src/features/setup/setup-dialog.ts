@@ -2,6 +2,7 @@
 // Backend sie verlangt (MG_PACKAGED und Modelle fehlen); lässt sich bis zum Ende nicht wegklicken.
 import type { LmSize, SetupStatus } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
+import { errorDialog } from "../../core/dialogs.ts";
 import { byId } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 
@@ -59,7 +60,7 @@ export class SetupDialog {
     try {
       this.show(await this.api.addXl());
     } catch (e) {
-      alert((e as Error).message);
+      void errorDialog(this.t, e);
     }
   }
 
@@ -68,7 +69,7 @@ export class SetupDialog {
     try {
       this.show(await this.api.addStems());
     } catch (e) {
-      alert((e as Error).message);
+      void errorDialog(this.t, e);
     }
   }
 
@@ -77,7 +78,7 @@ export class SetupDialog {
     try {
       this.show(await this.api.addXlStems());
     } catch (e) {
-      alert((e as Error).message);
+      void errorDialog(this.t, e);
     }
   }
 
