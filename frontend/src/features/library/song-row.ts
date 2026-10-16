@@ -185,7 +185,11 @@ function stemRow(stem: Stem, ctx: SongRowContext): string {
   const state = stem.status === "done" ? "" : stem.status === "running" ? `<span class="s run">${t("stem_running")}</span>`
     : stem.status === "error" ? `<span class="s err" title="${esc(stem.message)}">${t(stem.message === "cancelled" ? "cancelled" : "error")}</span>`
     : `<span class="s">${t("waiting")}</span>`;
-  const kind = stem.kind === "generated" ? "" : ` <span class="stem-kind">${t(`stem_kind_${stem.kind}`)}</span>`;
+  // Mehrere Versionen einer Spur (Mixer › Neue Version): Nummer zeigen und welche zu hören ist
+  const versions = (ctx.stems ?? []).filter((s) => s.track === stem.track && s.status === "done").length;
+  const label = stem.kind === "version" ? `v${stem.version}` : stem.kind === "generated" ? "" : t(`stem_kind_${stem.kind}`);
+  const active = versions > 1 && stem.active && stem.status === "done" ? ` <span class="stem-kind on">${t("ver_active")}</span>` : "";
+  const kind = `${label ? ` <span class="stem-kind">${label}</span>` : ""}${active}`;
   return `<div class="stem ${current ? "playing" : ""}">
       <button class="sek icon" data-a="stem-play" data-stem="${stem.id}" ${stem.url ? "" : "disabled"} aria-label="${t("play")}">${current && ctx.stemPlaying ? "❚❚" : "▶"}</button>
       <span class="stem-name">${esc(t(`track_${stem.track}`))}${kind}</span>${state}

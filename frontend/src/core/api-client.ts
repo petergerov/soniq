@@ -1,5 +1,5 @@
 // Typisierter Zugriff auf die HTTP-API des Backends. Einzige Stelle, die fetch() für /api benutzt.
-import type { AnalyzeResult, ErrorBody, FolderOverview, GenerateRequest, GenerateResponse, HealthInfo, Preset, PresetValues, QueueInfo, SetupRequest, SetupStatus, Stem, StemIntent, StemTrack, Settings, SettingsView, Song, SongPatch, UpdateCheck, UpdateStatus } from "../../../shared/api.ts";
+import type { AnalyzeResult, ErrorBody, FolderOverview, GenerateRequest, GenerateResponse, HealthInfo, NewVersionRequest, Preset, PresetValues, QueueInfo, SetupRequest, SetupStatus, Stem, StemIntent, StemTrack, Settings, SettingsView, Song, SongPatch, UpdateCheck, UpdateStatus } from "../../../shared/api.ts";
 
 export class ApiError extends Error {
   override name = "ApiError";
@@ -43,6 +43,11 @@ export class ApiClient {
   }
   cancelExtract(songId: string): Promise<Stem[]> { return this.send("POST", `/api/songs/${songId}/stems/cancel`); }
   deleteAllStems(songId: string): Promise<Stem[]> { return this.send("DELETE", `/api/songs/${songId}/stems`); }
+  deleteStem(stemId: string): Promise<Stem[]> { return this.send("DELETE", `/api/stems/${stemId}`); }
+  /** Neue Version(en) einer Spur einreihen; die alte bleibt erhalten. */
+  createVersions(stemId: string, request: NewVersionRequest): Promise<Stem[]> { return this.send("POST", `/api/stems/${stemId}/versions`, request); }
+  /** Diese Version ihrer Spur hörbar machen (Mixer, Mix-Download, ZIP). */
+  activateStem(stemId: string): Promise<Stem[]> { return this.send("PUT", `/api/stems/${stemId}/active`); }
   /** Mix nach Reglerstellung als WAV: Kanal-ID (Spur oder Vorlage) → Lautstärke 0…1, fehlende Kanäle sind stumm. */
   async mixdown(songId: string, gains: ReadonlyMap<string, number>): Promise<{ blob: Blob; filename: string }> {
     const list = [...gains].map(([id, gain]) => `${id}:${Math.round(gain * 1000) / 1000}`).join(",");

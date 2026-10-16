@@ -180,8 +180,11 @@ const EXTRACT_INSTRUMENTAL: Record<ExtractCount, readonly StemTrack[]> = {
 export function extractPreset(count: ExtractCount, instrumental: boolean): StemTrack[] {
   return [...(instrumental ? EXTRACT_INSTRUMENTAL : EXTRACT_VOCAL)[count]];
 }
-/** generated = Spur für Spur erzeugt, extracted = aus dem Song herausgelöst, replacement / accompaniment = zu einer hochgeladenen Datei */
-export type StemKind = "generated" | "extracted" | "replacement" | "accompaniment";
+/**
+ * generated = Spur für Spur erzeugt, extracted = aus dem Song herausgelöst, replacement / accompaniment = zu einer
+ * hochgeladenen Datei, version = im Mixer neu erzeugte Version einer vorhandenen Spur (die alte bleibt erhalten)
+ */
+export type StemKind = "generated" | "extracted" | "replacement" | "accompaniment" | "version";
 export type StemStatus = "queued" | "running" | "done" | "error";
 /** Kanal der hochgeladenen Vorlage im Mixer (Schlüssel neben den Spur-IDs in GET /api/songs/:id/mix?gains=…) */
 export const SOURCE_CHANNEL = "source";
@@ -195,6 +198,49 @@ export interface Stem {
   position: number;
   message: string | null;
   url: string | null;
+  /** 1 = die ursprüngliche Spur, ab 2 die neu erzeugten Versionen derselben Spur */
+  version: number;
+  /** Diese Version ist im Mix, im Mixer und im ZIP zu hören (je Spur genau eine) */
+  active: boolean;
+  /** Wünsche, mit denen eine Version erzeugt wurde (nur kind "version") */
+  recipe: StemRecipe | null;
+}
+
+/** Wünsche für eine neue Version einer Spur (Mixer › Neue Version), siehe shared/track-variation.ts */
+export interface VersionRecipe {
+  /** Regler −2…+2 je Achse; fehlende Achsen stehen auf 0 */
+  axes: Partial<Record<VariationAxis, number>>;
+  /** gewählte Schnellwahl-Knöpfe (IDs aus chipsFor) */
+  chips: string[];
+  /** Freitext, wird wörtlich in die Caption übernommen */
+  text: string;
+}
+
+export interface StemRecipe extends VersionRecipe {
+  /** Caption, die an die Engine ging */
+  caption: string;
+}
+
+export interface NewVersionRequest extends VersionRecipe {
+  /** Anzahl Versionen mit verschiedenen Seeds (1–3) */
+  count: number;
+}
+
+export const VARIATION_AXES = ["intensity", "body", "character", "density", "room"] as const;
+export type VariationAxis = (typeof VARIATION_AXES)[number];
+
+/**
+ * Je Spur die Version, die zu hören ist: die aktive fertige, sonst die erste fertige. Reihenfolge wie die erste
+ * Version jeder Spur; Spuren ohne fertige Version fehlen.
+ */
+export function activeTakes<T extends { track: string; status: string; active: boolean | number }>(stems: readonly T[]): T[] {
+  const byTrack = new Map<string, T>();
+  for (const s of stems) {
+    if (s.status !== "done") continue;
+    const current = byTrack.get(s.track);
+    if (!current || (s.active && !current.active)) byTrack.set(s.track, s);
+  }
+  return [...byTrack.values()];
 }
 
 export interface Folder {

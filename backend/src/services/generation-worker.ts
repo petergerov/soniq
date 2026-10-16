@@ -8,6 +8,7 @@ import type { SongRepository } from "../infrastructure/song-repository.ts";
 import type { SongStorage } from "../infrastructure/song-storage.ts";
 import { wavDepthFor } from "../infrastructure/wav.ts";
 import type { ExtractTracks } from "./extract.ts";
+import type { StemVersions } from "./stem-versions.ts";
 import { hasAccompany, hasReplace, type ReplaceAccompany } from "./replace-accompany.ts";
 import { hasTracks, type TrackByTrack } from "./track-by-track.ts";
 
@@ -27,7 +28,8 @@ export interface GenerationWorkerDeps {
   trackByTrack: TrackByTrack;
   extract: ExtractTracks;
   replaceAccompany: ReplaceAccompany;
-  nextExtractSongId: () => string | undefined;
+  versions: StemVersions;
+  nextStemJobSongId: () => string | undefined;
   log?: (message: string) => void;
 }
 
@@ -61,15 +63,15 @@ export class GenerationWorker implements JobRunner {
   async run(): Promise<void> {
     while (!this.stopped) {
       const job = this.deps.songs.nextQueued();
-      const extractId = job ? undefined : this.deps.nextExtractSongId();
-      if (!job && !extractId) {
+      const stemJobId = job ? undefined : this.deps.nextStemJobSongId();
+      if (!job && !stemJobId) {
         this.deps.keepAwake.disable();
         await this.sleepUntilWoken();
         continue;
       }
       this.deps.keepAwake.enable();
       if (job) await this.process(job.id, JSON.parse(job.params) as SongParams);
-      else await this.processExtract(extractId!);
+      else await this.processStemJobs(stemJobId!);
     }
     this.deps.keepAwake.disable();
   }
@@ -124,18 +126,20 @@ export class GenerationWorker implements JobRunner {
     }
   }
 
-  /** Herauslösen auf einem fertigen Song: Status bleibt "done", nur die Spuren laufen. */
-  private async processExtract(songId: string): Promise<void> {
+  /** Herauslösen und neue Versionen auf einem fertigen Song: Status bleibt "done", nur die Spuren laufen. */
+  private async processStemJobs(songId: string): Promise<void> {
     const settings = this.deps.settings.get();
     const engine = this.deps.engineFactory(settings);
     const abort = new AbortController();
     this.running = { songId, abort };
     try {
       const report = (msg: string) => this.deps.songs.setProgress(songId, msg);
-      await this.deps.extract.run(songId, engine, wavDepthFor(settings.output_format), report, abort.signal);
+      const depth = wavDepthFor(settings.output_format);
+      await this.deps.extract.run(songId, engine, depth, report, abort.signal);
+      await this.deps.versions.run(songId, engine, depth, report, abort.signal);
     } catch (e) {
       if (abort.signal.aborted) return;
-      if (!(e instanceof EngineError)) this.deps.log?.(`Extract ${songId}: ${(e as Error).stack ?? String(e)}`);
+      if (!(e instanceof EngineError)) this.deps.log?.(`Spuren ${songId}: ${(e as Error).stack ?? String(e)}`);
     } finally {
       this.running = undefined;
     }

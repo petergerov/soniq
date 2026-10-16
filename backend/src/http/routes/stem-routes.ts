@@ -5,14 +5,16 @@ import type { ExtractTracks } from "../../services/extract.ts";
 import type { GenerationService } from "../../services/generation-service.ts";
 import type { JobRunner } from "../../services/generation-worker.ts";
 import type { StemService } from "../../services/stem-service.ts";
+import type { StemVersions } from "../../services/stem-versions.ts";
 import { HttpError, queryBool, readFormData, readJson } from "../request.ts";
 import { DownloadResponse, FileResponse, ZipResponse } from "../responses.ts";
 import type { Router } from "../router.ts";
-import { parseExtractTracks, parseMixGains, parseStemUploadCommand } from "../validation.ts";
+import { parseExtractTracks, parseMixGains, parseNewVersion, parseStemUploadCommand } from "../validation.ts";
 
 export interface StemRouteServices {
   stems: StemService;
   extract: ExtractTracks;
+  versions: StemVersions;
   generation: GenerationService;
   jobs: JobRunner;
 }
@@ -28,6 +30,7 @@ export function registerStemRoutes(router: Router, s: StemRouteServices): void {
     .post("/api/songs/:id/stems/cancel", ({ params }) => {
       s.jobs.cancel(params.id!);
       s.extract.cancel(params.id!);
+      s.versions.cancel(params.id!);
       return s.stems.list(params.id!);
     })
     .get("/api/songs/:id/stems.zip", async ({ params }) => {
@@ -47,9 +50,17 @@ export function registerStemRoutes(router: Router, s: StemRouteServices): void {
       return new FileResponse(file.path, { downloadName: file.downloadName });
     })
     .delete("/api/stems/:id", ({ params }) => s.stems.remove(params.id!))
+    .post("/api/stems/:id/versions", async ({ req, params }) => {
+      const { count, ...recipe } = parseNewVersion(await readJson(req));
+      s.versions.enqueue(params.id!, recipe, count);
+      s.jobs.wake();
+      return s.stems.list(s.stems.songOf(params.id!));
+    })
+    .put("/api/stems/:id/active", ({ params }) => s.stems.activate(params.id!))
     .delete("/api/songs/:id/stems", ({ params }) => {
       s.jobs.cancel(params.id!);
       s.extract.cancel(params.id!);
+      s.versions.cancel(params.id!);
       return s.stems.removeAll(params.id!);
     })
     .post("/api/stems/upload", async ({ req }) => {

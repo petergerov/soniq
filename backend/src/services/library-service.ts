@@ -22,8 +22,8 @@ export interface LibraryServiceDeps {
   storage: SongStorage;
   /** Fertige und wartende Einzelspuren je Song */
   stemCounts: () => Map<string, { done: number; pending: number }>;
-  /** Extract-Aufträge auf fertigen Songs (für Warteschlange und ETA) */
-  pendingExtractJobs: () => { song_id: string; units: number; duration: number; created_at: string }[];
+  /** Spur-Aufträge auf fertigen Songs: Herauslösen und neue Versionen (für Warteschlange und ETA) */
+  pendingStemJobs: () => { song_id: string; units: number; duration: number; created_at: string }[];
 }
 
 export class LibraryService {
@@ -91,7 +91,7 @@ export class LibraryService {
 
   async queue(): Promise<QueueInfo> {
     const active = this.deps.songs.active();
-    const extracts = this.deps.pendingExtractJobs();
+    const extracts = this.deps.pendingStemJobs();
     const runs = this.deps.songs.runRecords();
     const rate = learnRate(runs.finished);
     const extractRuns = extracts.map((e) => ({

@@ -78,7 +78,27 @@ per Solo zum Vergleichen), beim Begleiten hörbar (die Aufnahme gehört zum Song
   (Lautstärke, Mute und Solo). Den Mix rechnet der Server aus den gespeicherten WAVs; Spitzen über 0,95 werden wie
   beim Song-Mix abgesenkt, ein Original mit 44,1 kHz wird auf die 48 kHz der Spuren umgerechnet.
 
-Keine neue Synthese — es werden die gespeicherten WAV-Dateien geladen. Der normale Player-Balken ist auf dieser Seite ausgeblendet.
+Die Wiedergabe lädt die gespeicherten WAV-Dateien. Der normale Player-Balken ist auf dieser Seite ausgeblendet.
+
+### Neue Version einer Spur
+
+**Wo:** Mixer → **✦** an einer Spur.
+
+Schnellwahl-Knöpfe je Instrument (z. B. Schlagzeug: Dezenter, Mehr Body, Akustischer, Besen, Halftime …), fünf Regler
+(Intensität, Body, Charakter, Spielweise, Raum; je −2…+2), Freitext und Anzahl (1–3 Versionen mit verschiedenen Seeds).
+Knöpfe setzen die Regler sichtbar; wer danach einen Regler anders stellt, löst den Knopf. Die Vorschau zeigt die
+Stichworte, die in die Caption gehen. Tabellen: [`shared/track-variation.ts`](../shared/track-variation.ts).
+
+**Was passiert:** `lego` wie beim Ersetzen. Backing = alle *anderen* Spuren in ihrer hörbaren Version (beim Begleiten
+dazu die Aufnahme). Caption = Spur-Prompt, Wünsche, Freitext, dann der bereinigte Song-Stil (`versionCaption`); ist der
+Intensitäts-Regler gesetzt, fallen Energie-Wörter des Songs („energetic“, „calm“ …) weg. Läuft in der Warteschlange wie
+das Herauslösen, der Song bleibt spielbar.
+
+**Versionen:** Die alte Version bleibt erhalten. Gleiche Spuren bilden im Mixer eine Gruppe; mit mehreren Versionen lässt
+sie sich aufklappen. Zugeklappt sieht man nur die hörbare Version („v2 · 3 Versionen“). Alle Versionen laufen synchron mit,
+umschalten geht deshalb sofort, auch während der Wiedergabe. Eine neue Version wird hörbar, sobald sie fertig ist.
+Mix ↓ und ZIP nehmen je Spur nur die hörbare Version, ältere lädt man einzeln (↓ in der Zeile). Nicht hörbare Versionen
+lassen sich löschen (✕). Der Song-Mix in der Bibliothek bleibt unverändert.
 
 ---
 
@@ -92,8 +112,8 @@ Keine neue Synthese — es werden die gespeicherten WAV-Dateien geladen. Der nor
 
 - Jobs laufen in der **gleichen Queue** wie Songs, nacheinander. Abbrechen stoppt die aktuelle Spur und verwirft den Rest.  
 - Dateien: `<song-id>.<track>.wav` im Song-Ordner.  
-- Tabelle `stems`: `id`, `song_id`, `track`, `kind`, `status`, Reihenfolge, Zeiten. Song löschen löscht die Spuren.  
+- Tabelle `stems`: `id`, `song_id`, `track`, `kind` (auch `version`), `status`, Reihenfolge, Zeiten, `version`, `active` (je Spur genau eine hörbar), `recipe` (Wünsche + Caption). Song löschen löscht die Spuren. Dateien neuer Versionen: `<song-id>.v<n>.<spur>.wav`.  
 - Engine: Multipart `POST /synth` mit `synth_model` = Base-Modell.  
-- API u. a.: `GET /api/songs/:id/stems`, `…/stems.zip`, `GET /api/stems/:id/audio`, `DELETE /api/stems/:id`, `DELETE /api/songs/:id/stems`, `POST /api/songs/:id/stems` (extract), `POST /api/stems/upload` (replace/accompany), `GET /api/songs/:id/source` (Original), `GET /api/songs/:id/mix?gains=<spur-id>:<0…1>,…,source:<0…1>` (Mix als WAV; fehlende Kanäle sind stumm).
+- API u. a.: `GET /api/songs/:id/stems`, `…/stems.zip`, `GET /api/stems/:id/audio`, `DELETE /api/stems/:id`, `DELETE /api/songs/:id/stems`, `POST /api/songs/:id/stems` (extract), `POST /api/stems/upload` (replace/accompany), `GET /api/songs/:id/source` (Original), `GET /api/songs/:id/mix?gains=<spur-id>:<0…1>,…,source:<0…1>` (Mix als WAV; fehlende Kanäle sind stumm), `POST /api/stems/:id/versions` (neue Version: `axes`, `chips`, `text`, `count`), `PUT /api/stems/:id/active` (Version hörbar machen).
 
 Plan, Experimente und Status der Umsetzung: [`newfeatures.md`](../newfeatures.md).

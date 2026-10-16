@@ -72,6 +72,7 @@ const player = new AudioPlayer({
 });
 const mixer = new MixerView({
   api, t, findSong: (id) => store.find(id), back: () => router.go("library"), pauseMainPlayer: () => player.pause(),
+  stemsAvailable: () => store.stemsAvailable,
 });
 songList = new SongList({
   store, played, playback: player, drag, t, play: playSong, // Übernehmen und Kreuzen füllen das Formular: dafür auf die Seite „Erzeugen“ wechseln

@@ -1,6 +1,7 @@
 // Einzelspuren eines Songs (siehe newfeatures.md). Dateien liegen neben dem Song: <song-id>.<spur>.wav
-import { STEM_TRACKS, type Stem, type StemKind, type StemStatus, type StemTrack } from "../../../shared/api.ts";
+import { STEM_TRACKS, type Stem, type StemKind, type StemRecipe, type StemStatus, type StemTrack, type VersionRecipe } from "../../../shared/api.ts";
 import { GENRE, PIECE_MOOD } from "../../../shared/piece-style.ts";
+import { variationTags } from "../../../shared/track-variation.ts";
 
 export interface StemRecord {
   id: string;
@@ -13,6 +14,10 @@ export interface StemRecord {
   message: string | null;
   created_at: string;
   finished_at: string | null;
+  version: number;
+  active: number;
+  /** JSON: StemRecipe (nur kind "version") */
+  recipe: string | null;
 }
 
 /** Beschreibung je Spur, vor den Stil gesetzt (die Spur allein soll klar benannt sein) */
@@ -152,6 +157,28 @@ export function legoCaption(track: StemTrack, styleCaption: string): string {
   return [...new Set(parts.join(", ").split(", ").filter(Boolean))].join(", ");
 }
 
+const ENERGY_WORD = /\b(?:very calm|high energy|calm|energetic|driving|fiery|lively|gentle|mellow|relaxed|upbeat|intense|powerful|soft)\b/i;
+
+/**
+ * Caption für eine neue Version (Mixer): Spur, dann die Wünsche (Knöpfe, Regler, Freitext), dann der bereinigte Stil
+ * des Songs. Die Wünsche stehen vor dem Stil, damit "acoustic drum kit" nicht hinter einem langen Stil verschwindet;
+ * Klang-Wörter wie "acoustic" sind hier ausdrücklich gewollt und laufen deshalb nicht durch styleForTrack.
+ */
+export function versionCaption(track: StemTrack, recipe: VersionRecipe, styleCaption: string): string {
+  let style = styleForTrack(track, styleCaption);
+  // Regler "Intensität" gesetzt: Energie-Wörter des Songs würden dagegenhalten ("soft" neben "energetic")
+  if (recipe.axes.intensity) style = style.split(",").filter((p) => !ENERGY_WORD.test(p)).join(",");
+  const parts = [TRACK_PROMPTS[track], ...variationTags(track, recipe), recipe.text.trim(), style];
+  if (!VOCAL_TRACKS.includes(track)) parts.push("instrumental");
+  const seen = new Set<string>();
+  return parts.join(", ").split(",").map((p) => p.trim()).filter((p) => {
+    const key = p.toLowerCase();
+    if (!p || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).join(", ");
+}
+
 export function isStemTrack(value: unknown): value is StemTrack {
   return STEM_TRACKS.includes(value as StemTrack);
 }
@@ -162,7 +189,8 @@ export function orderTracks(tracks: readonly StemTrack[]): StemTrack[] {
 }
 
 /** Dateiname einer Spur; `kind` unterscheidet z. B. herausgelösten und Ersatz-Bass desselben Songs. */
-export function stemFileName(songId: string, track: StemTrack, kind: StemKind): string {
+export function stemFileName(songId: string, track: StemTrack, kind: StemKind, version = 1): string {
+  if (kind === "version") return `${songId}.v${version}.${track}.wav`;
   return kind === "generated" ? `${songId}.${track}.wav` : `${songId}.${kind}.${track}.wav`;
 }
 
@@ -180,5 +208,6 @@ export function toStemDto(r: StemRecord): Stem {
   return {
     id: r.id, song_id: r.song_id, track: r.track as StemTrack, kind: r.kind as StemKind, status: r.status as StemStatus,
     position: r.position, message: r.message, url: r.status === "done" && r.file ? `/api/stems/${r.id}/audio` : null,
+    version: r.version ?? 1, active: !!r.active, recipe: r.recipe ? JSON.parse(r.recipe) as StemRecipe : null,
   };
 }

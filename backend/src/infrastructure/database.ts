@@ -33,7 +33,7 @@ const SCHEMA = `
     id          TEXT PRIMARY KEY,
     song_id     TEXT NOT NULL,
     track       TEXT NOT NULL,          -- vocals | drums | bass | …
-    kind        TEXT NOT NULL,          -- generated | extracted | replacement | accompaniment
+    kind        TEXT NOT NULL,          -- generated | extracted | replacement | accompaniment | version
     status      TEXT NOT NULL,          -- queued | running | done | error
     position    INTEGER NOT NULL,       -- Reihenfolge (Rhythmus zuerst)
     file        TEXT,
@@ -62,6 +62,11 @@ export class Database {
     if (!columns.includes("hidden")) this.db.exec("ALTER TABLE songs ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0");
     // Beginn der Rechenzeit (für die Schätzung der Warteschlange)
     if (!columns.includes("started_at")) this.db.exec("ALTER TABLE songs ADD COLUMN started_at TEXT");
+    // Versionen einer Spur (Mixer › Neue Version): Nummer, welche zu hören ist, und die Wünsche dazu
+    const stemColumns = this.all<{ name: string }>("PRAGMA table_info(stems)").map((c) => c.name);
+    if (!stemColumns.includes("version")) this.db.exec("ALTER TABLE stems ADD COLUMN version INTEGER NOT NULL DEFAULT 1");
+    if (!stemColumns.includes("active")) this.db.exec("ALTER TABLE stems ADD COLUMN active INTEGER NOT NULL DEFAULT 1");
+    if (!stemColumns.includes("recipe")) this.db.exec("ALTER TABLE stems ADD COLUMN recipe TEXT");
   }
 
   run(sql: string, ...params: SqlParam[]): number {

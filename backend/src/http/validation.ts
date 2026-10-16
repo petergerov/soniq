@@ -1,5 +1,6 @@
 // Prüft und normalisiert JSON-Eingaben, bevor sie an die Services gehen.
-import type { PresetValues, SongPatch, StemTrack } from "../../../shared/api.ts";
+import { VARIATION_AXES, type NewVersionRequest, type PresetValues, type SongPatch, type StemTrack } from "../../../shared/api.ts";
+import { AXIS_MAX, MAX_VERSION_COUNT, MAX_VERSION_TEXT } from "../../../shared/track-variation.ts";
 import { isStemTrack, orderTracks } from "../domain/stem.ts";
 import type { GenerateCommand } from "../services/generation-service.ts";
 import { HttpError } from "./request.ts";
@@ -112,6 +113,22 @@ export function parseExtractTracks(input: Input): StemTrack[] {
   const tracks = input.tracks;
   if (!Array.isArray(tracks) || !tracks.length || !tracks.every(isStemTrack)) invalid("tracks", "non-empty list of track names expected");
   return orderTracks(tracks);
+}
+
+/** Neue Version einer Spur: Regler −2…+2, Knopf-IDs (unbekannte fallen später weg), Freitext, Anzahl 1–3. */
+export function parseNewVersion(input: Input): NewVersionRequest {
+  const rawAxes = input.axes;
+  if (rawAxes !== undefined && (typeof rawAxes !== "object" || rawAxes === null || Array.isArray(rawAxes))) invalid("axes", "object expected");
+  const axes: NewVersionRequest["axes"] = {};
+  for (const axis of VARIATION_AXES) {
+    const v = num((rawAxes ?? {}) as Input, axis, 0, { integer: true, min: -AXIS_MAX, max: AXIS_MAX });
+    if (v) axes[axis] = v;
+  }
+  const chips = input.chips ?? [];
+  if (!Array.isArray(chips) || !chips.every((c) => typeof c === "string")) invalid("chips", "list of strings expected");
+  const text = str(input, "text").trim();
+  if (text.length > MAX_VERSION_TEXT) invalid("text", `at most ${MAX_VERSION_TEXT} characters`);
+  return { axes, chips: [...new Set(chips as string[])], text, count: num(input, "count", 1, { integer: true, min: 1, max: MAX_VERSION_COUNT }) };
 }
 
 /** `gains=<id>:<0…1>,…` des Mixers (Spur-IDs und "source"); fehlende Kanäle sind stumm. */

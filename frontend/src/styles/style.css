@@ -489,6 +489,7 @@ dialog.setup { width: min(560px, calc(100vw - 32px)); }
 .stem .sek.icon { width: 28px; height: 28px; padding: 0; }
 .stem-name { font-size: 13px; min-width: 120px; }
 .stem-kind { color: var(--faint); font-size: 11px; }
+.stem-kind.on { color: var(--accent-soft); }
 .stem .s { font-size: 12px; color: var(--muted); }
 .stem .s.run { color: var(--accent-soft); }
 .stem .s.err { color: var(--error); }
@@ -519,7 +520,7 @@ body.in-mixer { padding-bottom: 24px; }
 .mixer-transport .aktion.round { flex: none; }
 #mixerScrub { flex: 1; min-width: 0; accent-color: var(--accent-soft); }
 .mixer-tracks { display: flex; flex-direction: column; gap: 10px; }
-.mixer-track { display: grid; grid-template-columns: 132px 1fr auto; gap: 12px; align-items: center;
+.mixer-track { display: grid; grid-template-columns: 164px 1fr auto; gap: 12px; align-items: center;
   padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(255, 255, 255, .015);
   transition: opacity .15s, border-color .15s; }
 .mixer-track.is-silent { opacity: .45; }
@@ -549,8 +550,65 @@ body.in-mixer { padding-bottom: 24px; }
 .mixer-vol input[data-a=vol]::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent-soft); }
 .mixer-vol input[data-a=vol]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 0; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+/* Mixer: Versionen einer Spur. Zugeklappt nur die hörbare Version, aufgeklappt alle mit Auswahl */
+.mixer-title { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; min-width: 0; padding: 0; border: 0; background: none;
+  color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.mixer-title:disabled { cursor: default; }
+.mixer-title:focus-visible { outline: none; box-shadow: var(--focus); border-radius: 6px; }
+.mixer-title .mixer-name { flex: 1; min-width: 0; }
+.mixer-caret { flex: none; color: var(--muted); transition: transform .15s; }
+.mixer-title:disabled .mixer-caret { display: none; }
+.mixer-track.is-open .mixer-caret { transform: rotate(90deg); }
+.mixer-title:not(:disabled):hover .mixer-caret, .mixer-title:not(:disabled):hover .mixer-count { color: var(--accent-soft); }
+.mixer-count { flex-basis: 100%; font-size: 11px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mixer-count:empty { display: none; }
+.mixer-lanes { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.mixer-track:not(.is-open) .mixer-lane:not(.is-active), .mixer-track:not(.is-open) .mixer-lane-head { display: none; }
+.mixer-track.is-open .mixer-lane { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255, 255, 255, .015); }
+.mixer-track.is-open .mixer-lane.is-active { border-color: rgba(167, 139, 250, .45); background: var(--accent-tint); }
+.mixer-track.is-open .mixer-lane:not(.is-active) .mixer-wave { opacity: .5; }
+.mixer-lane-head { display: flex; align-items: center; gap: 8px; min-height: 26px; margin-bottom: 4px; font-size: 12px; }
+.mixer-lane-head .s { font-size: 11px; color: var(--faint); white-space: nowrap; }
+.mixer-lane-head .s.run { color: var(--accent-soft); }
+.mixer-lane-head .s.err { color: var(--error); }
+.mixer-take { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 3px 9px; border-radius: 999px; font: inherit; font-size: 12px;
+  font-weight: 600; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--muted); cursor: pointer; }
+.mixer-take:hover:not(:disabled) { color: var(--text); border-color: rgba(255, 255, 255, .22); }
+.mixer-take:focus-visible { outline: none; box-shadow: var(--focus); }
+.mixer-take[aria-checked=true] { color: #fff; border-color: transparent; background: var(--gradient); }
+.mixer-take:disabled { opacity: .5; cursor: default; }
+.mixer-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; }
+.mixer-take[aria-checked=true] .mixer-dot { background: currentColor; }
+.mixer-take-desc { flex: 1; min-width: 0; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mixer-lane-btns { display: flex; gap: 4px; margin-left: auto; flex: none; }
+.mixer-lane-btns .sek.icon { width: 26px; min-width: 26px; height: 26px; padding: 0; font-size: 12px; border-radius: 8px; }
+.mixer-wave.is-pending { border-radius: 6px; background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
+  background-size: 200% 100%; animation: wave-wait 1.6s linear infinite; }
+@keyframes wave-wait { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .mixer-wave.is-pending { animation: none; } }
+.mixer-new:hover, .mixer-new[aria-expanded=true] { color: var(--accent-soft); background: var(--accent-tint); }
+.mixer-new:disabled { opacity: .4; cursor: not-allowed; }
+.mixer-track.is-editing { border-color: rgba(167, 139, 250, .35); }
+
+/* Mixer: Feld für eine neue Version (✦) */
+.mixer-ver { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 12px; margin-top: 2px; padding: 14px;
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface-2); }
+.mixer-ver-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.mixer-ver-head strong { font-size: 13px; }
+.mixer-ver-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.mixer-ver .chip { cursor: pointer; }
+.mixer-ver .axes { margin: 0; }
+.mixer-ver-text { width: 100%; }
+.mixer-ver-preview { font-family: var(--mono); font-size: 11.5px; line-height: 1.5; overflow-wrap: anywhere; }
+.mixer-ver-prompt-lbl { font-family: var(--font); font-weight: 600; color: var(--faint); }
+.mixer-ver-preview .faint { color: var(--faint); }
+.mixer-ver-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.mixer-ver-counts { display: flex; gap: 4px; }
+.mixer-ver-counts .chip { min-width: 32px; justify-content: center; text-align: center; }
+.mixer-ver-actions { display: flex; gap: 8px; margin-left: auto; }
 @media (max-width: 720px) {
   .mixer-track { grid-template-columns: 1fr auto; grid-template-rows: auto auto; }
   .mixer-label { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; }
-  .mixer-wave { grid-column: 1; }
+  .mixer-wave, .mixer-lanes { grid-column: 1; }
+  .mixer-ver-actions { margin-left: 0; width: 100%; justify-content: flex-end; }
 }

@@ -37,6 +37,7 @@ import { ExtractTracks } from "./services/extract.ts";
 import { ReplaceAccompany } from "./services/replace-accompany.ts";
 import { TrackByTrack } from "./services/track-by-track.ts";
 import { StemService } from "./services/stem-service.ts";
+import { StemVersions } from "./services/stem-versions.ts";
 import { GenerationService } from "./services/generation-service.ts";
 import { GenerationWorker } from "./services/generation-worker.ts";
 import { LibraryService } from "./services/library-service.ts";
@@ -86,16 +87,17 @@ async function main(): Promise<void> {
   const stemsAvailable = () => existsSync(join(config.modelsDir, STEM_MODEL));
   const trackByTrack = new TrackByTrack({ stems, storage, removeStems: (id) => stemService.removeForSong(id) });
   const extract = new ExtractTracks({ stems, songs, storage, stemsAvailable });
+  const versions = new StemVersions({ stems, songs, storage, stemsAvailable });
   const replaceAccompany = new ReplaceAccompany({ stems, storage, removeStems: (id) => stemService.removeForSong(id) });
   const worker = new GenerationWorker({
     songs, settings, storage, engineFactory, keepAwake: createKeepAwake(config.platform),
-    trackByTrack, extract, replaceAccompany, nextExtractSongId: () => stems.nextExtractSongId(), log,
+    trackByTrack, extract, replaceAccompany, versions, nextStemJobSongId: () => stems.nextStemJobSongId(), log,
   });
   const generation = new GenerationService({
     songs, folders, storage, jobs: worker, removeStems: (id) => stemService.removeForSong(id), stemsAvailable,
   });
   const library = new LibraryService({
-    songs, folders, storage, stemCounts: () => stems.counts(), pendingExtractJobs: () => stems.pendingExtractJobs(),
+    songs, folders, storage, stemCounts: () => stems.counts(), pendingStemJobs: () => stems.pendingStemJobs(),
   });
   const folderService = new FolderService(folders, songs);
   const settingsService = new SettingsService({ settings, songs, storage, modelsDir: config.modelsDir, packaged: config.packaged });
@@ -123,7 +125,7 @@ async function main(): Promise<void> {
   registerFolderRoutes(router, folderService, library);
   registerPresetRoutes(router, presets);
   registerSetupRoutes(router, setup);
-  registerStemRoutes(router, { stems: stemService, extract, generation, jobs: worker });
+  registerStemRoutes(router, { stems: stemService, extract, versions, generation, jobs: worker });
   registerSystemRoutes(router, { settings: settingsService, analysis, system, updates });
   const server = new HttpServer(router, new StaticFiles(config.frontendDir), log);
 

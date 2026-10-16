@@ -1,10 +1,10 @@
 // Einzelspuren eines Songs: auflisten, Datei holen, alle als ZIP, Mix nach Reglerstellung, mit dem Song löschen
 // (siehe newfeatures.md). Dazu die hochgeladene Vorlage von Ersetzen/Begleiten.
 import { extname } from "node:path";
-import { SOURCE_CHANNEL, type SongParams, type Stem } from "../../../shared/api.ts";
+import { activeTakes, SOURCE_CHANNEL, type SongParams, type Stem } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
 import { cleanFileName } from "../domain/song.ts";
-import { toStemDto } from "../domain/stem.ts";
+import { toStemDto, type StemRecord } from "../domain/stem.ts";
 import { isFile } from "../infrastructure/files.ts";
 import type { SongRepository } from "../infrastructure/song-repository.ts";
 import type { SongStorage } from "../infrastructure/song-storage.ts";
@@ -27,6 +27,13 @@ export class StemService {
 
   constructor(deps: StemServiceDeps) {
     this.deps = deps;
+  }
+
+  /** Song, zu dem eine Spur gehört. */
+  songOf(stemId: string): string {
+    const stem = this.deps.stems.find(stemId);
+    if (!stem) throw new AppError("not_found");
+    return stem.song_id;
   }
 
   list(songId: string): Stem[] {
@@ -53,7 +60,10 @@ export class StemService {
     return { path, downloadName: forDownload ? `${this.baseName(song)} - original${extname(file)}` : undefined };
   }
 
-  /** Alle fertigen Spuren eines Songs für ein ZIP ("<Titel>/<Spur>.wav"), vorneweg die Vorlage ("00 original.wav"). */
+  /**
+   * Alle fertigen Spuren eines Songs für ein ZIP ("<Titel>/<Spur>.wav"), vorneweg die Vorlage ("00 original.wav").
+   * Von mehreren Versionen einer Spur nur die hörbare; die anderen lädt man im Mixer einzeln.
+   */
   async zipEntries(songId: string): Promise<{ archiveName: string; entries: ZipEntry[] }> {
     const song = this.deps.songs.find(songId);
     if (!song) throw new AppError("not_found");
@@ -63,8 +73,8 @@ export class StemService {
     if (source && (await this.deps.storage.exists(source))) {
       entries.push({ name: `${archiveName}/00 original${extname(source)}`, path: await this.deps.storage.pathOf(source) });
     }
-    for (const stem of this.deps.stems.forSong(songId)) {
-      if (stem.status !== "done" || !stem.file) continue;
+    for (const stem of activeTakes<StemRecord>(this.deps.stems.forSong(songId))) {
+      if (!stem.file) continue;
       const path = await this.deps.storage.pathOf(stem.file);
       if (await isFile(path)) entries.push({ name: `${archiveName}/${String(stem.position + 1).padStart(2, "0")} ${this.label(stem)}.wav`, path });
     }
@@ -100,13 +110,30 @@ export class StemService {
     return { data: encodeWav(limitPeak(sum), depth), downloadName: `${this.baseName(song)} - mix.wav` };
   }
 
-  /** Eine fertige oder fehlgeschlagene Spur löschen (nicht während queued/running). */
+  /**
+   * Eine fertige oder fehlgeschlagene Spur löschen (nicht während queued/running). War sie die hörbare Version,
+   * wird die neueste übrige fertige Version derselben Spur hörbar.
+   */
   async remove(stemId: string): Promise<Stem[]> {
     const stem = this.deps.stems.find(stemId);
     if (!stem) throw new AppError("not_found");
     if (stem.status === "queued" || stem.status === "running") throw new AppError("bad_request", "stem_busy");
     if (stem.file) await this.deps.storage.remove(stem.file);
     this.deps.stems.delete(stemId);
+    if (stem.active) {
+      const next = this.deps.stems.forSong(stem.song_id).filter((s) => s.track === stem.track && s.status === "done")
+        .sort((a, b) => b.version - a.version)[0];
+      if (next) this.deps.stems.setActive(next.id);
+    }
+    return this.list(stem.song_id);
+  }
+
+  /** Diese Version ihrer Spur hörbar machen (Mixer, Mix-Download, ZIP). */
+  activate(stemId: string): Stem[] {
+    const stem = this.deps.stems.find(stemId);
+    if (!stem) throw new AppError("not_found");
+    if (stem.status !== "done") throw new AppError("bad_request", "version_not_ready");
+    this.deps.stems.setActive(stemId);
     return this.list(stem.song_id);
   }
 
@@ -127,8 +154,9 @@ export class StemService {
     return cleanFileName(song.title || song.caption.slice(0, 40)) || "Song";
   }
 
-  private label(stem: { track: string; kind: string }): string {
-    return `${TRACK_LABEL[stem.track] ?? stem.track.replaceAll("_", " ")}${KIND_SUFFIX[stem.kind] ?? ""}`;
+  private label(stem: { track: string; kind: string; version: number }): string {
+    const suffix = stem.kind === "version" ? ` (v${stem.version})` : KIND_SUFFIX[stem.kind] ?? "";
+    return `${TRACK_LABEL[stem.track] ?? stem.track.replaceAll("_", " ")}${suffix}`;
   }
 }
 
