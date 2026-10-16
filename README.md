@@ -38,7 +38,7 @@ It is needed for track by track, Stem Separation and Replace / accompany ([docs/
 these stay greyed out. Add it later with `./install.command --stems` (Windows `.\install.ps1 -Stems`, Linux
 `./arch_linux.sh --stems`); the Mac app downloads it under Gear › Track model. There is also an XL track model
 (`acestep-v15-xl-base`, 5.3 GB, about twice as long per track): `--xl-stems` (Windows `-XlStems`) or in the Mac app
-under Gear › Track model; switch between Standard and XL there.
+under Gear › Track model. Once installed, XL is used by default (cleaner tracks); Gear › Track model switches back.
 
 ## Usage
 

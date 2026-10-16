@@ -102,7 +102,8 @@ Click a title to rename it. The line below shows **BPM · IT** (iterations) **·
 Three features work with single instrument tracks (stems). They need the **track model** (2.5 GB): the installer asks
 for it (or `install --stems`), the Mac app downloads it under **Gear › Track model**. Without it they are greyed out.
 There is also an **XL track model** (5.3 GB, 4 instead of 2 billion parameters, about twice as long): add it with
-`install --xl-stems` or, in the Mac app, under **Gear › Track model**, then pick XL there.
+`install --xl-stems` or, in the Mac app, under **Gear › Track model**. Once installed it is used by default: its tracks
+stay cleaner (no guitar sneaking into the vocal track, steadier bass). Gear › Track model switches back to Standard.
 Each track takes about as long as a whole song of the same length.
 
 - **Track by track** (Create › Generation): a new song built instrument by instrument, each track fitting the ones

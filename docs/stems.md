@@ -8,8 +8,16 @@ oder das Häkchen in der ersten Einrichtung. Danach sind die Funktionen ohne Neu
 
 Optional gibt es das **XL-Spuren-Modell** `acestep-v15-xl-base` (~5,3 GB, 4 statt 2 Mrd. Parameter, rechnet etwa doppelt
 so lange): `install --xl-stems` (Windows `-XlStems`) bzw. in der Mac-App **Einstellungen › XL-Spuren-Modell laden**. Unter
-**Einstellungen › Spuren-Modell** wählt man dann Standard oder XL (`Settings.stem_model`, `STEM_MODELS` in
-`domain/music-engine.ts`). Fehlt die Datei des gewählten Modells, aber das andere ist da, rechnen die Spuren mit dem anderen.
+**Einstellungen › Spuren-Modell** wählt man Standard oder XL (`Settings.stem_model`, `STEM_MODELS` in
+`domain/music-engine.ts`). Vorgabe ist XL; fehlt die Datei des gewählten Modells, aber das andere ist da, rechnen die Spuren
+mit dem anderen (ohne XL-Datei also mit Standard).
+
+Warum XL die Vorgabe ist (gemessen an dd6705bb0239, gleicher Seed, gleiche Lyrics und Begleitung): Das Standard-Modell hält
+sich schlecht an „nur diese Spur“. Die Gesangsspur spielte in Intro, Break und Outro selbst Gitarre (−24 dB statt Stille)
+und unter dem Gesang harte Anschläge; der Bass rutschte chromatisch um den Grundton (67 Tonwechsel/min) und hing an den
+Drums. Mit XL: Intro/Outro der Gesangsspur −45 dB (still), weicher Stimmklang, Bass mit klaren Tönen aus der Tonart
+(26 Tonwechsel/min). Bereinigte Lyrics, „a cappella“ in der Caption oder ein zweiter `extract`-Durchgang halfen beim
+Standard-Modell nicht. Kosten: etwa doppelte Rechenzeit je Spur.
 
 Grobe Dauer: etwa **75 Sekunden pro Spur und Minute Musik**.
 
