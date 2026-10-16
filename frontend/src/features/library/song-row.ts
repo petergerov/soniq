@@ -1,5 +1,5 @@
 // HTML einer Songzeile. Reine Darstellung: kennt weder API noch Ereignisse.
-import { EXTRACT_COUNTS, type ExtractCount, type Song, type Stem, type SynthCompute } from "../../../../shared/api.ts";
+import { EXTRACT_COUNTS, type ExtractCount, type Song, type SynthCompute } from "../../../../shared/api.ts";
 import { escapeHtml as esc } from "../../core/dom.ts";
 import { formatDuration, generationTime } from "../../core/format.ts";
 import { stemsMissingText } from "../../core/stems-hint.ts";
@@ -19,12 +19,8 @@ export interface SongRowContext {
   crossing: "from" | "pick" | null;
   /** Geschätzte Sekunden, bis der Song fertig ist (laufend/wartend), sonst undefined */
   eta: number | undefined;
-  /** Spurenliste aufgeklappt; stems = geladene Spuren (undefined = lädt noch) */
-  stemsOpen: boolean;
-  stems: Stem[] | undefined;
-  /** Spur, die gerade im Player ist, und ob sie läuft */
-  currentStemId: string | null;
-  stemPlaying: boolean;
+  /** Stem Separation aufgeklappt (Spuren selbst zeigt der Mixer) */
+  extractOpen: boolean;
   /** Spuren-Modell da? Sonst ist Herauslösen gesperrt */
   stemsAvailable: boolean;
   /** Gewählte Stem-Anzahl (2 / 4 / 6) */
@@ -134,13 +130,13 @@ function actionButtons(song: Song, lyrics: string, ctx: SongRowContext): string 
     done && menuItem("hide", t(song.hidden ? "unhide" : "hide"), { icon: ICON_THUMB_DOWN, on: song.hidden }),
     done && song.url && `<a class="song-menu-item" href="${song.url}?download=1" role="menuitem" data-a="download" download>${esc(t("download"))}</a>`,
     lyrics && menuItem("lyrics", t("show_lyrics"), { on: ctx.lyricsOpen }),
-    // Stereo-Mix: „Stem Separation“; sonst „Spuren“ (bereits Einzelspuren)
-    canExtract(song)
-      ? menuItem("stems", t("stem_separation"), { icon: ICON_STEMS, on: ctx.stemsOpen })
-      : hasStems(song) && menuItem("stems", t("stems_tip"), { icon: ICON_STEMS, on: ctx.stemsOpen }),
+    // Stereo-Mix ohne Spuren: „Stem Separation“. Fertige Spuren hört, lädt und bearbeitet man im Mixer
+    canExtract(song) && (song.stems === 0 || song.stems_pending > 0)
+      && menuItem("extract", t("stem_separation"), { icon: ICON_STEMS, on: ctx.extractOpen }),
     ctx.hasFolders && menuItem("move", t("move"), { icon: ICON_FOLDER }),
     menuItem("more", t("more")),
     (song.status === "error" || song.status === "cancelled") && menuItem("retry", t("retry")),
+    hasMixer && !song.stems_pending && menuItem("stems-del-all", t("stems_del_all"), { danger: true }),
     menuItem("del", active ? t("cancel") : t("del"), { danger: true }),
   ].filter(Boolean).join("");
 
@@ -167,11 +163,6 @@ function lyricsBlock(song: Song, lyrics: string, ctx: SongRowContext): string {
     `href="data:text/plain;charset=utf-8,${encodeURIComponent(lyrics)}" title="${ctx.t("lyrics_dl")}">TXT ↓</a></div>`;
 }
 
-/** Song mit Einzelspuren, oder fertiger Song (Herauslösen anbieten) */
-export function hasStems(song: Song): boolean {
-  return song.stems > 0 || song.stems_pending > 0 || (song.params.mode === "tracks" && song.status !== "queued") || song.status === "done";
-}
-
 /** Herauslösen nur aus dem Stereo-Mix — nicht bei Spur-für-Spur / Replace / Begleitung */
 export function canExtract(song: Song): boolean {
   if (song.status !== "done" || !song.file) return false;
@@ -179,46 +170,11 @@ export function canExtract(song: Song): boolean {
   return !mode || mode === "full";
 }
 
-function stemRow(stem: Stem, ctx: SongRowContext): string {
-  const { t } = ctx;
-  const current = stem.id === ctx.currentStemId;
-  const state = stem.status === "done" ? "" : stem.status === "running" ? `<span class="s run">${t("stem_running")}</span>`
-    : stem.status === "error" ? `<span class="s err" title="${esc(stem.message)}">${t(stem.message === "cancelled" ? "cancelled" : "error")}</span>`
-    : `<span class="s">${t("waiting")}</span>`;
-  // Mehrere Versionen einer Spur (Mixer › Neue Version): Nummer zeigen und welche zu hören ist
-  const versions = (ctx.stems ?? []).filter((s) => s.track === stem.track && s.status === "done").length;
-  const label = stem.kind === "version" ? `v${stem.version}` : stem.kind === "generated" ? "" : t(`stem_kind_${stem.kind}`);
-  const active = versions > 1 && stem.active && stem.status === "done" ? ` <span class="stem-kind on">${t("ver_active")}</span>` : "";
-  const kind = `${label ? ` <span class="stem-kind">${label}</span>` : ""}${active}`;
-  return `<div class="stem ${current ? "playing" : ""}">
-      <button class="sek icon" data-a="stem-play" data-stem="${stem.id}" ${stem.url ? "" : "disabled"} aria-label="${t("play")}">${current && ctx.stemPlaying ? "❚❚" : "▶"}</button>
-      <span class="stem-name">${esc(t(`track_${stem.track}`))}${kind}</span>${state}
-      ${stem.url ? `<a class="download mini" href="${stem.url}?download=1" title="${t("download")}">WAV ↓</a>` : ""}</div>`;
-}
-
-/** Kennung der Vorlage im Player (eigene Wiedergabe wie eine Spur). */
-export function sourcePlayId(songId: string): string {
-  return `${songId}:source`;
-}
-
-/** Hochgeladene Vorlage (Ersetzen/Begleiten): abspielen und laden wie eine Spur. */
-function sourceRow(song: Song, ctx: SongRowContext): string {
-  if (!song.source_url) return "";
-  const { t } = ctx;
-  const current = ctx.currentStemId === sourcePlayId(song.id);
-  const ext = (song.params.source?.split(".").pop() || "wav").toUpperCase();
-  return `<div class="stem ${current ? "playing" : ""}">
-      <button class="sek icon" data-a="source-play" aria-label="${t("play")}">${current && ctx.stemPlaying ? "❚❚" : "▶"}</button>
-      <span class="stem-name">${esc(t("source_track"))} <span class="stem-kind">${t("stem_kind_upload")}</span></span>
-      <a class="download mini" href="${song.source_url}?download=1" title="${t("download")}">${ext} ↓</a></div>`;
-}
-
 function extractBlock(song: Song, ctx: SongRowContext): string {
   if (!canExtract(song)) return "";
   const { t } = ctx;
   const pending = song.stems_pending > 0;
-  const done = (ctx.stems ?? []).some((s) => s.kind === "extracted" && s.status !== "error");
-  if (done && !pending) return "";
+  if (song.stems > 0 && !pending) return "";   // fertig: weiter im Mixer
   const chips = EXTRACT_COUNTS.map((n) => {
     const on = ctx.extractCount === n;
     return `<button type="button" class="chip ${on ? "on" : ""}" data-a="extract-count" data-count="${n}" aria-pressed="${on}" ${pending || !ctx.stemsAvailable ? "disabled" : ""}>${t("extract_n", n)}</button>`;
@@ -240,17 +196,9 @@ function computeBadge(c: SynthCompute, t: Translate): string {
   return `<span class="extract-device ${c.mode}" title="${esc(c.device || label)}">${esc(label)}</span>`;
 }
 
-function stemsBlock(song: Song, ctx: SongRowContext): string {
-  if (!ctx.stemsOpen) return "";
-  if (!ctx.stems) return `<div class="stems">${extractBlock(song, ctx)}<div class="small">…</div></div>`;
-  const ready = ctx.stems.some((s) => s.url) || !!song.source_url;   // das ZIP enthält auch die Vorlage
-  const deletable = ctx.stems.some((s) => s.status === "done" || s.status === "error");
-  const zip = ready
-    ? `<a class="download mini stems-zip" href="/api/songs/${song.id}/stems.zip" title="${ctx.t("stems_zip_tip")}">ZIP ↓</a>` : "";
-  const clear = deletable
-    ? `<button type="button" class="sek mini" data-a="stems-del-all">${ctx.t("stems_del_all")}</button>` : "";
-  return `<div class="stems">${extractBlock(song, ctx)}${ctx.stems.map((s) => stemRow(s, ctx)).join("")}${sourceRow(song, ctx)}
-      <div class="stems-actions">${clear}${zip}</div></div>`;
+function extractPanel(song: Song, ctx: SongRowContext): string {
+  const block = ctx.extractOpen ? extractBlock(song, ctx) : "";
+  return block ? `<div class="stems">${block}</div>` : "";
 }
 
 export function renderSongRow(song: Song, ctx: SongRowContext): string {
@@ -259,5 +207,5 @@ export function renderSongRow(song: Song, ctx: SongRowContext): string {
   return `<div class="${classes}" data-id="${song.id}" draggable="${ctx.hasFolders && !ctx.editing}">
       ${leftSlot(song, ctx)}
       <div style="min-width:0">${titleBlock(song, ctx)}<div class="m" title="${ctx.t("meta_tip")}">${esc(metaLine(song))}</div>${stateLine(song, ctx)}</div>
-      <div class="actions">${actionButtons(song, lyrics, ctx)}</div>${lyricsBlock(song, lyrics, ctx)}${stemsBlock(song, ctx)}</div>`;
+      <div class="actions">${actionButtons(song, lyrics, ctx)}</div>${lyricsBlock(song, lyrics, ctx)}${extractPanel(song, ctx)}</div>`;
 }

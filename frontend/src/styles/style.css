@@ -484,18 +484,7 @@ dialog.setup { width: min(560px, calc(100vw - 32px)); }
 .extract-device.cpu { color: var(--muted); background: var(--surface-2); }
 .song .stems { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; margin: 8px 0 2px 58px; padding: 10px 12px;
   border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(255, 255, 255, .015); }
-.stem { display: flex; align-items: center; gap: 10px; min-height: 30px; }
-.stem.playing .stem-name { color: var(--accent-soft); }
-.stem .sek.icon { width: 28px; height: 28px; padding: 0; }
-.stem-name { font-size: 13px; min-width: 120px; }
-.stem-kind { color: var(--faint); font-size: 11px; }
-.stem-kind.on { color: var(--accent-soft); }
-.stem .s { font-size: 12px; color: var(--muted); }
-.stem .s.run { color: var(--accent-soft); }
-.stem .s.err { color: var(--error); }
-.stem .download { margin-left: auto; }
-.stems-zip { align-self: flex-end; margin-top: 4px; }
-.extract { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.extract { display: flex; flex-direction: column; gap: 6px; }
 .extract-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
 .replace-card { display: flex; flex-direction: column; gap: 14px; }
 .replace-lead { margin: -4px 0 0; max-width: 52ch; line-height: 1.45; }
@@ -503,8 +492,6 @@ dialog.setup { width: min(560px, calc(100vw - 32px)); }
 .replace-box .seg { margin-top: 2px; }
 .replace-box .sek:disabled { opacity: .45; cursor: not-allowed; }
 .replace-keep { display: flex; flex-direction: column; gap: 4px; }
-.stems-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 6px; }
-.stems-mixer { font-size: 12px; }
 @media (max-width: 720px) { .song .stems { margin-left: 0; } }
 
 /* ------------------------------------------------------------ Mixer */

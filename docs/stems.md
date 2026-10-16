@@ -22,12 +22,12 @@ Grobe Dauer: etwa **75 Sekunden pro Spur und Minute Musik**.
 
 ## Spuren herauslösen (Extract)
 
-**Wo:** Bibliothek → bei einem **Stereo-Mix** (Erzeugung „Ganzer Song“) **Stem Separation** öffnen → **2 / 4 / 6** Stems wählen und herauslösen.  
+**Wo:** Bibliothek → bei einem **Stereo-Mix** (Erzeugung „Ganzer Song“) ohne Spuren im ⋮-Menü **Stem Separation** öffnen → **2 / 4 / 6** Stems wählen und herauslösen. Sind die Spuren fertig, verschwindet der Eintrag und der Mixer-Knopf erscheint.  
 Nicht bei Spur-für-Spur, Replace oder Begleitung — die haben bereits Einzelspuren.
 
 **Was passiert:** Keine Voranalyse und keine manuelle Spurwahl — feste Sets (z. B. 4 = drums/bass/guitar/vocals). Für jede Spur ruft SONIQ ACE-Step **`extract`** auf dem **Synth-Server (GPU: Metal / CUDA / Vulkan)** auf. Auf Apple Silicon hält der Server die Modelle mit `--keep-loaded` im Speicher, damit 2/4/6 Spuren nicht jedes Mal DiT/VAE neu laden. Die Spur wird **neu generiert** und folgt dem Song — das ist **kein** verlustfreier Stem-Split.
 
-**Ergebnis:** Spuren am gleichen Song (`kind: extracted`), abspielbar, downloadbar, als ZIP, und im Mixer.
+**Ergebnis:** Spuren am gleichen Song (`kind: extracted`); abspielen, herunterladen und ZIP im Mixer.
 
 ---
 
@@ -58,7 +58,7 @@ Upload ist schon eine **isolierte Take** (z. B. Gesang oder Gitarre). Kein Ext
 
 **Ergebnis:** neuer Bibliothek-Eintrag („Replacement for …“ / „Accompaniment for …“) mit Spuren (`replacement` / `accompaniment`) und Mix.
 
-Der Upload bleibt erreichbar: in der Spurenliste als **Original** (abspielen, herunterladen), im Mixer als eigener Kanal
+Der Upload bleibt erreichbar: im Mixer als eigener Kanal **Original** (abspielen, herunterladen)
 und im ZIP als `00 original.wav`. Beim Ersetzen ist der Kanal anfangs stumm (darin stecken die ersetzten Instrumente;
 per Solo zum Vergleichen), beim Begleiten hörbar (die Aufnahme gehört zum Song).
 
@@ -66,7 +66,7 @@ per Solo zum Vergleichen), beim Begleiten hörbar (die Aufnahme gehört zum Song
 
 ## Mixer
 
-**Wo:** Bibliothek → Tracks → **Mixer**, oder `#/mixer/:songId`.
+**Wo:** Bibliothek → Mixer-Knopf am Song, oder `#/mixer/:songId`. Eine Spurenliste unter dem Song gibt es nicht mehr; alles Spur-Bezogene läuft über den Mixer. Im ⋮-Menü bleibt **Alle Spuren löschen**.
 
 **Was es ist:** reine Wiedergabe-UI für fertige Spuren eines Songs:
 
