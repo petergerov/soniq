@@ -26,6 +26,9 @@ neuste_quelle() {
     -exec stat -f '%m' {} \; 2>/dev/null | sort -rn | head -1
 }
 
+# Suchpfad der Bibliotheken heilen, falls der Projektordner umbenannt wurde.
+engine_rpath
+
 # --- Modellserver -----------------------------------------------------------
 if [ "$MODE" = "split" ]; then
   if laeuft "$LM_PORT"; then

@@ -85,6 +85,24 @@ lade_conf() {   # engine.conf als key=value lesen, nicht ausführen
   [ -n "$MODE" ] || MODE=split
 }
 
+# CMake speichert den absoluten Build-Ordner als Suchpfad. Nach einem Umbenennen des
+# Projektordners findet macOS die ggml-Bibliotheken nicht mehr, obwohl sie neben der
+# Binary liegen. @loader_path sucht dort, unabhängig vom Ordnernamen.
+engine_rpath() {
+  [ "$(uname)" = "Darwin" ] || return 0
+  command -v install_name_tool >/dev/null 2>&1 || return 0
+  local dir="$ENGINE/build" f
+  [ -d "$dir" ] || return 0
+  for f in "$dir"/*; do
+    [ -f "$f" ] || continue
+    file "$f" 2>/dev/null | grep -q "Mach-O" || continue
+    otool -L "$f" 2>/dev/null | grep -q "@rpath/" || continue
+    otool -l "$f" 2>/dev/null | grep -q "@loader_path" && continue
+    install_name_tool -add_rpath "@loader_path" "$f" || continue
+    codesign --force --sign - "$f" >/dev/null 2>&1 || true
+  done
+}
+
 # Terminal-Fenster nach getaner Arbeit selbst schließen (macOS).
 fenster_schliessen() {
   [ "$(uname)" = "Darwin" ] || return 0
