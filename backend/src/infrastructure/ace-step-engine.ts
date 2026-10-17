@@ -134,7 +134,10 @@ export class AceStepEngine implements MusicEngine {
 
   async stem(r: StemRequest, progress: ProgressReporter, signal: AbortSignal): Promise<Uint8Array> {
     const req: Json = {
-      synth_model: this.stemModel, task_type: r.task, track: r.track, caption: r.caption, lyrics: r.lyrics || "[Instrumental]",
+      synth_model: this.stemModel, task_type: r.task, track: r.track, lyrics: r.lyrics || "[Instrumental]",
+      // extract ohne Caption, wie in der ACE-Step-Referenz: die Song-Beschreibung lenkt sonst auf das, was sie nennt
+      // (extract drums aus "fingerpicked guitar, …" lieferte die Gitarre; ohne Caption die Drums ab ihrem Einsatz)
+      caption: r.task === "extract" ? "" : r.caption,
       // Werte der ACE-Step-Referenz: ohne sie befolgt das Modell die Spur-Anweisung kaum (siehe STEM_SHIFT)
       inference_steps: STEM_STEPS, shift: STEM_SHIFT, guidance_scale: STEM_GUIDANCE,
       output_format: "wav32",   // Gleitkomma: Spuren werden danach addiert, ohne Rundung dazwischen
