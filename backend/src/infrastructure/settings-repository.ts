@@ -17,7 +17,7 @@ export function defaultSettings(engine: EngineValues, ports: Ports): Settings {
     poll_interval: 1.5,
     timeout_minutes: 30,
     dit: "standard",                        // Klangmodell: "standard" (2B) oder "xl" (4B, braucht die XL-Datei)
-    stem_model: "xl",                       // Spuren-Modell: "xl" (XL-Base 4B, sauberere Spuren) oder "standard" (Base 2B); fehlt XL, rechnet Standard
+    stem_model: "standard",                 // Spuren-Modell: "standard" (Base 2B) oder "xl" (XL-Base 4B); Standard klang im Hörtest sauberer
     output_format: DEFAULT_OUTPUT_FORMAT,   // Dateiformat der Songs (siehe domain/output-format.ts)
     songs_dir: "",                          // leer = data/songs im Programmordner, sonst absoluter Pfad
   };

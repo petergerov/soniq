@@ -7,7 +7,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import type { HealthInfo, Settings } from "../../../shared/api.ts";
 import type { SongResultMeta } from "../../../shared/api.ts";
 import {
-  DIT_MODELS, EngineError, LEGO_GUIDANCE, STEM_MODELS, STEM_STEPS,
+  DIT_MODELS, EngineError, STEM_GUIDANCE, STEM_MODELS, STEM_SHIFT, STEM_STEPS,
   type AnalysisResult, type GeneratedAudio, type MusicEngine, type ProgressReporter, type StemRequest,
 } from "../domain/music-engine.ts";
 import { DEFAULT_OUTPUT_FORMAT, OUTPUT_FORMATS, type AceOutputFormat } from "../domain/output-format.ts";
@@ -135,8 +135,8 @@ export class AceStepEngine implements MusicEngine {
   async stem(r: StemRequest, progress: ProgressReporter, signal: AbortSignal): Promise<Uint8Array> {
     const req: Json = {
       synth_model: this.stemModel, task_type: r.task, track: r.track, caption: r.caption, lyrics: r.lyrics || "[Instrumental]",
-      inference_steps: STEM_STEPS, shift: 1.0,   // Vorgaben für das Base-Modell
-      guidance_scale: r.task === "lego" ? LEGO_GUIDANCE : 1.0,   // lego: CFG hält die Spur frei von anderen Instrumenten
+      // Werte der ACE-Step-Referenz: ohne sie befolgt das Modell die Spur-Anweisung kaum (siehe STEM_SHIFT)
+      inference_steps: STEM_STEPS, shift: STEM_SHIFT, guidance_scale: STEM_GUIDANCE,
       output_format: "wav32",   // Gleitkomma: Spuren werden danach addiert, ohne Rundung dazwischen
     };
     for (const k of ["bpm", "keyscale", "timesignature", "duration", "seed"] as const) if (r[k] !== undefined && r[k] !== null && r[k] !== "") req[k] = r[k];

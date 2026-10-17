@@ -76,12 +76,14 @@ export function effectiveStemModel(choice: StemModel, installed: (file: string) 
   const other: StemModel = choice === "xl" ? "standard" : "xl";
   return !installed(STEM_MODELS[choice]) && installed(STEM_MODELS[other]) ? other : choice;
 }
-/** Empfehlung von acestep.cpp für das Base-Modell (docs/ARCHITECTURE.md, Beispiel lego) */
-export const STEM_STEPS = 50;
 /**
- * CFG-Stärke für lego (neue Einzelspur): mit 1.0 (CFG aus, Vorgabe von acestep.cpp) mischt das Modell oft andere
- * Instrumente in die Spur. Gemessen an einer Bass-Spur auf Schlagzeug (Energie über 400 Hz, 2 Seeds): 1.0 → 0,076,
- * 3.0 → 0,033, 5.0 → 0,011 (Referenz guter Bass: 0,019). Kostet etwa 45 % mehr Rechenzeit je Spur.
- * extract bleibt bei 1.0 (nicht getestet).
+ * Sampling für die Spur-Aufgaben (lego, extract, complete) wie in der Referenz-Implementierung von ACE-Step 1.5
+ * (acestep/api/http/release_task_models.py: shift 3.0 "nur für Base-Modelle wirksam", acestep/inference.py:
+ * guidance_scale 7.0, 32–100 Schritte für Base). Das Beispiel in acestep.cpp (shift 1.0, CFG 1.0) setzt die
+ * Spur-Anweisung kaum durch: extract drums gab mit XL den ganzen Song zurück (Korrelation 0,993), mit Standard die
+ * Gitarre, lego auf Stille einen Mix mit Flöten. Mit shift 3 und CFG 7 lieferten beide Modelle aus einem Funk-Song
+ * echte Drums (Standard hörbar sauberer, 2026-10-17).
  */
-export const LEGO_GUIDANCE = 5.0;
+export const STEM_STEPS = 50;
+export const STEM_SHIFT = 3.0;
+export const STEM_GUIDANCE = 7.0;

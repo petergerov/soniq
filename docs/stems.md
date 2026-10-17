@@ -9,15 +9,15 @@ oder das Häkchen in der ersten Einrichtung. Danach sind die Funktionen ohne Neu
 Optional gibt es das **XL-Spuren-Modell** `acestep-v15-xl-base` (~5,3 GB, 4 statt 2 Mrd. Parameter, rechnet etwa doppelt
 so lange): `install --xl-stems` (Windows `-XlStems`) bzw. in der Mac-App **Einstellungen › XL-Spuren-Modell laden**. Unter
 **Einstellungen › Spuren-Modell** wählt man Standard oder XL (`Settings.stem_model`, `STEM_MODELS` in
-`domain/music-engine.ts`). Vorgabe ist XL; fehlt die Datei des gewählten Modells, aber das andere ist da, rechnen die Spuren
-mit dem anderen (ohne XL-Datei also mit Standard).
+`domain/music-engine.ts`). Vorgabe ist Standard; fehlt die Datei des gewählten Modells, aber das andere ist da, rechnen die
+Spuren mit dem anderen.
 
-Warum XL die Vorgabe ist (gemessen an dd6705bb0239, gleicher Seed, gleiche Lyrics und Begleitung): Das Standard-Modell hält
-sich schlecht an „nur diese Spur“. Die Gesangsspur spielte in Intro, Break und Outro selbst Gitarre (−24 dB statt Stille)
-und unter dem Gesang harte Anschläge; der Bass rutschte chromatisch um den Grundton (67 Tonwechsel/min) und hing an den
-Drums. Mit XL: Intro/Outro der Gesangsspur −45 dB (still), weicher Stimmklang, Bass mit klaren Tönen aus der Tonart
-(26 Tonwechsel/min). Bereinigte Lyrics, „a cappella“ in der Caption oder ein zweiter `extract`-Durchgang halfen beim
-Standard-Modell nicht. Kosten: etwa doppelte Rechenzeit je Spur.
+**Sampling der Spur-Aufgaben:** shift 3.0, CFG 7.0, 50 Schritte, wie die Referenz-Implementierung von ACE-Step 1.5
+(`STEM_SHIFT`, `STEM_GUIDANCE` in `domain/music-engine.ts`). Vorher liefen die Spuren mit shift 1.0 und CFG 1.0
+(extract) bzw. 5.0 (lego), wie im Beispiel von acestep.cpp; damit setzte das Modell die Spur-Anweisung kaum durch:
+`extract drums` gab mit XL den ganzen Song zurück (Wellenform-Korrelation 0,993), mit Standard die Gitarre, und `lego`
+auf Stille ergab einen Mix (Drums mit Flöten). Mit den Referenz-Werten lösten beide Modelle aus einem Funk-Song echte
+Drums heraus; die vom Standard-Modell klangen sauberer, daher bleibt Standard die Vorgabe.
 
 Grobe Dauer: etwa **75 Sekunden pro Spur und Minute Musik**.
 
