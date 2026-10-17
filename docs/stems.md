@@ -41,12 +41,34 @@ nach drei Versuchen bricht der Song ab, bevor Spuren entstehen („Keine Lyrics 
 
 ## Spuren herauslösen (Extract)
 
-**Wo:** Bibliothek → bei einem **Stereo-Mix** (Erzeugung „Ganzer Song“) ohne Spuren im ⋮-Menü **Stem Separation** öffnen → **2 / 4 / 6** Stems wählen und herauslösen. Sind die Spuren fertig, verschwindet der Eintrag und der Mixer-Knopf erscheint.  
+**Wo:** Bibliothek → bei einem **Stereo-Mix** (Erzeugung „Ganzer Song“) ohne Spuren im ⋮-Menü **Stem Separation** öffnen → Verfahren wählen und herauslösen. Sind die Spuren fertig, verschwindet der Eintrag und der Mixer-Knopf erscheint.  
 Nicht bei Spur-für-Spur, Replace oder Begleitung — die haben bereits Einzelspuren.
 
-**Was passiert:** Keine Voranalyse und keine manuelle Spurwahl — feste Sets (z. B. 4 = drums/bass/guitar/vocals). Für jede Spur ruft SONIQ ACE-Step **`extract`** auf dem **Synth-Server (GPU: Metal / CUDA / Vulkan)** auf. Auf Apple Silicon hält der Server die Modelle mit `--keep-loaded` im Speicher, damit 2/4/6 Spuren nicht jedes Mal DiT/VAE neu laden. Die Spur wird **neu generiert** und folgt dem Song — das ist **kein** verlustfreier Stem-Split.
+**Verfahren** (Vorauswahl: das erste verfügbare):
 
-**Ergebnis:** Spuren am gleichen Song (`kind: extracted`); abspielen, herunterladen und ZIP im Mixer.
+| Wahl | Modell | Spuren | Dauer (Mac, 32 GB, 4 Threads) |
+|---|---|---|---|
+| Demucs · 4 Stems | `htdemucs_ft`: vier nachtrainierte Modelle (4 × 84 MB), beste Qualität | drums, bass, vocals, other | ~3,2 × Songlänge (90-s-Song: 288 s) |
+| Demucs · 6 Stems | `htdemucs_6s` (55 MB) | drums, bass, guitar, keyboard (Klavier), vocals, other | ~0,9 × Songlänge (90 s: 78 s, 165 s: ~2 min) |
+| ACE-Step | Spuren-Modell, `extract` je Spur | 2 / 4 / 6 nach festem Set | je Spur etwa so lange wie der Song |
+
+**Demucs** ist ein eigenes Trennmodell (Meta, über [demucs.cpp](https://github.com/sevagh/demucs.cpp), MIT): es teilt den
+vorhandenen Mix auf, alle Spuren in einem Durchgang, auf der CPU (Mac: Accelerate; Linux: OpenMP). Die Spuren
+ergeben zusammen wieder den Song (Rest bei „Amber Echoes“, htdemucs_6s: −23,5 dB). Die Gewichte sind die
+Originale von Meta in halber Genauigkeit (htdemucs_6s 55 MB = offizieller Checkpoint `5c90dfd2-34c22ccb.th`); ein
+größeres 6-Spur-Demucs gibt es nicht. Das Klavier von htdemucs_6s ist laut den Entwicklern noch unsauber.
+Ablauf (`infrastructure/demucs-separator.ts`): Song auf 44,1 kHz (das liest demucs.cpp) als Float-WAV in `data/tmp`,
+`demucs_mt.cpp.main` bzw. `demucs_ft_mt.cpp.main` mit 1–4 Threads je nach Arbeitsspeicher (je Thread ~1,7 GB), Spuren
+zurück auf 48 kHz. Nur für WAV-Songs (ein MP3-Decoder fehlt dem Server bewusst; MP3-Songs → ACE-Step). Die Restspur
+`other` kennt ACE-Step nicht: im Mixer ohne ✦ (keine neue Version).
+
+**ACE-Step:** Keine Voranalyse und keine manuelle Spurwahl — feste Sets (z. B. 4 = drums/bass/guitar/vocals). Für jede Spur ruft SONIQ ACE-Step **`extract`** auf dem **Synth-Server (GPU: Metal / CUDA / Vulkan)** auf, ohne Caption (sie lenkte auf das, was sie nennt). Die Spur wird **neu generiert** und folgt dem Song — das ist **kein** verlustfreier Stem-Split.
+
+**Ergebnis:** Spuren am gleichen Song (`kind: extracted`; das Verfahren steht intern im Feld `recipe`); abspielen, herunterladen und ZIP im Mixer.
+
+**Installation:** `install.command` und `arch_linux.sh` bauen demucs.cpp (feste Revision `DEMUCS_REV` in
+`scripts/common.sh`) nach `engine/demucs.cpp/build` und laden die Gewichte mit SHA-256-Prüfung nach `models/demucs`.
+Die fertige Mac-App, das Debian-Paket und Windows liefern Demucs noch nicht mit; dort fehlen die beiden Demucs-Knöpfe.
 
 ---
 
@@ -138,6 +160,6 @@ Spuren (das Backing) und das Spuren-Modell dieselben sind. Versionen von vor die
 - Dateien: `<song-id>.<track>.wav` im Song-Ordner.  
 - Tabelle `stems`: `id`, `song_id`, `track`, `kind` (auch `version`), `status`, Reihenfolge, Zeiten, `version`, `active` (je Spur genau eine hörbar), `recipe` (Wünsche, Caption, Seed). Song löschen löscht die Spuren. Dateien neuer Versionen: `<song-id>.v<n>.<spur>.wav`.  
 - Engine: Multipart `POST /synth` mit `synth_model` = Base-Modell.  
-- API u. a.: `GET /api/songs/:id/stems`, `…/stems.zip`, `GET /api/stems/:id/audio`, `DELETE /api/stems/:id`, `DELETE /api/songs/:id/stems`, `POST /api/songs/:id/stems` (extract), `POST /api/stems/upload` (replace/accompany), `GET /api/songs/:id/source` (Original), `GET /api/songs/:id/mix?gains=<spur-id>:<0…1>,…,source:<0…1>` (Mix als WAV; fehlende Kanäle sind stumm), `POST /api/stems/:id/versions` (neue Version: `axes`, `chips`, `text`, `count`, optional `seed`), `PUT /api/stems/:id/active` (Version hörbar machen).
+- API u. a.: `GET /api/songs/:id/stems`, `…/stems.zip`, `GET /api/stems/:id/audio`, `DELETE /api/stems/:id`, `DELETE /api/songs/:id/stems`, `POST /api/songs/:id/stems` (Stem Separation: `{ separator: "demucs_ft" | "demucs_6s" }` oder `{ separator: "ace", tracks }`), `POST /api/stems/upload` (replace/accompany), `GET /api/songs/:id/source` (Original), `GET /api/songs/:id/mix?gains=<spur-id>:<0…1>,…,source:<0…1>` (Mix als WAV; fehlende Kanäle sind stumm), `POST /api/stems/:id/versions` (neue Version: `axes`, `chips`, `text`, `count`, optional `seed`), `PUT /api/stems/:id/active` (Version hörbar machen).
 
 Plan, Experimente und Status der Umsetzung: [`newfeatures.md`](../newfeatures.md).

@@ -38,6 +38,17 @@ node-v24.21.0-linux-x64.tar.xz:fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d
 node-v24.21.0-linux-arm64.tar.xz:6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2"
 # cmake zum Bauen des Modellservers auf dem Mac (nur geladen, wenn keins installiert ist)
 CMAKE_MAC="https://github.com/Kitware/CMake/releases/download/v3.31.9/cmake-3.31.9-macos-universal.tar.gz:eb9d0b2b6a5b900e2f5811326a86ea393a146e4cb2384d15512c226e9c98f8bf"
+# Stem Separation mit Demucs: demucs.cpp (MIT, feste Revision) und die ggml-Gewichte von htdemucs_ft (4 Spuren, beste
+# Qualität) und htdemucs_6s (mit Gitarre und Klavier), im Modellordner unter demucs/. Datei:Größe in MB:SHA-256.
+DEMUCS_REPO="https://github.com/sevagh/demucs.cpp"
+DEMUCS_REV="f1206e9adeea103aef4a636b9e62297cf1f8e34e"
+DEMUCS_DIR="$ROOT/engine/demucs.cpp"
+DEMUCS_HF="https://huggingface.co/datasets/Retrobear/demucs.cpp/resolve/8f58ac0491bbea657275bcd3e38af1ab3a27bfc9"
+DEMUCS_FILES="ggml-model-htdemucs-6s-f16.bin:55:09704f4ceae204e56e77d5eefd6ac71d7275be81fd507e6913371d59abcee856
+ggml-model-htdemucs_ft_drums-4s-f16.bin:84:cda268755cc80deb5f4616a99f9d09f26bc5ce3882aa35e0bc504708a12604bb
+ggml-model-htdemucs_ft_bass-4s-f16.bin:84:e6ded215aa15fb4eff7a37f3a51fd596ee17c94ae0ddb7ef3f2f6ecf8b86cdb5
+ggml-model-htdemucs_ft_other-4s-f16.bin:84:cbc315571584d512e7853c9d40a499182393a7f4155cb8723a9040a685c2435b
+ggml-model-htdemucs_ft_vocals-4s-f16.bin:84:19186500a45a551a034d96e9500415ebe73c8bd570bf55337ddc8cc8f53a9120"
 SERVER_ENTRY="$ROOT/backend/src/main.ts"
 NODE_FLAGS="--disable-warning=ExperimentalWarning"
 
@@ -90,6 +101,48 @@ lade_conf() {   # engine.conf als key=value lesen, nicht ausführen
 # CMake speichert den absoluten Build-Ordner als Suchpfad. Nach einem Umbenennen des
 # Projektordners findet macOS die ggml-Bibliotheken nicht mehr, obwohl sie neben der
 # Binary liegen. @loader_path sucht dort, unabhängig vom Ordnernamen.
+# demucs.cpp auf DEMUCS_REV bringen und die beiden Programme bauen (ein Modell / htdemucs_ft), sofern nötig.
+# Weitere cmake-Optionen als Argumente (Linux: -DUSE_OPENBLAS=OFF, dann OpenMP). Ausgabe nach stdout/stderr.
+demucs_build() {
+  if [ ! -d "$DEMUCS_DIR/.git" ]; then
+    mkdir -p "$(dirname "$DEMUCS_DIR")" && git clone --quiet "$DEMUCS_REPO" "$DEMUCS_DIR" || return 1
+  fi
+  ( cd "$DEMUCS_DIR" \
+    && { git cat-file -e "$DEMUCS_REV^{commit}" 2>/dev/null || git fetch --quiet origin; } \
+    && git checkout --quiet "$DEMUCS_REV" \
+    && git submodule update --init --recursive --quiet ) || return 1
+  local B="$DEMUCS_DIR/build"
+  if [ "$(cat "$B/.soniq-rev" 2>/dev/null)" = "$DEMUCS_REV" ] && [ -x "$B/demucs_mt.cpp.main" ] && [ -x "$B/demucs_ft_mt.cpp.main" ]; then
+    return 0
+  fi
+  cmake -S "$DEMUCS_DIR" -B "$B" -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 "$@" \
+    && cmake --build "$B" --target demucs_mt.cpp.main demucs_ft_mt.cpp.main -j "$(getconf _NPROCESSORS_ONLN)" \
+    && echo "$DEMUCS_REV" > "$B/.soniq-rev"
+}
+
+# Gewichte von Demucs nach $MODELS/demucs laden und per SHA-256 prüfen (vorhandene bleiben). Rückgabe 1 bei Fehler.
+demucs_models() {
+  local dir="$MODELS/demucs" e f sha
+  mkdir -p "$dir"
+  for e in $DEMUCS_FILES; do
+    IFS=: read -r f _ sha <<< "$e"
+    if [ -f "$dir/$f" ]; then echo "  ✓ $f"; continue; fi
+    echo "  ↓ $f"
+    curl -L --fail -C - --progress-bar -o "$dir/$f.part" "$DEMUCS_HF/$f" || return 1
+    if [ "$(sha256_of "$dir/$f.part")" != "$sha" ]; then
+      rm -f "$dir/$f.part"
+      echo "  Checksum of $f does not match, file deleted."
+      return 1
+    fi
+    mv "$dir/$f.part" "$dir/$f"
+  done
+}
+
+# SHA-256 einer Datei (macOS: shasum, Linux: sha256sum)
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi
+}
+
 engine_rpath() {
   [ "$(uname)" = "Darwin" ] || return 0
   command -v install_name_tool >/dev/null 2>&1 || return 0

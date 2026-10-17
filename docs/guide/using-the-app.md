@@ -108,8 +108,10 @@ Each track takes about as long as a whole song of the same length.
 
 - **Track by track** (Create › Generation): a new song built instrument by instrument, each track fitting the ones
   before. The mix is exactly the sum of the tracks.
-- **Stem Separation** (library, ⋮ menu of a song): pull 2, 4 or 6 tracks out of a finished song. The model re-generates
-  them, so they follow the song but are no exact split of the mix.
+- **Stem Separation** (library, ⋮ menu of a song): split a finished song into tracks. **Demucs · 4 stems** (best quality:
+  drums, bass, vocals, other) or **Demucs · 6 stems** (adds guitar and piano) split the actual mix, all tracks in one
+  pass on the CPU; WAV songs only. **ACE-Step** re-generates 2, 4 or 6 tracks with the track model, so they follow the
+  song but are no exact split of the mix.
 - **Replace / accompany** (tab **Replace**): upload a file and replace chosen instruments, or add new accompaniment
   tracks to a single take, for example vocals. The upload is ready at once; length comes from the file. **Detect tempo
   and key** is optional and fills BPM, key, time signature and a short genre, not the full description.

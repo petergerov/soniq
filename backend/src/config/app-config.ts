@@ -25,6 +25,8 @@ export interface AppConfig {
   lmPort: number;
   /** Modellserver acestep.cpp; die fertige App startet ihn selbst */
   engineBin: string;
+  /** Ordner mit den Programmen von demucs.cpp (demucs_mt.cpp.main, demucs_ft_mt.cpp.main) */
+  demucsBinDir: string;
   platform: NodeJS.Platform;
   /** Versionsnummer: von der App (MG_APP_VERSION, aus Info.plist) oder aus package.json */
   appVersion: string;
@@ -82,6 +84,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
     synthPort: parsePort(env.MG_SYNTH_PORT, 8085),
     lmPort: parsePort(env.MG_LM_PORT, 8086),
     engineBin: env.MG_ENGINE_BIN ? resolve(env.MG_ENGINE_BIN) : join(root, "engine", "acestep.cpp", "build", "ace-server"),
+    demucsBinDir: env.MG_DEMUCS_DIR ? resolve(env.MG_DEMUCS_DIR) : join(root, "engine", "demucs.cpp", "build"),
     platform: process.platform,
     packaged: env.MG_PACKAGED === "1",
     appVersion: env.MG_APP_VERSION || packageVersion(root),

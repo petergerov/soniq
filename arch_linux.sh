@@ -579,6 +579,11 @@ installiere() {
     echo "  ✓ acestep.cpp is already built (${ACESTEP_REV:0:7})."
   fi
 
+  # Stem Separation: demucs.cpp, ohne BLAS mit OpenMP (gcc aus base-devel), auf der CPU
+  echo "  Stem separation demucs.cpp (${DEMUCS_REV:0:7}) ..."
+  demucs_build -DUSE_OPENBLAS=OFF > "$DATA/demucs-build.log" 2>&1 || abbruch "Building demucs.cpp failed. Details in data/demucs-build.log"
+  echo "  ✓ demucs.cpp ready."
+
   # 6. Modellgröße wählen
   schritt "6. Choosing the model size"
   local EMPF="1.7B"
@@ -652,6 +657,10 @@ installiere() {
     IFS=: read -r f mb _ <<< "$e"
     [ -f "$MODELS/$f" ] || NEED_MB=$(( NEED_MB + mb ))
   done
+  for e in $DEMUCS_FILES; do   # Demucs (Stem Separation) gehört immer dazu
+    IFS=: read -r f mb _ <<< "$e"
+    [ -f "$MODELS/demucs/$f" ] || NEED_MB=$(( NEED_MB + mb ))
+  done
   local NEED_GB=$(( (NEED_MB + 1023) / 1024 + 3 ))
   echo "  Download: $(( (NEED_MB + 1023) / 1024 )) GB · about $NEED_GB GB free space needed"
   [ "$FREE_GB" -ge "$NEED_GB" ] || abbruch "Not enough disk space: $FREE_GB GB free, $NEED_GB GB needed."
@@ -675,6 +684,8 @@ installiere() {
     mv "$MODELS/$f.part" "$MODELS/$f"
     echo "    ✓ Checksum ok"
   done
+  echo "  Demucs (stem separation):"
+  demucs_models || abbruch "Downloading the Demucs models failed. Running the script again resumes the download."
 
   # 8. Selbsttest & Konfiguration speichern
   schritt "8. Graphics self-test and configuration"

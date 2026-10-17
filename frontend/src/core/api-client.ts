@@ -1,5 +1,5 @@
 // Typisierter Zugriff auf die HTTP-API des Backends. Einzige Stelle, die fetch() für /api benutzt.
-import type { AnalyzeResult, ErrorBody, FolderOverview, GenerateRequest, GenerateResponse, HealthInfo, NewVersionRequest, Preset, PresetValues, QueueInfo, SetupRequest, SetupStatus, Stem, StemIntent, StemTrack, Settings, SettingsView, Song, SongPatch, UpdateCheck, UpdateStatus } from "../../../shared/api.ts";
+import type { AnalyzeResult, ErrorBody, ExtractRequest, FolderOverview, GenerateRequest, GenerateResponse, HealthInfo, NewVersionRequest, Preset, PresetValues, QueueInfo, SetupRequest, SetupStatus, Stem, StemIntent, StemTrack, Settings, SettingsView, Song, SongPatch, UpdateCheck, UpdateStatus } from "../../../shared/api.ts";
 
 export class ApiError extends Error {
   override name = "ApiError";
@@ -38,8 +38,8 @@ export class ApiClient {
 
   song(id: string): Promise<Song> { return this.send("GET", `/api/songs/${id}`); }
   stems(songId: string): Promise<Stem[]> { return this.send("GET", `/api/songs/${songId}/stems`); }
-  extractStems(songId: string, tracks: StemTrack[]): Promise<Stem[]> {
-    return this.send("POST", `/api/songs/${songId}/stems`, { tracks });
+  extractStems(songId: string, request: ExtractRequest): Promise<Stem[]> {
+    return this.send("POST", `/api/songs/${songId}/stems`, request);
   }
   cancelExtract(songId: string): Promise<Stem[]> { return this.send("POST", `/api/songs/${songId}/stems/cancel`); }
   deleteAllStems(songId: string): Promise<Stem[]> { return this.send("DELETE", `/api/songs/${songId}/stems`); }

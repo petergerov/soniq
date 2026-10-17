@@ -1,7 +1,7 @@
 // Einstellungen prüfen und speichern; ein neuer Song-Ordner nimmt die vorhandenen Songs mit.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import type { DitModel, Settings, SettingsView, StemModel } from "../../../shared/api.ts";
+import type { DemucsModel, DitModel, Settings, SettingsView, StemModel } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
 import { DIT_MODELS, effectiveStemModel, STEM_MODELS } from "../domain/music-engine.ts";
 import { isOutputFormat } from "../domain/output-format.ts";
@@ -15,6 +15,8 @@ export interface SettingsServiceDeps {
   storage: SongStorage;
   modelsDir: string;
   packaged: boolean;
+  /** Demucs-Modelle samt Programm installiert (Stem Separation) */
+  demucsAvailable: () => Record<DemucsModel, boolean>;
 }
 
 const POSITIVE_NUMBERS = ["timeout_minutes", "poll_interval"] as const;
@@ -35,6 +37,7 @@ export class SettingsService {
       dit_xl_available: this.has(DIT_MODELS.xl),
       stems_available: Object.values(STEM_MODELS).some((f) => this.has(f)),
       stems_xl_available: this.has(STEM_MODELS.xl),
+      demucs: this.deps.demucsAvailable(),
       packaged: this.deps.packaged,
     };
   }

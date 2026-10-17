@@ -138,7 +138,29 @@ export interface Preset {
 export const STEM_TRACKS = [
   "drums", "percussion", "bass", "guitar", "keyboard", "synth", "strings", "brass", "woodwinds", "fx", "vocals", "backing_vocals",
 ] as const;
-export type StemTrack = (typeof STEM_TRACKS)[number];
+/**
+ * Restspur von Demucs: alles, was nicht Drums, Bass, Gesang (bzw. Gitarre, Klavier) ist. ACE-Step kennt sie nicht,
+ * daher steht sie nicht in STEM_TRACKS (keine neue Version, kein Spur für Spur).
+ */
+export const OTHER_TRACK = "other";
+export type StemTrack = (typeof STEM_TRACKS)[number] | typeof OTHER_TRACK;
+
+/**
+ * Stem Separation: Demucs (eigenes Trennmodell, demucs.cpp) oder ACE-Step (extract je Spur).
+ * demucs_ft = htdemucs_ft, vier nachtrainierte Modelle, beste Qualität; demucs_6s = htdemucs_6s mit Gitarre und Klavier.
+ */
+export const SEPARATORS = ["demucs_ft", "demucs_6s", "ace"] as const;
+export type Separator = (typeof SEPARATORS)[number];
+export type DemucsModel = Exclude<Separator, "ace">;
+
+/** Spuren der Demucs-Modelle in der Reihenfolge des Mixers (Klavier landet auf "keyboard") */
+export const DEMUCS_TRACKS: Record<DemucsModel, readonly StemTrack[]> = {
+  demucs_ft: ["drums", "bass", "vocals", "other"],
+  demucs_6s: ["drums", "bass", "guitar", "keyboard", "vocals", "other"],
+};
+
+/** POST /api/songs/:id/stems: ACE-Step mit gewählten Spuren, oder ein Demucs-Modell (seine Spuren stehen fest). */
+export type ExtractRequest = { separator: "ace"; tracks: StemTrack[] } | { separator: DemucsModel };
 
 /** Spuren, die der Text nahelegt (Stil/Beschreibung), für die Vorauswahl beim Herauslösen. */
 const TRACK_HINTS: readonly [RegExp, StemTrack][] = [
@@ -296,6 +318,8 @@ export interface SettingsView extends Settings {
   stems_available: boolean;
   /** XL-Spuren-Modell liegt im Modellordner (in den Einstellungen wählbar) */
   stems_xl_available: boolean;
+  /** Demucs-Modelle samt Programm installiert (Stem Separation) */
+  demucs: Record<DemucsModel, boolean>;
   /** Fertige App: XL lässt sich über die Einrichtung nachladen statt über den Installer */
   packaged: boolean;
 }

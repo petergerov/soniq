@@ -1,5 +1,5 @@
 // Songliste der Bibliothek: zeichnet die Zeilen und setzt Klicks in Befehle um.
-import { extractPreset, type ExtractCount, type Song, type Stem, type StemTrack } from "../../../../shared/api.ts";
+import { extractPreset, type DemucsModel, type ExtractCount, type ExtractRequest, type Separator, type Song, type Stem, type StemTrack } from "../../../../shared/api.ts";
 import { confirmDialog, errorDialog } from "../../core/dialogs.ts";
 import { byId, closest, labelIconButtons, PressGuard, setHtml } from "../../core/dom.ts";
 import type { Translate } from "../../i18n/i18n.ts";
@@ -25,7 +25,7 @@ export interface SongListDeps {
   reuse: (song: Song) => void;
   /** Stil von a, Szene von b ins Formular */
   cross: (a: Song, b: Song) => void;
-  extractStems: (songId: string, tracks: StemTrack[]) => Promise<Stem[]>;
+  extractStems: (songId: string, request: ExtractRequest) => Promise<Stem[]>;
   cancelExtract: (songId: string) => Promise<Stem[]>;
   deleteAllStems: (songId: string) => Promise<Stem[]>;
   /** Mixer öffnen (Waveforms, Mute, Solo, Versionen, Downloads) */
@@ -47,8 +47,10 @@ export class SongList {
   private crossFrom: string | null = null;
   /** Songs mit aufgeklappter Stem Separation */
   private readonly openExtract = new Set<string>();
-  /** Gewählte Stem-Anzahl zum Herauslösen, je Song */
+  /** Gewählte Stem-Anzahl zum Herauslösen mit ACE-Step, je Song */
   private readonly extractCounts = new Map<string, ExtractCount>();
+  /** Gewähltes Trennverfahren, je Song */
+  private readonly extractSeparators = new Map<string, Separator>();
   /** Song-ID mit offenem ⋮-Menü */
   private menuOpenId: string | null = null;
 
@@ -85,6 +87,8 @@ export class SongList {
       extractOpen: this.openExtract.has(s.id),
       stemsAvailable: store.stemsAvailable,
       extractCount: this.extractCount(s),
+      extractSeparator: this.separatorFor(s),
+      demucs: store.demucs,
       synthCompute: store.synthCompute,
       menuOpen: s.id === this.menuOpenId,
     })).join("");
@@ -138,8 +142,16 @@ export class SongList {
         this.extractCounts.set(song.id, n);
         return this.render();
       }
+      case "extract-sep": {
+        const sep = button.dataset.sep as Separator;
+        if (song.stems_pending > 0 || !this.separatorUsable(song, sep)) return;
+        this.extractSeparators.set(song.id, sep);
+        return this.render();
+      }
       case "extract-go": {
-        await this.deps.extractStems(song.id, this.tracksForExtract(song));
+        const sep = this.separatorFor(song);
+        const request: ExtractRequest = sep === "ace" ? { separator: "ace", tracks: this.tracksForExtract(song) } : { separator: sep };
+        await this.deps.extractStems(song.id, request);
         await this.deps.store.refresh();
         return;
       }
@@ -161,6 +173,19 @@ export class SongList {
         return store.remove(song.id);
       }
     }
+  }
+
+  /** Gewähltes Verfahren, sonst das beste verfügbare: Demucs 4 Stems, Demucs 6 Stems, ACE-Step. */
+  private separatorFor(song: Song): Separator {
+    const chosen = this.extractSeparators.get(song.id);
+    if (chosen && this.separatorUsable(song, chosen)) return chosen;
+    return (["demucs_ft", "demucs_6s"] as const).find((m) => this.separatorUsable(song, m)) ?? "ace";
+  }
+
+  /** Demucs braucht sein Modell und einen WAV-Song, ACE-Step das Spuren-Modell. */
+  private separatorUsable(song: Song, sep: Separator): boolean {
+    if (sep === "ace") return this.deps.store.stemsAvailable;
+    return this.deps.store.demucs[sep as DemucsModel] && /\.wav$/i.test(song.file ?? "");
   }
 
   private extractCount(song: Song): ExtractCount {

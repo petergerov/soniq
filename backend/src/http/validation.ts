@@ -1,5 +1,5 @@
 // Prüft und normalisiert JSON-Eingaben, bevor sie an die Services gehen.
-import { VARIATION_AXES, type NewVersionRequest, type PresetValues, type SongPatch, type StemTrack } from "../../../shared/api.ts";
+import { SEPARATORS, VARIATION_AXES, type DemucsModel, type ExtractRequest, type NewVersionRequest, type PresetValues, type SongPatch, type StemTrack } from "../../../shared/api.ts";
 import { AXIS_MAX, MAX_VERSION_COUNT, MAX_VERSION_TEXT } from "../../../shared/track-variation.ts";
 import { isStemTrack, orderTracks } from "../domain/stem.ts";
 import type { GenerateCommand } from "../services/generation-service.ts";
@@ -112,10 +112,14 @@ export function parseFolderName(input: Input): string {
   return input.name;
 }
 
-export function parseExtractTracks(input: Input): StemTrack[] {
+/** Stem Separation: { separator: "demucs_ft" | "demucs_6s" } oder ACE-Step mit { tracks } (separator "ace" oder fehlt). */
+export function parseExtractRequest(input: Input): ExtractRequest {
+  const separator = input.separator ?? "ace";
+  if (!(SEPARATORS as readonly unknown[]).includes(separator)) invalid("separator", `one of ${SEPARATORS.join(", ")} expected`);
+  if (separator !== "ace") return { separator: separator as DemucsModel };
   const tracks = input.tracks;
   if (!Array.isArray(tracks) || !tracks.length || !tracks.every(isStemTrack)) invalid("tracks", "non-empty list of track names expected");
-  return orderTracks(tracks);
+  return { separator: "ace", tracks: orderTracks(tracks) };
 }
 
 /** Neue Version einer Spur: Regler −2…+2, Knopf-IDs (unbekannte fallen später weg), Freitext, Anzahl 1–3. */

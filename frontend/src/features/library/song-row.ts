@@ -1,5 +1,5 @@
 // HTML einer Songzeile. Reine Darstellung: kennt weder API noch Ereignisse.
-import { EXTRACT_COUNTS, type ExtractCount, type Song, type SynthCompute } from "../../../../shared/api.ts";
+import { DEMUCS_TRACKS, EXTRACT_COUNTS, SEPARATORS, type DemucsModel, type ExtractCount, type Separator, type Song, type SynthCompute } from "../../../../shared/api.ts";
 import { escapeHtml as esc } from "../../core/dom.ts";
 import { formatDuration, generationTime } from "../../core/format.ts";
 import { stemsMissingText } from "../../core/stems-hint.ts";
@@ -23,8 +23,12 @@ export interface SongRowContext {
   extractOpen: boolean;
   /** Spuren-Modell da? Sonst ist Herauslösen gesperrt */
   stemsAvailable: boolean;
-  /** Gewählte Stem-Anzahl (2 / 4 / 6) */
+  /** Gewählte Stem-Anzahl (2 / 4 / 6) für ACE-Step */
   extractCount: ExtractCount;
+  /** Gewähltes Trennverfahren (Demucs 4 / 6 Stems oder ACE-Step) */
+  extractSeparator: Separator;
+  /** Demucs-Modelle installiert */
+  demucs: Record<DemucsModel, boolean>;
   /** Synth CPU/GPU für Stem Separation */
   synthCompute: SynthCompute;
   /** Überlaufmenü (⋮) dieser Zeile ist offen */
@@ -176,18 +180,35 @@ function extractBlock(song: Song, ctx: SongRowContext): string {
   const { t } = ctx;
   const pending = song.stems_pending > 0;
   if (song.stems > 0 && !pending) return "";   // fertig: weiter im Mixer
-  const chips = EXTRACT_COUNTS.map((n) => {
+  const sep = ctx.extractSeparator;
+  const isWav = /\.wav$/i.test(song.file ?? "");
+  // Demucs nur anbieten, wenn installiert; bei MP3-Songs sichtbar, aber gesperrt (Demucs liest hier nur WAV)
+  const sepChips = SEPARATORS.filter((s) => s === "ace" || ctx.demucs[s]).map((s) => {
+    const usable = s === "ace" ? ctx.stemsAvailable : isWav;
+    const on = s === sep;
+    const tip = s !== "ace" && !isWav ? t("sep_wav_only") : t(`sep_${s}_tip`);
+    return `<button type="button" class="chip ${on ? "on" : ""}" data-a="extract-sep" data-sep="${s}" aria-pressed="${on}" title="${esc(tip)}" ${pending || !usable ? "disabled" : ""}>${esc(t(`sep_${s}`))}</button>`;
+  });
+  const ace = sep === "ace";
+  const ready = ace ? ctx.stemsAvailable : true;
+  const counts = ace ? EXTRACT_COUNTS.map((n) => {
     const on = ctx.extractCount === n;
     return `<button type="button" class="chip ${on ? "on" : ""}" data-a="extract-count" data-count="${n}" aria-pressed="${on}" ${pending || !ctx.stemsAvailable ? "disabled" : ""}>${t("extract_n", n)}</button>`;
-  }).join("");
+  }).join("") : "";
   const action = pending
     ? `<button type="button" class="sek" data-a="extract-cancel">${t("extract_cancel")}</button>`
-    : `<button type="button" class="sek" data-a="extract-go" ${!ctx.stemsAvailable ? "disabled" : ""}>${t("extract_go")}</button>`;
-  const compute = computeBadge(ctx.synthCompute, t);
+    : `<button type="button" class="sek" data-a="extract-go" ${!ready ? "disabled" : ""}>${t("extract_go")}</button>`;
+  const info = ace ? (ctx.stemsAvailable ? t("extract_honest") : stemsMissingText(t)) : t("sep_demucs_info");
+  const hint = ace
+    ? (ctx.stemsAvailable ? t("extract_hint", ctx.extractCount) : "")
+    : `${DEMUCS_TRACKS[sep].map((tr) => t(`track_${tr}`)).join(", ")} · ${t(`sep_${sep}_time`)}`;
+  // CPU/GPU des Modellservers betrifft nur ACE-Step; Demucs rechnet immer auf der CPU
+  const compute = ace ? computeBadge(ctx.synthCompute, t) : `<span class="extract-device cpu">${esc(t("extract_cpu"))}</span>`;
   return `<div class="extract">
-      <div class="extract-head"><div class="small">${(ctx.stemsAvailable ? t("extract_honest") : stemsMissingText(t))}</div>${compute}</div>
-      <div class="chips track-chips">${chips}</div>
-      <div class="extract-bar">${action}<span class="small">${ctx.stemsAvailable ? t("extract_hint", ctx.extractCount) : ""}</span></div>
+      <div class="extract-head"><div class="small">${info}</div>${compute}</div>
+      ${sepChips.length > 1 ? `<div class="chips track-chips extract-seps">${sepChips.join("")}</div>` : ""}
+      ${counts ? `<div class="chips track-chips">${counts}</div>` : ""}
+      <div class="extract-bar">${action}<span class="small">${hint}</span></div>
     </div>`;
 }
 

@@ -25,7 +25,11 @@ export const TRACK_PROMPTS: Record<StemTrack, string> = {
   drums: "drums, drum kit, steady groove", percussion: "percussion, shakers and hand drums", bass: "bass, bass line",
   guitar: "guitar", keyboard: "keyboard, piano", synth: "synthesizer", strings: "string section", brass: "brass section",
   woodwinds: "woodwinds", fx: "sound effects, fx", vocals: "lead vocals", backing_vocals: "backing vocals, harmonies",
+  other: "instruments",   // nur Demucs (Restspur); ACE-Step bekommt sie nie als Spur
 };
+
+/** Muster, das nie passt: für die Demucs-Restspur, die in keinem Stil-Text vorkommt */
+const NEVER = /(?!)/g;
 
 /** Spuren mit Gesang: bekommen die Lyrics, alle anderen "[Instrumental]" */
 export const VOCAL_TRACKS: readonly StemTrack[] = ["vocals", "backing_vocals"];
@@ -48,6 +52,7 @@ const TRACK_STYLE_NOISE: Record<StemTrack, RegExp> = {
   // Gesang erkennt styleForTrack über VOCAL_TAG (auch "singer-songwriter"); diese beiden Einträge nutzt es nicht
   vocals: /\b(?:(?:female|male|lead|backing)\s+)?vocals?\b|\bsingers?(?!-songwriter)\b|\bsinging\b|\bchoir\b/gi,
   backing_vocals: /\b(?:backing\s+vocals?|harmonies|choir|ad[- ]?libs?)\b/gi,
+  other: NEVER,
 };
 
 /** Gesang, auch Stimmlagen und Gesangs-Genres ("singer-songwriter" = Sänger mit Gitarre; nicht "alto sax") */
@@ -107,6 +112,7 @@ const TRACK_ROLE: Record<StemTrack, RegExp> = {
   fx: /\b(?:sound\s+effects?|sfx)\b/gi,
   vocals: /\b(?:(?:soft|powerful|breathy|raspy|soulful|female|male|lead|operatic|whispered|gentle)\s+){0,3}vocals?\b|\b(?:soprano|alto|tenor|baritone)\s+(?:vocals?|voice)\b|\bsinger-songwriters?\b/gi,
   backing_vocals: /\b(?:(?:soft|lush|tight)\s+){0,2}backing\s+vocals?\b|\bharmonies\b|\bchoir\b/gi,
+  other: NEVER,
 };
 
 interface TextSpan { start: number; end: number; text: string }
@@ -179,8 +185,9 @@ export function versionCaption(track: StemTrack, recipe: VersionRecipe, styleCap
   }).join(", ");
 }
 
+/** Spurname, den ACE-Step kennt (für lego, extract, complete; die Demucs-Restspur "other" gehört nicht dazu). */
 export function isStemTrack(value: unknown): value is StemTrack {
-  return STEM_TRACKS.includes(value as StemTrack);
+  return (STEM_TRACKS as readonly string[]).includes(value as string);
 }
 
 /** Spuren in der Reihenfolge "Rhythmus zuerst", ohne Doppelte. */
@@ -208,6 +215,7 @@ export function toStemDto(r: StemRecord): Stem {
   return {
     id: r.id, song_id: r.song_id, track: r.track as StemTrack, kind: r.kind as StemKind, status: r.status as StemStatus,
     position: r.position, message: r.message, url: r.status === "done" && r.file ? `/api/stems/${r.id}/audio` : null,
-    version: r.version ?? 1, active: !!r.active, recipe: r.recipe ? JSON.parse(r.recipe) as StemRecipe : null,
+    // recipe: Wünsche einer neuen Version; bei herausgelösten Spuren steht dort intern das Trennverfahren
+    version: r.version ?? 1, active: !!r.active, recipe: r.kind === "version" && r.recipe ? JSON.parse(r.recipe) as StemRecipe : null,
   };
 }

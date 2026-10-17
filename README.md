@@ -40,6 +40,11 @@ these stay greyed out. Add it later with `./install.command --stems` (Windows `.
 (`acestep-v15-xl-base`, 5.3 GB, about twice as long per track): `--xl-stems` (Windows `-XlStems`) or in the Mac app
 under Gear › Track model. Standard stays the default: in a listening test its tracks came out cleaner.
 
+**Stem Separation with Demucs:** `install.command` and `arch_linux.sh` also build [demucs.cpp](https://github.com/sevagh/demucs.cpp)
+and download Meta's Demucs models (`htdemucs_ft`, best quality, 4 stems; `htdemucs_6s` with guitar and piano; 390 MB
+together, checked by SHA-256). They split the actual mix on the CPU and need no track model. The Mac app, the Debian
+package and Windows do not include Demucs yet.
+
 ## Usage
 
 - **start** starts the model server and the app and opens http://localhost:8765

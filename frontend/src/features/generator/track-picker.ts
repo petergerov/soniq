@@ -24,7 +24,7 @@ export class TrackPicker {
   private readonly chips = byId("trackChips");
   private readonly hint = byId("trackHint");
   private mode: GenerationMode = storage.get(MODE_KEY) === "tracks" ? "tracks" : "full";
-  private readonly chosen = new Set<StemTrack>(storage.getJson<StemTrack[]>(TRACKS_KEY, [...DEFAULT_TRACKS]).filter((t) => STEM_TRACKS.includes(t)));
+  private readonly chosen = new Set<StemTrack>(storage.getJson<StemTrack[]>(TRACKS_KEY, [...DEFAULT_TRACKS]).filter((t) => (STEM_TRACKS as readonly string[]).includes(t)));
   /** Spuren-Modell vorhanden? Bis die Einstellungen geladen sind: ja (der Server prüft ohnehin) */
   private available = true;
 

@@ -50,6 +50,7 @@ const replace = new ReplaceView({
 void api.settings().then((s) => {
   setPackagedApp(s.packaged);
   store.stemsAvailable = s.stems_available;
+  store.demucs = s.demucs;
   replace.setAvailable(s.stems_available);
 }, () => {});
 
@@ -78,7 +79,7 @@ songList = new SongList({
   store, played, playback: player, drag, t, play: playSong, // Übernehmen und Kreuzen füllen das Formular: dafür auf die Seite „Erzeugen“ wechseln
   reuse: (song) => { form.fill(song); router.go("generate"); },
   cross: (a, b) => { form.cross(a, b); router.go("generate"); },
-  extractStems: (songId, tracks) => api.extractStems(songId, tracks),
+  extractStems: (songId, request) => api.extractStems(songId, request),
   cancelExtract: (songId) => api.cancelExtract(songId),
   deleteAllStems: (songId) => api.deleteAllStems(songId),
   openMixer: (song) => router.go("mixer", song.id),
@@ -125,6 +126,7 @@ function refreshStemsAvailable(): void {
   void api.settings().then((s) => {
     setPackagedApp(s.packaged);
     store.stemsAvailable = s.stems_available;
+    store.demucs = s.demucs;
     replace.setAvailable(s.stems_available);
     form.setStemsAvailable(s.stems_available);
     songList.render();

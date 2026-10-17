@@ -9,7 +9,7 @@ import type { StemVersions } from "../../services/stem-versions.ts";
 import { HttpError, queryBool, readFormData, readJson } from "../request.ts";
 import { DownloadResponse, FileResponse, ZipResponse } from "../responses.ts";
 import type { Router } from "../router.ts";
-import { parseExtractTracks, parseMixGains, parseNewVersion, parseStemUploadCommand } from "../validation.ts";
+import { parseExtractRequest, parseMixGains, parseNewVersion, parseStemUploadCommand } from "../validation.ts";
 
 export interface StemRouteServices {
   stems: StemService;
@@ -23,7 +23,7 @@ export function registerStemRoutes(router: Router, s: StemRouteServices): void {
   router
     .get("/api/songs/:id/stems", ({ params }) => s.stems.list(params.id!))
     .post("/api/songs/:id/stems", async ({ req, params }) => {
-      s.extract.enqueue(params.id!, parseExtractTracks(await readJson(req)));
+      s.extract.enqueue(params.id!, parseExtractRequest(await readJson(req)));
       s.jobs.wake();
       return s.stems.list(params.id!);
     })

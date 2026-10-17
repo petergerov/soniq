@@ -6,7 +6,7 @@
 // nur die aktive. Mit mehreren Versionen lässt sich der Kanal aufklappen, um sie zu sehen und umzuschalten (sofort,
 // auch während der Wiedergabe). ✦ öffnet das Feld für eine neue Version (Knöpfe, Regler, Freitext); die alte bleibt.
 import WaveSurfer from "wavesurfer.js";
-import { activeTakes, SOURCE_CHANNEL, VARIATION_AXES, type Song, type Stem, type StemRecipe, type StemStatus, type StemTrack, type VariationAxis } from "../../../../shared/api.ts";
+import { activeTakes, OTHER_TRACK, SOURCE_CHANNEL, VARIATION_AXES, type Song, type Stem, type StemRecipe, type StemStatus, type StemTrack, type VariationAxis } from "../../../../shared/api.ts";
 import { AXIS_MAX, chipsFor, MAX_VERSION_COUNT, MAX_VERSION_TEXT, variationTags, type VariationChip } from "../../../../shared/track-variation.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { confirmDialog, errorDialog } from "../../core/dialogs.ts";
@@ -194,7 +194,8 @@ export class MixerView {
     const row = document.createElement("div");
     row.className = `mixer-track${o.muted ? " is-muted" : ""}`;
     row.dataset.ch = o.key;
-    const spark = o.track
+    // Neue Version nur für Spuren, die ACE-Step kennt (nicht die Demucs-Restspur "other")
+    const spark = o.track && o.track !== OTHER_TRACK
       ? `<button type="button" class="sek icon mixer-new" data-a="ver-open" title="${t("ver_new")}" aria-label="${t("ver_new")}" aria-expanded="false">${SPARK_SVG}</button>`
       : "";
     row.innerHTML = `

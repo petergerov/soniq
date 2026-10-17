@@ -120,6 +120,10 @@ for e in $FILES; do
   IFS=: read -r f mb _ <<< "$e"
   [ -f "$MODELS/$f" ] || NEED_MB=$(( NEED_MB + mb ))
 done
+for e in $DEMUCS_FILES; do   # Demucs (Stem Separation) gehört immer dazu
+  IFS=: read -r f mb _ <<< "$e"
+  [ -f "$MODELS/demucs/$f" ] || NEED_MB=$(( NEED_MB + mb ))
+done
 NEED_GB=$(( (NEED_MB + 1023) / 1024 + 3 ))   # + Build, Node.js und etwas Platz für Songs
 echo "  Download: $(( (NEED_MB + 1023) / 1024 )) GB · about $NEED_GB GB free space needed in total"
 [ "$FREE_GB" -ge "$NEED_GB" ] || abbruch "Not enough disk space: $FREE_GB GB free, about $NEED_GB GB needed."
@@ -173,6 +177,11 @@ else
 fi
 engine_rpath
 
+# --- 4b. Stem Separation: demucs.cpp (auf dem Mac mit Accelerate, ohne Zusatzpakete) ----
+schritt "Stem separation demucs.cpp (${DEMUCS_REV:0:7})"
+demucs_build > "$DATA/demucs-build.log" 2>&1 || abbruch "Building demucs.cpp failed, details in data/demucs-build.log"
+echo "  done"
+
 # --- 5. Modelle -----------------------------------------------------------------
 schritt "Downloading models"
 mkdir -p "$MODELS"
@@ -191,6 +200,8 @@ for e in $FILES; do
   mv "$MODELS/$f.part" "$MODELS/$f"
   NEW_MODELS=1
 done
+echo "  Demucs (stem separation):"
+demucs_models || abbruch "Downloading the Demucs models failed. Running install again resumes the download."
 # Der Modellserver liest die Modellliste nur beim Start: nach neuen Modellen laufende Server beenden, ON startet sie neu.
 if [ "$NEW_MODELS" = 1 ]; then
   for p in "$SYNTH_PORT" "$LM_PORT"; do laeuft "$p" && kill $(lsof -i :"$p" -sTCP:LISTEN -t) 2>/dev/null; done

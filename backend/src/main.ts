@@ -15,6 +15,7 @@ import { registerSystemRoutes } from "./http/routes/system-routes.ts";
 import { Router } from "./http/router.ts";
 import { StaticFiles } from "./http/static-files.ts";
 import { AceStepEngine } from "./infrastructure/ace-step-engine.ts";
+import { DemucsSeparator } from "./infrastructure/demucs-separator.ts";
 import { Database } from "./infrastructure/database.ts";
 import { EngineConf } from "./infrastructure/engine-conf.ts";
 import { EngineSupervisor } from "./infrastructure/engine-supervisor.ts";
@@ -88,7 +89,8 @@ async function main(): Promise<void> {
   const stemService = new StemService({ stems, songs, storage });
   const stemsAvailable = () => Object.values(STEM_MODELS).some(modelInstalled);
   const trackByTrack = new TrackByTrack({ stems, storage, removeStems: (id) => stemService.removeForSong(id) });
-  const extract = new ExtractTracks({ stems, songs, storage, stemsAvailable });
+  const demucs = new DemucsSeparator({ binDir: config.demucsBinDir, modelsDir: config.modelsDir, tmpDir: join(config.dataDir, "tmp"), log });
+  const extract = new ExtractTracks({ stems, songs, storage, stemsAvailable, demucs });
   const versions = new StemVersions({ stems, songs, storage, stemsAvailable });
   const replaceAccompany = new ReplaceAccompany({ stems, storage, removeStems: (id) => stemService.removeForSong(id) });
   const worker = new GenerationWorker({
@@ -102,7 +104,9 @@ async function main(): Promise<void> {
     songs, folders, storage, stemCounts: () => stems.counts(), pendingStemJobs: () => stems.pendingStemJobs(),
   });
   const folderService = new FolderService(folders, songs);
-  const settingsService = new SettingsService({ settings, songs, storage, modelsDir: config.modelsDir, packaged: config.packaged });
+  const settingsService = new SettingsService({
+    settings, songs, storage, modelsDir: config.modelsDir, packaged: config.packaged, demucsAvailable: () => demucs.availability(),
+  });
   const analysis = new AnalysisService(settings, engineFactory);
   const system = new SystemService({
     root: config.root, dataDir: config.dataDir, platform: config.platform, packaged: config.packaged,
