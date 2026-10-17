@@ -36,6 +36,10 @@ export interface MixerViewDeps {
   back: () => void;
   /** Haupt-Player pausieren, solange der Mixer läuft */
   pauseMainPlayer: () => void;
+  /** Haupt-Player anhalten; lief dort gerade dieser Song, seine Stelle (der Mixer spielt dort weiter) */
+  handOffMainPlayer: (songId: string) => number | null;
+  /** Der Mixer spielte beim Verlassen: der Haupt-Player spielt den Song an dieser Stelle weiter */
+  resumeMainPlayer: (songId: string, time: number) => void;
   /** Spuren-Modell vorhanden (sonst keine neuen Versionen) */
   stemsAvailable: () => boolean;
 }
@@ -99,6 +103,8 @@ export class MixerView {
   private pollTimer: ReturnType<typeof setTimeout> | undefined;
   /** Fortschritt der laufenden Version (Song-Meldung) */
   private progress: string | null = null;
+  /** Stelle, an der der Haupt-Player den Song beim Öffnen spielte: dort geht es weiter, sobald alles geladen ist */
+  private resumeAt: number | null = null;
 
   constructor(deps: MixerViewDeps) {
     this.deps = deps;
@@ -123,8 +129,9 @@ export class MixerView {
   /** Mixer öffnen bzw. Song wechseln. */
   async open(songId: string): Promise<void> {
     if (this.songId === songId && this.channels.length) return;
-    this.deps.pauseMainPlayer();
+    const resumeAt = this.deps.handOffMainPlayer(songId);
     this.destroy();
+    this.resumeAt = resumeAt;
     this.songId = songId;
     this.root.classList.add("loading");
     this.playBtn.disabled = true;
@@ -173,8 +180,11 @@ export class MixerView {
 
   /** Mixer verlassen: Player und Speicher freigeben. */
   close(): void {
+    const songId = this.songId;
+    const time = this.playing ? this.master()?.getCurrentTime() : undefined;
     this.destroy();
     this.songId = null;
+    if (songId && time !== undefined) this.deps.resumeMainPlayer(songId, time);
   }
 
   refreshTexts(): void {
@@ -399,6 +409,12 @@ export class MixerView {
     this.playBtn.disabled = false;
     this.applyGains();
     this.updateTransport();
+    const resumeAt = this.resumeAt;
+    this.resumeAt = null;
+    if (resumeAt === null) return;
+    this.seekAll(Math.min(resumeAt, Math.max(0, (this.master()?.getDuration() ?? 0) - 0.1)));
+    // Ohne Nutzergeste kann der Browser das Abspielen verweigern: dann steht der Mixer an der Stelle bereit
+    this.togglePlay().catch(() => this.pauseAll());
   }
 
   private async togglePlay(): Promise<void> {
@@ -841,6 +857,7 @@ export class MixerView {
     this.editor = null;
     this.progress = null;
     this.loaded = false;
+    this.resumeAt = null;
     this.tracksEl.innerHTML = "";
   }
 }

@@ -73,6 +73,11 @@ const player = new AudioPlayer({
 });
 const mixer = new MixerView({
   api, t, findSong: (id) => store.find(id), back: () => router.go("library"), pauseMainPlayer: () => player.pause(),
+  handOffMainPlayer: (songId) => player.handOff(songId),
+  resumeMainPlayer: (songId, time) => {
+    const song = store.find(songId);
+    if (song?.url) playSong(song, { startAt: time });
+  },
   stemsAvailable: () => store.stemsAvailable,
 });
 songList = new SongList({

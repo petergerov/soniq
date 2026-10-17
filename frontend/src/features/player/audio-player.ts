@@ -20,6 +20,8 @@ export interface AudioPlayerDeps {
 export interface PlayOptions {
   /** A/B-Vergleich: an derselben Stelle weiterspielen statt von vorn */
   keepPosition?: boolean;
+  /** An dieser Stelle (Sekunden) starten, z. B. nach dem Mixer */
+  startAt?: number;
 }
 
 export class AudioPlayer implements PlaybackState {
@@ -37,6 +39,8 @@ export class AudioPlayer implements PlaybackState {
   private currentSong: Song | null = null;
   /** Jede Wiedergabe-Anfrage bekommt eine Nummer: nach dem Laden zählt nur die neueste */
   private requestSeq = 0;
+  /** Ein Song wird gerade geladen und soll danach starten */
+  private loading = false;
 
   constructor(deps: AudioPlayerDeps) {
     this.deps = deps;
@@ -80,6 +84,16 @@ export class AudioPlayer implements PlaybackState {
     if (this.ws?.isPlaying()) this.ws.pause();
   }
 
+  /** Für den Mixer: anhalten und, wenn gerade dieser Song lief, die Stelle zurückgeben (der Mixer spielt dort weiter). */
+  handOff(songId: string): number | null {
+    const loading = this.loading;
+    if (loading) { this.requestSeq++; this.loading = false; }   // der noch ladende Song startet nicht mehr
+    else if (!this.ws?.isPlaying()) return null;
+    else this.ws.pause();
+    if (this.current !== songId) return null;
+    return loading ? 0 : this.ws!.getCurrentTime();
+  }
+
   /** Texte neu setzen (nach Sprachwechsel). */
   refreshTexts(): void {
     this.volume?.update();
@@ -88,14 +102,19 @@ export class AudioPlayer implements PlaybackState {
 
   async play(song: Song, options: PlayOptions = {}): Promise<void> {
     const ws = this.ensureWaveSurfer();
+    const { startAt } = options;
     if (this.current === song.id) {
-      await ws.playPause();
+      if (startAt === undefined) await ws.playPause();
+      else {
+        ws.setTime(Math.min(startAt, Math.max(0, ws.getDuration() - 0.1)));
+        await ws.play();
+      }
       return;
     }
     const seq = ++this.requestSeq;
     const keep = options.keepPosition && this.current !== null;
-    const position = keep ? ws.getCurrentTime() : 0;
-    const resume = !keep || ws.isPlaying();
+    const position = startAt ?? (keep ? ws.getCurrentTime() : 0);
+    const resume = startAt !== undefined || !keep || ws.isPlaying();
     if (ws.isPlaying()) ws.pause();   // der bisherige Song verstummt sofort, nicht erst nach dem Laden des neuen
     this.current = song.id;
     this.currentSong = song;
@@ -104,13 +123,15 @@ export class AudioPlayer implements PlaybackState {
     this.title.textContent = song.title || song.caption;
     this.title.title = `Seed ${song.seed}` + (song.result_meta?.keyscale ? ` · ${song.result_meta.keyscale}` : "");
     this.onStateChange();
+    this.loading = resume;
     try {
       await ws.load(song.url!);
     } catch (err) {
-      if (seq === this.requestSeq) throw err;
+      if (seq === this.requestSeq) { this.loading = false; throw err; }
       return;   // abgebrochen, weil inzwischen ein anderer Song gewählt wurde
     }
     if (seq !== this.requestSeq) return;
+    this.loading = false;
     if (position > 0) ws.setTime(Math.min(position, Math.max(0, ws.getDuration() - 0.1)));
     if (resume) await ws.play();
     this.onStateChange();
