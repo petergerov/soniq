@@ -520,7 +520,12 @@ body.in-mixer { padding-bottom: 24px; }
 .mixer-mute[aria-pressed=true] { background: var(--error-tint); color: var(--error); }
 .mixer-solo[aria-pressed=true] { background: var(--success-tint); color: var(--success); }
 .mixer-wave { min-width: 0; height: 48px; }
-.mixer-wave wave { overflow: hidden !important; }
+/* Wellenform (Player und Mixer): Balken, darüber der gespielte Teil in Akzentfarbe */
+.wave { position: relative; width: 100%; overflow: hidden; }
+.wave canvas { display: block; }
+.wave.seekable { cursor: pointer; }
+.wave-progress { position: absolute; inset: 0 auto 0 0; width: 0; overflow: hidden; pointer-events: none; }
+.wave-cursor { position: absolute; top: 0; bottom: 0; width: 1px; margin-left: -1px; background: var(--wave-progress); pointer-events: none; }
 .mixer-vol { display: flex; align-items: center; justify-content: flex-end; margin: 0; min-width: 36px; }
 .mixer-vol-btn { border-color: transparent; background: transparent; color: var(--muted); flex: none; }
 .mixer-vol.is-open .mixer-vol-btn, .mixer-vol-btn:hover { color: var(--text); }

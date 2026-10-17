@@ -1,11 +1,11 @@
 // Mixer: alle fertigen Spuren eines Songs mit Waveform, Lautstärke, Mute und Solo, dazu die hochgeladene Vorlage
-// (Ersetzen/Begleiten). Wiedergabe synchron über mehrere WaveSurfer-Instanzen; Solo dämpft alle anderen.
+// (Ersetzen/Begleiten). Alle Versionen laufen als Ebenen einer Szene in der gemeinsamen AudioEngine (sample-genau
+// zusammen); läuft der Song schon im Player, geht es an derselben Stelle ohne Pause weiter. Solo dämpft alle anderen.
 // Herunterladen: jede Spur einzeln, alle als ZIP, und der Mix so, wie er gerade klingt.
 //
 // Versionen: Jede Spur ist ein Kanal mit einer oder mehreren Versionen ("Takes"), die alle mitlaufen; zu hören ist
 // nur die aktive. Mit mehreren Versionen lässt sich der Kanal aufklappen, um sie zu sehen und umzuschalten (sofort,
 // auch während der Wiedergabe). ✦ öffnet das Feld für eine neue Version (Knöpfe, Regler, Freitext); die alte bleibt.
-import WaveSurfer from "wavesurfer.js";
 import { activeTakes, OTHER_TRACK, SOURCE_CHANNEL, VARIATION_AXES, type Song, type Stem, type StemRecipe, type StemStatus, type StemTrack, type VariationAxis } from "../../../../shared/api.ts";
 import { AXIS_MAX, chipsFor, MAX_VERSION_COUNT, MAX_VERSION_TEXT, variationTags, type VariationChip } from "../../../../shared/track-variation.ts";
 import type { ApiClient } from "../../core/api-client.ts";
@@ -15,6 +15,8 @@ import { formatDuration } from "../../core/format.ts";
 import { stemsMissingText } from "../../core/stems-hint.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import { displayTitle } from "../library/song-row.ts";
+import type { AudioEngine } from "../player/audio-engine.ts";
+import { Waveform } from "../player/waveform.ts";
 
 const SPEAKER_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="w1" d="M16 9a3.5 3.5 0 0 1 0 6"/><path class="w2" d="M18.5 6.5a7 7 0 0 1 0 11"/><path class="mx" d="M17 9l5 6M22 9l-5 6"/>
@@ -34,17 +36,13 @@ export interface MixerViewDeps {
   findSong: (id: string) => Song | undefined;
   /** Zurück zur Bibliothek */
   back: () => void;
-  /** Haupt-Player pausieren, solange der Mixer läuft */
-  pauseMainPlayer: () => void;
-  /** Haupt-Player anhalten; lief dort gerade dieser Song, seine Stelle (der Mixer spielt dort weiter) */
-  handOffMainPlayer: (songId: string) => number | null;
-  /** Der Mixer spielte beim Verlassen: der Haupt-Player spielt den Song an dieser Stelle weiter */
-  resumeMainPlayer: (songId: string, time: number) => void;
+  /** Gemeinsame Wiedergabe mit dem Player */
+  engine: AudioEngine;
   /** Spuren-Modell vorhanden (sonst keine neuen Versionen) */
   stemsAvailable: () => boolean;
 }
 
-/** Eine Version eines Kanals: Spur-ID (oder SOURCE_CHANNEL für die Vorlage) und ihre Waveform, sobald fertig */
+/** Eine Version eines Kanals: Spur-ID (oder SOURCE_CHANNEL für die Vorlage), ihre Wellenform und, sobald geladen, ihr Audio */
 interface Take {
   id: string;
   version: number;
@@ -52,7 +50,10 @@ interface Take {
   message: string | null;
   url: string | null;
   recipe: StemRecipe | null;
-  ws: WaveSurfer | null;
+  wave: Waveform | null;
+  buffer: AudioBuffer | null;
+  /** Laden fehlgeschlagen */
+  failed: boolean;
   lane: HTMLElement;
 }
 
@@ -93,9 +94,7 @@ export class MixerView {
   private readonly zipLink = byId<HTMLAnchorElement>("mixerZip");
   private channels: Channel[] = [];
   private songId: string | null = null;
-  private syncing = false;
-  private playing = false;
-  /** Alle beim Öffnen vorhandenen Waveforms sind geladen; später fertige Versionen steigen synchron ein */
+  /** Alle beim Öffnen vorhandenen Versionen sind geladen (und spielen in der Engine); später fertige steigen synchron ein */
   private loaded = false;
   /** Mix wird gerade auf dem Server gemischt und geladen */
   private mixing = false;
@@ -103,20 +102,15 @@ export class MixerView {
   private pollTimer: ReturnType<typeof setTimeout> | undefined;
   /** Fortschritt der laufenden Version (Song-Meldung) */
   private progress: string | null = null;
-  /** Stelle, an der der Haupt-Player den Song beim Öffnen spielte: dort geht es weiter, sobald alles geladen ist */
-  private resumeAt: number | null = null;
 
   constructor(deps: MixerViewDeps) {
     this.deps = deps;
     byId("mixerBack").addEventListener("click", () => deps.back());
     this.playBtn.addEventListener("click", () => void this.togglePlay());
     this.mixButton.addEventListener("click", () => void this.downloadMix());
-    this.scrub.addEventListener("input", () => {
-      const master = this.master();
-      if (!master) return;
-      const t = (Number(this.scrub.value) / 1000) * (master.getDuration() || 0);
-      this.seekAll(t);
-    });
+    this.scrub.addEventListener("input", () => this.seekTo((Number(this.scrub.value) / 1000) * deps.engine.duration));
+    deps.engine.onState(() => this.updatePlayButton());
+    deps.engine.onTick(() => this.updateTransport());
     this.tracksEl.addEventListener("click", (e) => this.onTrackClick(e));
     this.tracksEl.addEventListener("input", (e) => this.onTrackInput(e));
     document.addEventListener("pointerdown", (e) => {
@@ -129,12 +123,13 @@ export class MixerView {
   /** Mixer öffnen bzw. Song wechseln. */
   async open(songId: string): Promise<void> {
     if (this.songId === songId && this.channels.length) return;
-    const resumeAt = this.deps.handOffMainPlayer(songId);
+    // Ein anderer Song verstummt; läuft dieser schon (Player), spielt er weiter, bis die Spuren geladen sind
+    if (this.deps.engine.songId !== songId) this.deps.engine.pause();
     this.destroy();
-    this.resumeAt = resumeAt;
     this.songId = songId;
     this.root.classList.add("loading");
     this.playBtn.disabled = true;
+    this.updatePlayButton();
     this.timeEl.textContent = "…";
     this.scrub.value = "0";
     this.zipLink.hidden = true;
@@ -175,16 +170,26 @@ export class MixerView {
     this.zipLink.hidden = false;
     this.applyGains();
     this.root.classList.remove("loading");
+    this.updateTransport();
+    this.checkAllReady();
     this.schedulePoll();
   }
 
-  /** Mixer verlassen: Player und Speicher freigeben. */
-  close(): void {
+  /** Mixer verlassen und den Song zurückgeben, der offen war. Die Wiedergabe läuft weiter: der Player übernimmt sie. */
+  close(): string | null {
     const songId = this.songId;
-    const time = this.playing ? this.master()?.getCurrentTime() : undefined;
     this.destroy();
     this.songId = null;
-    if (songId && time !== undefined) this.deps.resumeMainPlayer(songId, time);
+    return songId;
+  }
+
+  /** Szene dieses Mixers in der Engine */
+  private key(): string {
+    return `mixer:${this.songId}`;
+  }
+
+  private owns(): boolean {
+    return this.songId !== null && this.deps.engine.sceneKey === this.key();
   }
 
   refreshTexts(): void {
@@ -247,7 +252,7 @@ export class MixerView {
         else {
           const finished = take.status !== "done" && stem.status === "done";
           Object.assign(take, { status: stem.status, message: stem.message, url: stem.url, recipe: stem.recipe });
-          if (finished) this.loadWave(take);
+          if (finished) this.loadTake(take);
         }
       }
       ch.takes.sort((a, b) => a.version - b.version);
@@ -265,58 +270,41 @@ export class MixerView {
     lane.dataset.take = s.id;
     lane.innerHTML = `<div class="mixer-lane-head"></div><div class="mixer-wave"></div>`;
     ch.row.querySelector(".mixer-lanes")!.appendChild(lane);
-    const take: Take = { ...s, ws: null, lane };
+    const take: Take = { ...s, wave: null, buffer: null, failed: false, lane };
     ch.takes.push(take);
-    if (take.status === "done") this.loadWave(take);
+    if (take.status === "done") this.loadTake(take);
   }
 
   private removeTake(ch: Channel, take: Take): void {
-    take.ws?.destroy();
+    take.wave?.destroy();
+    take.wave = null;
     take.lane.remove();
     ch.takes = ch.takes.filter((x) => x !== take);
+    this.deps.engine.removeLayer(this.key(), take.id);
   }
 
-  private loadWave(take: Take): void {
-    if (take.ws || !take.url) return;
-    const css = getComputedStyle(document.documentElement);
+  private loadTake(take: Take): void {
+    if (take.wave || !take.url) return;
     const container = take.lane.querySelector<HTMLElement>(".mixer-wave")!;
     container.classList.remove("is-pending");
-    const ws = WaveSurfer.create({
-      container, height: 48, barWidth: 2, barGap: 1, barRadius: 2, cursorWidth: 1,
-      waveColor: css.getPropertyValue("--wave").trim() || "#2b2b36",
-      progressColor: css.getPropertyValue("--wave-progress").trim() || "#a78bfa",
-      interact: true, url: take.url,
+    take.wave = new Waveform(container, {
+      height: 48, cursor: true,
+      onSeek: (f) => { if (take.buffer) this.seekTo(f * take.buffer.duration); },
     });
-    take.ws = ws;
+    const songId = this.songId;
     const lateJoiner = this.loaded;
-    ws.on("ready", () => {
+    this.deps.engine.load(take.url).then((buffer) => {
+      if (this.songId !== songId || !take.wave) return;   // Mixer zu oder Version gelöscht
+      take.buffer = buffer;
+      take.wave.setBuffer(buffer);
       if (lateJoiner) {
         // Später fertig gewordene Version: an der aktuellen Stelle einsteigen
-        this.applyGains();
-        const master = this.master();
-        if (master && master !== ws) {
-          ws.setTime(master.getCurrentTime());
-          if (this.playing) void ws.play();
-        }
-        return;
-      }
-      if (this.allWaves().every((w) => w.getDuration() > 0)) this.onAllReady();
-    });
-    ws.on("timeupdate", () => {
-      if (this.master() === ws) this.updateTransport();
-    });
-    ws.on("seeking", (time) => {
-      if (this.syncing) return;
-      this.seekAll(time);
-    });
-    ws.on("finish", () => {
-      if (this.master() === ws) this.setPlaying(false);
-    });
-    ws.on("play", () => {
-      if (this.master() === ws) this.setPlaying(true);
-    });
-    ws.on("pause", () => {
-      if (this.master() === ws && !this.syncing) this.setPlaying(false);
+        this.deps.engine.addLayer(this.key(), { id: take.id, buffer, gain: this.gains().get(take.id) ?? 0 });
+        this.updateTransport();
+      } else this.checkAllReady();
+    }, () => {
+      take.failed = true;
+      if (!lateJoiner) this.checkAllReady();
     });
   }
 
@@ -395,79 +383,64 @@ export class MixerView {
 
   // ——— Wiedergabe ———
 
-  private allWaves(): WaveSurfer[] {
-    return this.channels.flatMap((ch) => ch.takes.map((x) => x.ws).filter((ws): ws is WaveSurfer => !!ws));
+  private allTakes(): Take[] {
+    return this.channels.flatMap((ch) => ch.takes);
   }
 
-  /** Taktgeber für Transport und Zeit: die erste Waveform (Version 1 der ersten Spur bleibt es auch mit neuen Versionen) */
-  private master(): WaveSurfer | undefined {
-    return this.allWaves()[0];
+  /** Länge des Songs: die längste geladene Version */
+  private duration(): number {
+    return this.allTakes().reduce((d, x) => Math.max(d, x.buffer?.duration ?? 0), 0);
   }
 
+  private checkAllReady(): void {
+    if (this.loaded) return;
+    const pending = this.allTakes().some((x) => x.status === "done" && x.url && !x.buffer && !x.failed);
+    if (!pending) this.onAllReady();
+  }
+
+  /**
+   * Alles geladen: die Spuren werden zur Szene der Engine. Spielte dieser Song schon (im Player), blendet sie an
+   * derselben Stelle über; sonst steht der Mixer am Anfang bereit.
+   */
   private onAllReady(): void {
     this.loaded = true;
+    const engine = this.deps.engine;
+    const same = engine.songId === this.songId;
+    const gains = this.gains();
+    const layers = this.allTakes().filter((x) => x.buffer).map((x) => ({ id: x.id, buffer: x.buffer!, gain: gains.get(x.id) ?? 0 }));
+    if (!layers.length) return;   // nichts Abspielbares (nur wartende Versionen): der Song im Player läuft weiter
     this.playBtn.disabled = false;
+    engine.show(this.key(), this.songId!, layers, same ? { at: "continue", play: "continue" } : { at: 0, play: false });
     this.applyGains();
     this.updateTransport();
-    const resumeAt = this.resumeAt;
-    this.resumeAt = null;
-    if (resumeAt === null) return;
-    this.seekAll(Math.min(resumeAt, Math.max(0, (this.master()?.getDuration() ?? 0) - 0.1)));
-    // Ohne Nutzergeste kann der Browser das Abspielen verweigern: dann steht der Mixer an der Stelle bereit
-    this.togglePlay().catch(() => this.pauseAll());
+    this.updateEditor();
   }
 
-  private async togglePlay(): Promise<void> {
-    const master = this.master();
-    if (!master) return;
-    this.deps.pauseMainPlayer();
-    if (master.isPlaying()) {
-      this.pauseAll();
-      return;
-    }
-    // Alle Spuren auf denselben Zeitpunkt bringen, dann starten
-    const t = master.getCurrentTime();
-    this.syncing = true;
-    try {
-      await Promise.all(this.allWaves().map(async (ws) => {
-        ws.setTime(t);
-        await ws.play();
-      }));
-    } finally {
-      this.syncing = false;
-    }
-    this.setPlaying(true);
+  private togglePlay(): void {
+    if (this.owns()) this.deps.engine.toggle();
   }
 
-  private pauseAll(): void {
-    this.syncing = true;
-    this.allWaves().forEach((ws) => { if (ws.isPlaying()) ws.pause(); });
-    this.syncing = false;
-    this.setPlaying(false);
+  /** Springen: auch schon während des Ladens, wenn der Song im Player läuft (die Spuren steigen dort ein) */
+  private seekTo(time: number): void {
+    if (this.songId && this.deps.engine.songId === this.songId) this.deps.engine.seek(time);
   }
 
-  private seekAll(time: number): void {
-    this.syncing = true;
-    this.allWaves().forEach((ws) => ws.setTime(time));
-    this.syncing = false;
-    this.updateTransport();
-  }
-
-  private setPlaying(playing: boolean): void {
-    this.playing = playing;
+  private updatePlayButton(): void {
+    const playing = this.owns() && this.deps.engine.playing;
     this.playBtn.textContent = playing ? "❚❚" : "▶";
     this.playBtn.setAttribute("aria-label", this.deps.t(playing ? "pause" : "play"));
   }
 
   private updateTransport(): void {
-    const master = this.master();
-    if (!master) return;
-    const cur = master.getCurrentTime();
-    const dur = master.getDuration() || 0;
+    const engine = this.deps.engine;
+    if (!this.songId || engine.songId !== this.songId) return;
+    const cur = engine.position;
+    const dur = engine.duration;
     this.timeEl.textContent = `${formatDuration(cur)} / ${formatDuration(dur)}`;
     if (document.activeElement !== this.scrub) {
       this.scrub.value = String(dur > 0 ? Math.round((cur / dur) * 1000) : 0);
     }
+    this.allTakes().forEach((x) => x.wave?.setProgress(x.buffer ? cur / x.buffer.duration : 0));
   }
 
   // ——— Bedienung ———
@@ -597,7 +570,7 @@ export class MixerView {
   private applyGains(): void {
     const gains = this.gains();
     this.channels.forEach((ch) => {
-      ch.takes.forEach((x) => x.ws?.setVolume(gains.get(x.id) ?? 0));
+      ch.takes.forEach((x) => this.deps.engine.setGain(this.key(), x.id, gains.get(x.id) ?? 0));
       ch.row.classList.toggle("is-silent", !gains.get(ch.activeId));
     });
     this.updateMixButton();
@@ -724,7 +697,7 @@ export class MixerView {
     box.querySelector(".mixer-ver-prompt")!.innerHTML = tags.length
       ? `${esc(tags.join(", "))} <span class="faint">${esc(t("ver_style"))}</span>`
       : `<span class="faint">${esc(t("ver_same"))}</span>`;
-    const duration = this.master()?.getDuration() ?? 0;
+    const duration = this.duration();
     const minutes = Math.max(1, Math.round((ed.count * SECONDS_PER_TRACK_MINUTE * duration) / 3600));
     box.querySelector(".mixer-ver-eta")!.textContent = duration ? t("ver_eta", minutes) : "";
   }
@@ -851,13 +824,11 @@ export class MixerView {
 
   private destroy(): void {
     clearTimeout(this.pollTimer);
-    if (this.channels.length) this.pauseAll();
-    this.channels.forEach((ch) => ch.takes.forEach((x) => x.ws?.destroy()));
+    this.channels.forEach((ch) => ch.takes.forEach((x) => { x.wave?.destroy(); x.wave = null; }));
     this.channels = [];
     this.editor = null;
     this.progress = null;
     this.loaded = false;
-    this.resumeAt = null;
     this.tracksEl.innerHTML = "";
   }
 }

@@ -158,7 +158,7 @@ The interface is built on each computer into `frontend/dist` (not in the repo): 
 for example after an update. Until it is done the app shows a short "getting ready" page; the output goes to `data/frontend-build.log`.
 
 ```bash
-npm install            # developer tools (TypeScript, Vite, wavesurfer.js)
+npm install            # developer tools (TypeScript, Vite)
 npm run dev            # backend with --watch on :8765 and Vite with hot reload on :5173 (proxies /api)
 npm run typecheck      # type-check both parts
 npm run build          # type-check and build the interface into frontend/dist (not committed)
@@ -224,4 +224,3 @@ Check the license and training data situation yourself before any commercial use
 ## License
 
 The code in this repository is licensed under the [MIT License](LICENSE).
-The player uses [wavesurfer.js](https://github.com/katspaugh/wavesurfer.js) (BSD-3-Clause), bundled into the built interface.

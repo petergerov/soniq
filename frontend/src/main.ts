@@ -17,6 +17,7 @@ import { PlayedSongs } from "./features/library/played-songs.ts";
 import { SongDrag } from "./features/library/song-drag.ts";
 import { SongList } from "./features/library/song-list.ts";
 import { MixerView } from "./features/mixer/mixer-view.ts";
+import { AudioEngine } from "./features/player/audio-engine.ts";
 import { AudioPlayer, type PlayOptions } from "./features/player/audio-player.ts";
 import { ServerControl } from "./features/settings/server-control.ts";
 import { SettingsDialog } from "./features/settings/settings-dialog.ts";
@@ -63,8 +64,10 @@ const playSong = (song: Song, options?: PlayOptions) => {
   if (played.mark(song.id)) songList.render();
   player.play(song, options).catch((e: Error) => errorDialog(t, e));
 };
+// Eine Wiedergabe für Player und Mixer: der Wechsel zwischen beiden blendet an derselben Stelle über
+const engine = new AudioEngine();
 const player = new AudioPlayer({
-  t,
+  t, engine,
   onStateChange: () => songList.render(),
   // Versionen desselben Prompts in der aktuellen Ansicht, in Buchstabenfolge
   versionsOf: (song) => store.songs.filter((s) => s.group_id === song.group_id && s.status === "done" && s.url)
@@ -72,12 +75,7 @@ const player = new AudioPlayer({
   onVersionPick: (song) => playSong(song, { keepPosition: true }),
 });
 const mixer = new MixerView({
-  api, t, findSong: (id) => store.find(id), back: () => router.go("library"), pauseMainPlayer: () => player.pause(),
-  handOffMainPlayer: (songId) => player.handOff(songId),
-  resumeMainPlayer: (songId, time) => {
-    const song = store.find(songId);
-    if (song?.url) playSong(song, { startAt: time });
-  },
+  api, t, engine, findSong: (id) => store.find(id), back: () => router.go("library"),
   stemsAvailable: () => store.stemsAvailable,
 });
 songList = new SongList({
@@ -91,8 +89,23 @@ songList = new SongList({
 });
 router.onChange((state) => {
   if (state.route === "mixer" && state.songId) void mixer.open(state.songId).catch((e: Error) => errorDialog(t, e));
-  else mixer.close();
+  else void leaveMixer().catch((e: Error) => errorDialog(t, e));
 });
+
+/**
+ * Mixer verlassen: Lief er (oder zeigt der Player ohnehin diesen Song), spielt der Player den Song an derselben
+ * Stelle weiter; die Spuren klingen, bis er geladen ist. Sonst kehrt der Player zu seinem eigenen Song zurück.
+ */
+async function leaveMixer(): Promise<void> {
+  const songId = mixer.close();
+  if (!songId || engine.sceneKey !== `mixer:${songId}`) return;
+  if (engine.playing || player.currentId === songId) {
+    const song = store.find(songId) ?? await api.song(songId);
+    if (song.url) return player.takeOver(song);
+  }
+  engine.clear();
+  await player.restore();
+}
 if (router.current === "mixer" && router.songId) void mixer.open(router.songId).catch((e: Error) => errorDialog(t, e));
 bindKeyboardShortcuts({
   form, playback: player, songs: () => store.songs, play: playSong, nextVersion: () => player.nextVersion(),

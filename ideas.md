@@ -32,7 +32,7 @@ Status: ✅ done · 🚧 in progress · 💡 open
 |---|---|---|---|
 | 11 | **A/B comparison:** switch between versions of one prompt at the same playback position | ✅ | Letter buttons A, B, C … in the player bar while a song with several finished versions plays; key `C` cycles. The new version continues at the same position (and stays paused if paused). Versions come from the current library view. |
 | 12 | **Quick rating:** 👎 / hide to sort out misses without deleting; the dice could learn from favorites | ✅ | Thumb-down button on finished songs sets `hidden` (new DB column, `PATCH /api/songs/:id {hidden}`); the library leaves them out unless the eye button next to the search is on (`GET /api/songs?hidden=true`). Learning: terms from style and prompt of all favorites are picked more often by every dice (20 % chance per pick when a list contains one, `PREFER_CHANCE` in `random-content.ts`). |
-| 13 | **Waveform in the player:** see build-ups, drops and quiet parts, jump directly | ✅ | Already existed: the player bar uses WaveSurfer (`audio-player.ts`). |
+| 13 | **Waveform in the player:** see build-ups, drops and quiet parts, jump directly | ✅ | Already existed: the player bar draws its own waveform (`waveform.ts`). |
 
 ## Workflow
 
