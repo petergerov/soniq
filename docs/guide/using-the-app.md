@@ -46,6 +46,11 @@ Above the prompt sit three more buttons:
 - **↶** takes back the last roll, step by step.
 
 **Presets** at the top of the form save the current settings under a name: style, composition (instrumental or song) and vocal language, length, BPM, key, time signature, iterations, variance, number of versions and dice theme. Prompt, title, lyrics and seed are not saved. Pick a preset from the list to load it (↶ brings back the previous style), **Save** with the same name overwrites it, **✕** deletes it.
+Below your own presets, **Examples** holds eight built-in songs (funk rock, synthwave, folk ballad, boom bap rap, lo-fi,
+film score, chiptune, deep house). Unlike a preset, an example also fills in title, prompt and complete lyrics with
+`[verse]` / `[chorus]` markers: a good starting point to see what a full description looks like, or to edit into your own
+song. Iterations, variance, number of versions and dice theme stay as they are; ↶ brings back the previous prompt and
+style. Examples cannot be deleted.
 
 The **lock** next to the prompt and style dice keeps that field as it is: Random and Variation then only change the other one.
 

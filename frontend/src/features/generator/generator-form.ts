@@ -7,6 +7,7 @@ import { setPackagedApp } from "../../core/stems-hint.ts";
 import { storage } from "../../core/storage.ts";
 import type { Translate } from "../../i18n/i18n.ts";
 import { CoverSource } from "./cover-source.ts";
+import type { ExampleSong } from "./example-songs.ts";
 import { BubbleSlider } from "./bubble-slider.ts";
 import { LyricsEditor } from "./lyrics-editor.ts";
 import { PresetPicker } from "./preset-picker.ts";
@@ -124,7 +125,9 @@ export class GeneratorForm {
     this.bindDice();
     this.bindSubmit();
     this.updateButton();
-    this.presets = new PresetPicker({ api: deps.api, t: deps.t, read: () => this.presetValues(), apply: (v) => this.applyPreset(v) });
+    this.presets = new PresetPicker({
+      api: deps.api, t: deps.t, read: () => this.presetValues(), apply: (v) => this.applyPreset(v), applyExample: (e) => this.applyExample(e),
+    });
   }
 
   /** Alles außer Idee, Titel, Lyrics und Seed, für eine Vorlage. */
@@ -166,6 +169,19 @@ export class GeneratorForm {
     this.syncStyle();
     this.blocks.sync();
     this.updateButton();
+  }
+
+  /**
+   * Beispiel-Song: seine Einstellungen wie eine Vorlage, dazu Titel, Prompt und Lyrics. Iterationen, Varianz,
+   * Versionen und Würfel-Thema bleiben, ↶ bringt Prompt und Stil zurück. Ein Cover endet hier (Beispiele sind neue Songs).
+   */
+  applyExample(example: ExampleSong): void {
+    this.applyPreset({ ...this.presetValues(), ...example.values });
+    if (this.trackPicker.current === "cover") this.trackPicker.setMode("full");
+    this.f.title.value = example.title;
+    this.f.prompt.value = example.prompt;
+    if (example.values.vocals === "song") this.lyrics.setOwn(example.lyrics);
+    this.blocks.sync();
   }
 
   /** Zufall: Prompt und Stil neu würfeln, gesperrte Felder bleiben. */
