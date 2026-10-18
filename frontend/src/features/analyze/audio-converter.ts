@@ -68,3 +68,8 @@ export async function wavWithDuration(file: File): Promise<{ file: File; duratio
   const name = file.name.replace(/\.[^.]*$/, "") + ".wav";
   return { file: new File([encodeWav(channels, audio.sampleRate)], name, { type: "audio/wav" }), duration: decoded.duration };
 }
+
+/** Länge in Sekunden (der Server kennt sie nur bei WAV) */
+export async function audioDuration(file: File): Promise<number> {
+  return (await decode(file)).duration;
+}

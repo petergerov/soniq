@@ -91,7 +91,7 @@ export class TrackByTrack {
     try {
       // 1) Plan: eigene Angaben haben Vorrang, der Rest kommt vom Sprachmodell
       const wantsVocals = tracks.some((t) => VOCAL_TRACKS.includes(t));
-      const plan = await this.plan(params, wantsVocals && !params.lyrics, engine, progress, signal);
+      const plan = await planSong(params, wantsVocals && !params.lyrics, engine, progress, signal);
       const meta: SongResultMeta = {
         bpm: params.bpm || plan.bpm || null,
         keyscale: params.keyscale || plan.keyscale || null,
@@ -132,21 +132,24 @@ export class TrackByTrack {
       throw e;
     }
   }
+}
 
-  /**
-   * Tempo, Tonart, Takt, Länge und, wenn writeLyrics, die Lyrics. Liefert das Sprachmodell dabei keinen singbaren
-   * Text, fragt es mit anderem Seed erneut; nach PLAN_ATTEMPTS Versuchen bricht der Song ab, bevor Spuren entstehen.
-   */
-  private async plan(params: SongParams, writeLyrics: boolean, engine: MusicEngine, progress: ProgressReporter, signal: AbortSignal): Promise<SongResultMeta> {
-    const caption = writeLyrics ? lyricsPlanCaption(params) : params.caption;
-    for (let attempt = 1; ; attempt++) {
-      const seed = params.seed >= 0 ? params.seed + (attempt - 1) * 7919 : params.seed;
-      const label = attempt > 1 ? `Plan ${attempt}/${PLAN_ATTEMPTS}` : "Plan";
-      const plan = await engine.plan({ ...params, caption, seed }, writeLyrics, (m) => progress(`${label} · ${m}`), signal);
-      if (!writeLyrics || sungLineCount(plan.lyrics) >= MIN_SUNG_LINES) return plan;
-      if (attempt >= PLAN_ATTEMPTS) {
-        throw new EngineError("Sprachmodell hat keine Lyrics geschrieben: bitte Lyrics eingeben oder den Prompt um Gesang ergänzen");
-      }
+/**
+ * Tempo, Tonart, Takt, Länge und, wenn writeLyrics, die Lyrics. Liefert das Sprachmodell dabei keinen singbaren
+ * Text, fragt es mit anderem Seed erneut; nach PLAN_ATTEMPTS Versuchen bricht der Song ab, bevor Audio entsteht.
+ * Auch für Cover mit Gesang ohne eigene Lyrics (das Klangmodell singt dort, was es bekommt).
+ */
+export async function planSong(
+  params: SongParams, writeLyrics: boolean, engine: MusicEngine, progress: ProgressReporter, signal: AbortSignal,
+): Promise<SongResultMeta> {
+  const caption = writeLyrics ? lyricsPlanCaption(params) : params.caption;
+  for (let attempt = 1; ; attempt++) {
+    const seed = params.seed >= 0 ? params.seed + (attempt - 1) * 7919 : params.seed;
+    const label = attempt > 1 ? `Plan ${attempt}/${PLAN_ATTEMPTS}` : "Plan";
+    const plan = await engine.plan({ ...params, caption, seed }, writeLyrics, (m) => progress(`${label} · ${m}`), signal);
+    if (!writeLyrics || sungLineCount(plan.lyrics) >= MIN_SUNG_LINES) return plan;
+    if (attempt >= PLAN_ATTEMPTS) {
+      throw new EngineError("Sprachmodell hat keine Lyrics geschrieben: bitte Lyrics eingeben oder den Prompt um Gesang ergänzen");
     }
   }
 }

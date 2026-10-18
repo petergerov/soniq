@@ -65,6 +65,22 @@ export function parseWav(data: Uint8Array): WavFile {
   throw new Error("WAV without data chunk");
 }
 
+/** Länge in Sekunden aus dem Kopf, ohne die Samples zu lesen; 0 bei MP3 oder unlesbarer Datei. */
+export function wavSeconds(data: Uint8Array): number {
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const text = (pos: number) => String.fromCharCode(data[pos]!, data[pos + 1]!, data[pos + 2]!, data[pos + 3]!);
+  if (data.byteLength < 12 || text(0) !== "RIFF" || text(8) !== "WAVE") return 0;
+  let bytesPerSecond = 0;
+  for (let pos = 12; pos + 8 <= data.byteLength;) {
+    const id = text(pos);
+    const size = view.getUint32(pos + 4, true);
+    if (id === "fmt ") bytesPerSecond = view.getUint32(pos + 16, true);
+    else if (id === "data") return bytesPerSecond ? Math.min(size, data.byteLength - pos - 8) / bytesPerSecond : 0;
+    pos += 8 + size + (size % 2);
+  }
+  return 0;
+}
+
 export function encodeWav(pcm: Pcm, depth: WavDepth = 16): Uint8Array {
   const { samples, channels, sampleRate } = pcm;
   const bytes = depth / 8;

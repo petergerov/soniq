@@ -58,6 +58,8 @@
         </span>
       </div>
       <button type="button" id="similarBtn" class="sek rand similar" hidden title="Tempo, Tonart, Länge und Beschreibung der Analyse bleiben, der Stil wird neu gewürfelt" data-i18n-title="similar_tip"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg><span data-i18n="similar">Ähnlich, aber anders</span></button>
+      <button type="button" id="coverThisBtn" class="sek similar" hidden title="Diese Datei im Stil des Formulars nachspielen (Erzeugung: Cover)" data-i18n-title="cover_this_tip" data-i18n="cover_this">Als Cover</button>
+      <button type="button" id="refThisBtn" class="sek similar" hidden title="Neue Songs übernehmen die Klangfarbe dieser Datei" data-i18n-title="ref_this_tip" data-i18n="ref_this">Klingt wie diese Datei</button>
     </div>
     <form id="genForm">
       <div class="presetrow">
@@ -77,9 +79,26 @@
         <div class="seg" role="group" aria-label="Erzeugung" data-i18n-aria="gen_mode">
           <button type="button" class="sek" data-genmode="full" aria-pressed="true" data-i18n="gen_full">Ganzer Song</button>
           <button type="button" class="sek" data-genmode="tracks" aria-pressed="false" data-i18n="gen_tracks">Spur für Spur</button>
+          <button type="button" class="sek" data-genmode="cover" aria-pressed="false" title="Ein vorhandener Song oder eine Datei im neuen Stil: Aufbau und Länge bleiben" data-i18n-title="gen_cover_tip" data-i18n="gen_cover">Cover</button>
         </div>
         <div id="trackChips" class="chips track-chips" hidden></div>
         <span id="trackHint" class="small" hidden></span>
+        <div id="coverBox" class="cover-box" hidden>
+          <div class="src-row">
+            <span id="coverSrc" class="src-chip"></span>
+            <button type="button" id="coverPick" class="sek" data-i18n="src_pick">Datei wählen …</button>
+            <input id="coverFile" type="file" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg" hidden>
+          </div>
+          <span id="coverHint" class="small"></span>
+          <div class="cover-close">
+            <span class="lbl" title="Wie nah das Cover am Original bleibt. Links: frei nachgespielt im neuen Stil. Rechts: Melodie, Harmonien und Klang bleiben nah am Original." data-i18n-title="cover_close_tip" data-i18n="cover_close">Nähe zum Original</span>
+            <div class="slider" data-fmt="int">
+              <div class="fill"></div><div class="knob"><span></span></div>
+              <input name="closeness" type="range" min="1" max="5" step="1" value="2" aria-label="Nähe zum Original" data-i18n-aria="cover_close">
+            </div>
+            <div class="slider-ends small"><span data-i18n="cover_free">frei</span><span data-i18n="cover_near">nah</span></div>
+          </div>
+        </div>
       </div>
 
       <div class="field"><div class="lblrow"><span class="lbl" id="lblTitle" title="Nur zum Wiederfinden, hat keinen Einfluss auf die Musik." data-i18n-title="title_tip" data-i18n="title">Titel</span>
@@ -144,7 +163,16 @@
       <input type="checkbox" name="instrumental" checked hidden>
       <input type="checkbox" name="keep_caption" checked hidden>
 
-      <div class="field"><span class="lbl" data-i18n="length">Länge</span>
+      <div id="refBox" class="field ref"><span class="lbl" title="Optional: eine Datei oder ein Song, dessen Klangfarbe die neuen Songs übernehmen (Instrumente, Raum, Mischung). Melodie und Aufbau kommen weiter aus Prompt und Stil." data-i18n-title="ref_tip" data-i18n="ref_label">Klingt wie</span>
+        <div class="src-row">
+          <span id="refSrc" class="src-chip"></span>
+          <button type="button" id="refPick" class="sek" data-i18n="src_pick">Datei wählen …</button>
+          <input id="refFile" type="file" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg" hidden>
+        </div>
+        <span id="refHint" class="small" hidden></span>
+      </div>
+
+      <div id="lengthBox" class="field"><span class="lbl" data-i18n="length">Länge</span>
         <div class="slider" data-fmt="dur">
           <div class="fill"></div><div class="knob"><span></span></div>
           <input name="duration" type="range" min="10" max="300" step="5" value="90" aria-label="Länge" title="0:10 bis 5:00" data-i18n-aria="length" data-i18n-title="length_tip">

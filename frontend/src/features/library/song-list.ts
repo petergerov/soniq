@@ -30,6 +30,10 @@ export interface SongListDeps {
   deleteAllStems: (songId: string) => Promise<Stem[]>;
   /** Abschnitt neu erzeugen (Dialog mit Wellenform) */
   repaint: (song: Song) => void;
+  /** Song als Original eines Covers ins Formular */
+  cover: (song: Song) => void;
+  /** Song als Klang-Referenz ("Klingt wie") ins Formular */
+  soundsLike: (song: Song) => void;
   /** Mixer öffnen (Waveforms, Mute, Solo, Versionen, Downloads) */
   openMixer: (song: Song) => void;
 }
@@ -165,6 +169,10 @@ export class SongList {
         return this.deps.openMixer(song);
       case "repaint":
         return this.deps.repaint(song);
+      case "cover":
+        return this.deps.cover(song);
+      case "sounds-like":
+        return this.deps.soundsLike(song);
       case "download":
         return; // <a href> lädt selbst; Menü ist schon zu
       case "fav": return store.toggleFavorite(song);

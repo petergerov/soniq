@@ -1,5 +1,5 @@
 // Prüft und normalisiert JSON-Eingaben, bevor sie an die Services gehen.
-import { MIN_REPAINT_SECONDS, SEPARATORS, VARIATION_AXES, type DemucsModel, type ExtractRequest, type NewVersionRequest, type PresetValues, type SongPatch, type StemTrack } from "../../../shared/api.ts";
+import { COVER_LEVELS, MIN_REPAINT_SECONDS, SEPARATORS, type AudioRef, type CoverSettings, type GenerationMode, VARIATION_AXES, type DemucsModel, type ExtractRequest, type NewVersionRequest, type PresetValues, type SongPatch, type StemTrack } from "../../../shared/api.ts";
 import { AXIS_MAX, MAX_VERSION_COUNT, MAX_VERSION_TEXT } from "../../../shared/track-variation.ts";
 import { isStemTrack, orderTracks } from "../domain/stem.ts";
 import type { GenerateCommand, RepaintCommand } from "../services/generation-service.ts";
@@ -66,18 +66,40 @@ export function parseGenerateCommand(input: Input): GenerateCommand {
     lmTemperature: input.lm_temperature === undefined || input.lm_temperature === null ? null : num(input, "lm_temperature", 0),
     groupId: optionalId(input, "group_id"),
     folderId: optionalId(input, "folder_id"),
-    ...tracksMode(input),
+    ...generationMode(input),
+    reference: input.reference === undefined || input.reference === null ? null : audioRef(input.reference, "reference"),
   };
 }
 
-/** mode "tracks" mit mindestens einer bekannten Spur; sonst ganzer Song. */
-function tracksMode(input: Input): { mode: "full" | "tracks"; tracks: StemTrack[] } {
+/** mode "tracks" mit mindestens einer bekannten Spur, "cover" mit Vorlage; sonst ganzer Song. */
+function generationMode(input: Input): { mode: GenerationMode; tracks: StemTrack[]; cover: CoverSettings | null } {
   const mode = str(input, "mode", "full");
-  if (mode !== "full" && mode !== "tracks") invalid("mode", '"full" or "tracks" expected');
-  if (mode === "full") return { mode, tracks: [] };
+  if (mode !== "full" && mode !== "tracks" && mode !== "cover") invalid("mode", '"full", "tracks" or "cover" expected');
+  if (mode === "full") return { mode, tracks: [], cover: null };
+  if (mode === "cover") {
+    const c = input.cover;
+    if (!c || typeof c !== "object") invalid("cover", "object expected");
+    const cover = c as Input;
+    return {
+      mode, tracks: [],
+      cover: { source: audioRef(cover.source, "cover.source"), closeness: num(cover, "closeness", 1, { integer: true, min: 1, max: COVER_LEVELS }) },
+    };
+  }
   const tracks = input.tracks;
   if (!Array.isArray(tracks) || !tracks.length || !tracks.every(isStemTrack)) invalid("tracks", "non-empty list of track names expected");
-  return { mode, tracks: orderTracks(tracks) };
+  return { mode, tracks: orderTracks(tracks), cover: null };
+}
+
+/** Song der Bibliothek (song_id) oder hochgeladene Datei (upload aus POST /api/uploads) */
+function audioRef(value: unknown, field: string): AudioRef {
+  if (!value || typeof value !== "object") invalid(field, "object expected");
+  const v = value as Input;
+  const songId = optionalId(v, "song_id"), upload = optionalId(v, "upload");
+  if (!songId === !upload) invalid(field, "song_id or upload expected");
+  return {
+    ...(songId ? { song_id: songId } : { upload: upload! }),
+    name: str(v, "name"), duration: num(v, "duration", 0, { min: 0, max: 3600 }),
+  };
 }
 
 /** Repaint: Abschnitt in Sekunden (mindestens MIN_REPAINT_SECONDS lang), optional Beschreibung und Lyrics, Anzahl 1–3. */

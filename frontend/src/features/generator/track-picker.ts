@@ -1,4 +1,4 @@
-// Erzeugung: "Ganzer Song | Spur für Spur" und die Auswahl der Spuren (newfeatures.md, Feature B).
+// Erzeugung: "Ganzer Song | Spur für Spur | Cover" und die Auswahl der Spuren (newfeatures.md, Feature B).
 // Gesangsspuren nur bei Songs mit Gesang. Ohne Spuren-Modell (Base) ist "Spur für Spur" gesperrt.
 import { STEM_TRACKS, type GenerationMode, type SongParams, type StemTrack } from "../../../../shared/api.ts";
 import { byId, closest } from "../../core/dom.ts";
@@ -16,6 +16,8 @@ export interface TrackPickerDeps {
   t: Translate;
   /** Ist gerade "Instrumental" gewählt? */
   instrumental: () => boolean;
+  /** Erzeugung gewechselt (Cover zeigt seine Vorlage, blendet die Länge aus …) */
+  onModeChange: (mode: GenerationMode) => void;
 }
 
 export class TrackPicker {
@@ -30,7 +32,7 @@ export class TrackPicker {
 
   constructor(deps: TrackPickerDeps) {
     this.deps = deps;
-    this.buttons.forEach((b) => b.addEventListener("click", () => this.setMode(b.dataset.genmode === "tracks" ? "tracks" : "full")));
+    this.buttons.forEach((b) => b.addEventListener("click", () => this.setMode(b.dataset.genmode === "tracks" || b.dataset.genmode === "cover" ? b.dataset.genmode : "full")));
     this.chips.addEventListener("click", (e) => {
       const track = closest<HTMLElement>(e.target, "[data-track]")?.dataset.track as StemTrack | undefined;
       if (!track) return;
@@ -46,7 +48,13 @@ export class TrackPicker {
   /** Für den Auftrag: Spur für Spur nur mit mindestens einer möglichen Spur. */
   get request(): { mode: GenerationMode; tracks?: StemTrack[] } {
     const tracks = this.tracks;
+    if (this.mode === "cover") return { mode: "cover" };
     return this.mode === "tracks" && this.available && tracks.length ? { mode: "tracks", tracks } : { mode: "full" };
+  }
+
+  /** Gewählte Erzeugung (Spur für Spur ohne Spuren-Modell zählt als ganzer Song) */
+  get current(): GenerationMode {
+    return this.mode === "tracks" && !this.available ? "full" : this.mode;
   }
 
   /** Spuren-Modell da? (aus den Einstellungen) */
@@ -57,13 +65,13 @@ export class TrackPicker {
 
   /** "Wiederverwenden": Erzeugung und Spuren eines Songs übernehmen. */
   apply(params: SongParams): void {
-    this.mode = params.mode === "tracks" ? "tracks" : "full";
+    this.mode = params.mode === "tracks" || params.mode === "cover" ? params.mode : "full";
     if (params.mode === "tracks" && params.tracks?.length) {
       this.chosen.clear();
       params.tracks.forEach((t) => this.chosen.add(t));
       storage.setJson(TRACKS_KEY, [...this.chosen]);
     }
-    storage.set(MODE_KEY, this.mode);
+    if (this.mode !== "cover") storage.set(MODE_KEY, this.mode);
     this.render();
   }
 
@@ -77,18 +85,20 @@ export class TrackPicker {
     return STEM_TRACKS.filter((t) => this.chosen.has(t) && !(instrumental && VOCAL_TRACKS.includes(t)));
   }
 
-  private setMode(mode: GenerationMode): void {
+  /** Cover wird nicht gemerkt: nach dem Neuladen fehlt sein Original */
+  setMode(mode: GenerationMode): void {
     this.mode = mode;
-    storage.set(MODE_KEY, mode);
+    if (mode !== "cover") storage.set(MODE_KEY, mode);
     this.render();
   }
 
   private render(): void {
     const { t } = this.deps;
     const tracksMode = this.mode === "tracks" && this.available;
+    const current = this.current;
     this.buttons.forEach((b) => {
       const isTracks = b.dataset.genmode === "tracks";
-      b.setAttribute("aria-pressed", String(isTracks === tracksMode));
+      b.setAttribute("aria-pressed", String(b.dataset.genmode === current));
       if (isTracks) {
         b.disabled = !this.available;
         b.title = this.available ? t("gen_tracks_tip") : stemsMissingText(t);
@@ -105,5 +115,6 @@ export class TrackPicker {
     this.hint.hidden = !tracksMode;
     this.hint.className = `small ${n || !tracksMode ? "" : "err-t"}`.trim();
     this.hint.textContent = !this.available ? stemsMissingText(t) : n ? t("tracks_hint", n) : t("tracks_none");
+    this.deps.onModeChange(current);
   }
 }

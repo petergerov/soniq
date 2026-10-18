@@ -49,6 +49,13 @@ export class SongStorage {
     return isFile(await this.pathOf(file));
   }
 
+  /** Dateien, deren Name mit prefix beginnt, samt Änderungszeit (ms) */
+  async list(prefix: string): Promise<{ file: string; modified: number }[]> {
+    const dir = await this.directory();
+    const names = (await readdir(dir)).filter((n) => n.startsWith(prefix));
+    return Promise.all(names.map(async (file) => ({ file, modified: (await stat(join(dir, file))).mtimeMs })));
+  }
+
   async usage(): Promise<{ count: number; bytes: number }> {
     const dir = await this.directory();
     let count = 0, bytes = 0;

@@ -11,13 +11,14 @@ const OK_VISIBLE_MS = 4000;
 export class Dropzone {
   private readonly api: ApiClient;
   private readonly t: Translate;
-  private readonly onResult: (result: AnalyzeResult) => void;
+  /** file: die hochgeladene Fassung (WAV oder MP3), für Cover und Klang-Referenz */
+  private readonly onResult: (result: AnalyzeResult, file: File) => void;
   private readonly zone = byId("dropzone");
   private readonly status = byId("dzStatus");
   private readonly fileInput = byId<HTMLInputElement>("fileInput");
   private hideTimer: number | undefined;
 
-  constructor(api: ApiClient, t: Translate, onResult: (result: AnalyzeResult) => void) {
+  constructor(api: ApiClient, t: Translate, onResult: (result: AnalyzeResult, file: File) => void) {
     this.api = api;
     this.t = t;
     this.onResult = onResult;
@@ -47,7 +48,8 @@ export class Dropzone {
     if (!file) return;
     this.show("busy", this.t("analyzing", file.name));
     try {
-      this.onResult(await this.api.analyze(await toServerReadableAudio(file)));
+      const readable = await toServerReadableAudio(file);
+      this.onResult(await this.api.analyze(readable), readable);
       this.show("ok", this.t("analyzed", file.name));
     } catch (err) {
       const message = err instanceof UnsupportedAudioError ? this.t("decode_failed", file.name) : (err as Error).message;

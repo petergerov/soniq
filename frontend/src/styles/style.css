@@ -626,3 +626,20 @@ dialog.repaint-dlg { width: min(640px, calc(100vw - 32px)); }
 .repaint-counts { display: flex; gap: 4px; }
 .repaint-counts .chip { min-width: 32px; cursor: pointer; text-align: center; }
 .repaint-dlg .field > .small { line-height: 1.45; }
+
+/* Cover und „Klingt wie“: Vorlage aus der Bibliothek oder als Datei */
+.cover-box { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.cover-box[hidden], .src-chip[hidden] { display: none; }
+.src-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.src-row .sek { width: auto; }
+.src-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-width: 0; padding: 4px 4px 4px 11px;
+  border-radius: 999px; border: 1px solid rgba(167, 139, 250, .45); background: var(--accent-tint); font-size: 12px; }
+.src-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.src-dur { color: var(--muted); font-variant-numeric: tabular-nums; }
+.src-x { flex: none; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: transparent;
+  color: var(--muted); cursor: pointer; font: inherit; font-size: 11px; }
+.src-x:hover { color: var(--text); background: var(--surface-2); }
+.src-x:focus-visible { outline: none; box-shadow: var(--focus); }
+.cover-box > .small, .ref > .small { line-height: 1.45; }
+.cover-close { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.slider-ends { display: flex; justify-content: space-between; color: var(--faint); margin-top: -2px; }

@@ -1,5 +1,5 @@
 // Neue Songs in Auftrag geben, wiederholen, abbrechen oder löschen.
-import { MIN_REPAINT_SECONDS, type GenerateResponse, type GenerationMode, type SongParams, type SongResultMeta, type StemIntent, type StemTrack } from "../../../shared/api.ts";
+import { MIN_REPAINT_SECONDS, type AudioRef, type CoverSettings, type GenerateResponse, type GenerationMode, type SongParams, type SongResultMeta, type StemIntent, type StemTrack } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
 import { newId, randomSeed } from "../domain/ids.ts";
 import { INSTRUMENTAL, nowIso } from "../domain/song.ts";
@@ -9,6 +9,7 @@ import type { SongRepository } from "../infrastructure/song-repository.ts";
 import type { SongStorage } from "../infrastructure/song-storage.ts";
 import { MAX_UPLOAD_BYTES } from "./analysis-service.ts";
 import type { JobRunner } from "./generation-worker.ts";
+import type { SourceAudio } from "./source-audio.ts";
 
 /** Geprüfte Anfrage (siehe http/validation.ts). */
 export interface GenerateCommand {
@@ -32,6 +33,8 @@ export interface GenerateCommand {
   folderId: string | null; // Ordner der Bibliothek, in dem die neuen Songs landen
   mode: GenerationMode;    // "tracks" = Spur für Spur (siehe services/track-by-track.ts)
   tracks: StemTrack[];     // bei "tracks", schon in Reihenfolge
+  cover: CoverSettings | null;     // bei "cover"
+  reference: AudioRef | null;      // Klang-Referenz (nicht bei "tracks")
 }
 
 /** Geprüfte Anfrage für Ersetzen / Begleiten (Upload + JSON). */
@@ -71,6 +74,7 @@ export interface GenerationServiceDeps {
   removeStems: (songId: string) => Promise<void>;
   /** Spuren-Modell (Base) vorhanden? Nötig für "Spur für Spur" */
   stemsAvailable: () => boolean;
+  sources: SourceAudio;
 }
 
 export function buildCaption(style: string, prompt: string, fallback: string): string {
@@ -85,7 +89,7 @@ export class GenerationService {
     this.deps = deps;
   }
 
-  enqueue(cmd: GenerateCommand): GenerateResponse {
+  async enqueue(cmd: GenerateCommand): Promise<GenerateResponse> {
     const caption = buildCaption(cmd.style, cmd.prompt, cmd.caption);
     if (!caption) throw new AppError("invalid", "no_prompt");
     const lyrics = cmd.instrumental ? INSTRUMENTAL : cmd.lyrics.trim();
@@ -95,20 +99,26 @@ export class GenerationService {
       if (!tracks.length) throw new AppError("invalid", "no_tracks");
       if (!this.deps.stemsAvailable()) throw new AppError("bad_request", "stems_model_missing");
     }
+    // Cover: Länge von der Vorlage, Tempo/Tonart/Takt auf Auto von ihr (bei einem Song der Bibliothek)
+    const cover = cmd.mode === "cover" && cmd.cover ? await this.deps.sources.check(cmd.cover.source) : null;
+    const reference = cmd.mode !== "tracks" && cmd.reference ? (await this.deps.sources.check(cmd.reference)).ref : null;
+    const m = cover?.meta ?? {};
     const base: Omit<SongParams, "seed"> = {
       prompt: cmd.prompt,
       style: cmd.style,
       caption,
       lyrics,
-      duration: cmd.duration,
-      bpm: cmd.bpm,
-      keyscale: cmd.keyscale,
-      timesignature: cmd.timesignature,
+      duration: cover?.ref.duration || cmd.duration,
+      bpm: cmd.bpm || (cover && m.bpm) || 0,
+      keyscale: cmd.keyscale || (cover && m.keyscale) || "",
+      timesignature: cmd.timesignature || (cover && m.timesignature) || "",
       vocal_language: cmd.vocalLanguage,
       inference_steps: cmd.inferenceSteps,
       lm_temperature: cmd.lmTemperature,
       use_cot_caption: !cmd.keepCaption,
       ...(tracks.length ? { mode: "tracks" as const, tracks } : {}),
+      ...(cover && cmd.cover ? { mode: "cover" as const, cover: { source: cover.ref, closeness: cmd.cover.closeness } } : {}),
+      ...(reference ? { reference } : {}),
     };
     const groupId = cmd.groupId || newId();
     const folderId = cmd.folderId && this.deps.folders.find(cmd.folderId) ? cmd.folderId : null;
@@ -118,7 +128,7 @@ export class GenerationService {
       const seed = cmd.seed < 0 ? randomSeed() : cmd.seed + i;
       const id = newId();
       this.deps.songs.insert({
-        id, group_id: groupId, created_at: nowIso(), title: cmd.title.trim() || null,
+        id, group_id: groupId, created_at: nowIso(), title: cmd.title.trim() || cover?.ref.name || null,
         caption, lyrics, seed, params: JSON.stringify({ ...base, seed }), folder_id: folderId,
       });
       ids.push(id);
@@ -214,10 +224,11 @@ export class GenerationService {
       return { cancelled: true };
     }
     if (song.file) await this.deps.storage.remove(song.file);
-    const source = (JSON.parse(song.params) as SongParams).source;
-    if (source) await this.deps.storage.remove(source);
+    const params = JSON.parse(song.params) as SongParams;
+    if (params.source) await this.deps.storage.remove(params.source);
     await this.deps.removeStems(id);
     this.deps.songs.delete(id);
+    await this.deps.sources.release(params);
     return { deleted: true };
   }
 }

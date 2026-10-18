@@ -9,8 +9,10 @@ import type { SongStorage } from "../infrastructure/song-storage.ts";
 import { wavDepthFor } from "../infrastructure/wav.ts";
 import type { ExtractTracks } from "./extract.ts";
 import type { StemVersions } from "./stem-versions.ts";
+import { hasCover, runCover } from "./cover.ts";
 import { hasAccompany, hasReplace, type ReplaceAccompany } from "./replace-accompany.ts";
 import { hasRepaint, runRepaint } from "./repaint.ts";
+import type { SourceAudio } from "./source-audio.ts";
 import { hasTracks, type TrackByTrack } from "./track-by-track.ts";
 
 /** Was andere Services vom Worker brauchen: anstoßen und einen laufenden Auftrag abbrechen. */
@@ -30,6 +32,8 @@ export interface GenerationWorkerDeps {
   extract: ExtractTracks;
   replaceAccompany: ReplaceAccompany;
   versions: StemVersions;
+  /** Vorlagen für Cover und Klang-Referenz */
+  sources: SourceAudio;
   nextStemJobSongId: () => string | undefined;
   log?: (message: string) => void;
 }
@@ -113,13 +117,17 @@ export class GenerationWorker implements JobRunner {
         songs.markDone(songId, { file: result.file, engine: `${engine.name}+${params.mode}`, resultMeta: JSON.stringify(result.meta), finishedAt: nowIso() });
         return;
       }
+      const { sources } = this.deps;
       const result = hasRepaint(params)
         ? await runRepaint(this.deps, params, engine, report, abort.signal)
-        : await engine.generate({ ...params }, report, abort.signal);
+        : hasCover(params)
+          ? await runCover(sources, params, engine, report, abort.signal)
+          : await engine.generate({ ...params }, report, abort.signal, params.reference && await sources.read(params.reference));
       const file = `${songId}.${result.extension}`;
       if (songs.status(songId) !== "running") return;   // inzwischen abgebrochen
       await storage.save(file, result.audio);
-      songs.markDone(songId, { file, engine: hasRepaint(params) ? `${engine.name}+repaint` : engine.name, resultMeta: JSON.stringify(result.meta), finishedAt: nowIso() });
+      const variant = hasRepaint(params) || hasCover(params) ? `+${params.mode}` : "";
+      songs.markDone(songId, { file, engine: engine.name + variant, resultMeta: JSON.stringify(result.meta), finishedAt: nowIso() });
     } catch (e) {
       if (abort.signal.aborted) return;                   // vom Nutzer abgebrochen: Status steht schon auf "cancelled"
       songs.markError(songId, e instanceof Error ? e.message || e.name : String(e), nowIso());

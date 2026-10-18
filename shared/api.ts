@@ -28,9 +28,33 @@ export interface SongParams {
   source?: string;
   /** Bei mode "repaint": dieser Abschnitt (Sekunden) von Song song_id wird neu erzeugt, der Rest bleibt */
   repaint?: RepaintRegion;
+  /** Bei mode "cover": diese Vorlage im neuen Stil */
+  cover?: CoverSettings;
+  /** Klang-Referenz ("klingt wie"), bei ganzem Song und Cover */
+  reference?: AudioRef;
 }
 
-export type GenerationMode = "full" | "tracks" | "replace" | "accompany" | "repaint";
+export type GenerationMode = "full" | "tracks" | "replace" | "accompany" | "repaint" | "cover";
+
+/** Audio als Vorlage: ein Song der Bibliothek oder eine hochgeladene Datei (POST /api/uploads). */
+export interface AudioRef {
+  song_id?: string;
+  upload?: string;
+  /** Titel bzw. Dateiname, für die Anzeige */
+  name: string;
+  /** Sekunden (0 = unbekannt) */
+  duration: number;
+}
+
+/** Cover: Stufe 1 = frei nachgespielt … COVER_LEVELS = nah am Original */
+export interface CoverSettings {
+  source: AudioRef;
+  closeness: number;
+}
+
+export const COVER_LEVELS = 5;
+/** Vorgabe der Nähe zum Original */
+export const DEFAULT_COVER_CLOSENESS = 2;
 
 export interface RepaintRegion {
   song_id: string;
@@ -117,6 +141,9 @@ export interface GenerateRequest {
   /** "tracks" = Spur für Spur (braucht das Spuren-Modell, siehe SettingsView.stems_available) */
   mode?: GenerationMode;
   tracks?: StemTrack[];
+  /** Bei mode "cover" */
+  cover?: CoverSettings;
+  reference?: AudioRef;
   group_id?: string | null;
   folder_id?: string | null;
 }

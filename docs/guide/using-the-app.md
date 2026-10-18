@@ -56,6 +56,20 @@ Below the prompt, **Mood**, **Scene** and **Detail** show the building blocks of
 Below the style, three **sliders** (calm ↔ energetic, acoustic ↔ electronic, dark ↔ bright) write a matching word into the style. The middle position writes nothing.
 
 After analyzing a song, **Similar but different** appears under the upload field. Each click keeps tempo, key, length and description of the analyzed song and rolls a new style.
+Next to it, **Cover it** and **Sounds like this file** use the analyzed file for the two features below.
+
+**Cover** (Generation › Cover): plays an existing song in a new style. Choose the original with **Choose file …**, or
+in the library with ⋮ › **Cover …** on a song (that also fills in its lyrics and a title). Prompt, style, dice and
+sliders then describe the new style; length and structure come from the original, so the Length slider disappears.
+BPM, key and time signature on Auto take those of the original. **Closeness to the original** goes from 1 (freely
+replayed, new sound) to 5 (melody, harmonies and sound stay close to the original); 2 is the default. The model sings
+the lyrics as they are; leave them empty and it writes new ones first. A cover takes about as long as a new song of
+the same length.
+
+**Sounds like** (below the style): optional. Choose a file, or in the library ⋮ › **Use as sound reference**, and new
+songs take on its sound (instruments, room, mix); melody and structure still come from prompt and style. The effect is
+moderate. It works for whole songs and covers, not track by track. With a cover, your reference replaces the original
+as the sound model's reference, so the right end of the closeness slider stays less close. **✕** removes it.
 
 ## Keyboard shortcuts
 

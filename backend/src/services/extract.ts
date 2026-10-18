@@ -51,7 +51,7 @@ export class ExtractTracks {
     if (!song.file || song.status !== "done") throw new AppError("bad_request", "song_not_ready");
     // Nur Stereo-Mix (voll erzeugter Song) — Spur-für-Spur / Replace haben schon Einzelspuren
     const mode = (JSON.parse(song.params) as SongParams).mode;
-    if (mode && mode !== "full" && mode !== "repaint") throw new AppError("bad_request", "extract_mix_only");
+    if (mode && mode !== "full" && mode !== "repaint" && mode !== "cover") throw new AppError("bad_request", "extract_mix_only");
     // Demucs liest WAV (umgerechnet wird hier, ein MP3-Decoder fehlt dem Server bewusst)
     if (demucs && !/\.wav$/i.test(song.file)) throw new AppError("bad_request", "demucs_wav_only");
     const taken = new Set(stems.forSong(songId).filter((s) => s.kind === "extracted" && s.status !== "error").map((s) => s.track));

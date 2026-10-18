@@ -56,6 +56,40 @@ export interface RepaintRequest {
   params: Record<string, unknown>;
 }
 
+/** Audiodatei für den Modellserver; der Name (mit Endung) sagt ihm, ob MP3 oder WAV */
+export interface AudioFile {
+  data: Uint8Array;
+  name: string;
+}
+
+/** Vorlage im neuen Stil (task_type "cover" / "cover-nofsq", Klangmodell ohne Sprachmodell); Länge = Vorlage. */
+export interface CoverRequest {
+  source: AudioFile;
+  /** Klang-Referenz; fehlt bei freiem Cover ohne "klingt wie" */
+  reference?: AudioFile;
+  task: CoverTask;
+  /** audio_cover_strength: Anteil der Schritte, die die Vorlage hören */
+  strength: number;
+  /** Felder wie bei generate (caption, lyrics, bpm, keyscale, seed, inference_steps …) */
+  params: Record<string, unknown>;
+}
+
+export type CoverTask = "cover" | "cover-nofsq";
+
+/**
+ * Stufen der Nähe zum Original (1 … COVER_LEVELS). Gemessen an 30 s Funk als Jazz-Trio (2026-10-18, Harmonie =
+ * Chroma-Korrelation zur Vorlage, fremde Songs ~0,2): "cover" kam unabhängig von der Stärke (0,2–1,0) auf ~0,4 und
+ * neuen Klang. "cover-nofsq" ohne Referenz ebenso (~0,4); erst mit der Vorlage als eigener Klang-Referenz steuert die
+ * Stärke die Nähe: 0,15 → 0,47 · 0,3 → 0,56 · 0,5 → 0,71 · 0,7 → 0,83 · 1,0 → 0,94 (fast eine Kopie).
+ */
+export const COVER_STEPS: readonly { task: CoverTask; strength: number; selfReference: boolean }[] = [
+  { task: "cover", strength: 1.0, selfReference: false },
+  { task: "cover-nofsq", strength: 0.15, selfReference: true },
+  { task: "cover-nofsq", strength: 0.3, selfReference: true },
+  { task: "cover-nofsq", strength: 0.5, selfReference: true },
+  { task: "cover-nofsq", strength: 0.7, selfReference: true },
+];
+
 export interface MusicEngine {
   readonly name: string;
   /**
@@ -68,8 +102,13 @@ export interface MusicEngine {
   stem(request: StemRequest, progress: ProgressReporter, signal: AbortSignal): Promise<Uint8Array>;
   /** Song mit neu erzeugtem Abschnitt; außerhalb des Abschnitts bleibt das Audio unverändert. */
   repaint(request: RepaintRequest, progress: ProgressReporter, signal: AbortSignal): Promise<GeneratedAudio>;
-  /** Erzeugt einen Song. `signal` bricht ab (der Server-Job wird dann ebenfalls beendet). */
-  generate(params: Record<string, unknown>, progress: ProgressReporter, signal: AbortSignal): Promise<GeneratedAudio>;
+  /** Vorlage im neuen Stil; Länge, Aufbau und (je nach Stufe) Klang kommen von der Vorlage. */
+  cover(request: CoverRequest, progress: ProgressReporter, signal: AbortSignal): Promise<GeneratedAudio>;
+  /**
+   * Erzeugt einen Song. `signal` bricht ab (der Server-Job wird dann ebenfalls beendet).
+   * `reference`: Klang-Referenz, das Klangmodell nimmt ihre Klangfarbe auf.
+   */
+  generate(params: Record<string, unknown>, progress: ProgressReporter, signal: AbortSignal, reference?: AudioFile): Promise<GeneratedAudio>;
   analyze(audio: Blob, filename: string): Promise<AnalysisResult>;
   health(): Promise<HealthInfo>;
 }

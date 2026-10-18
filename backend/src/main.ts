@@ -41,6 +41,7 @@ import { StemService } from "./services/stem-service.ts";
 import { StemVersions } from "./services/stem-versions.ts";
 import { GenerationService } from "./services/generation-service.ts";
 import { GenerationWorker } from "./services/generation-worker.ts";
+import { SourceAudio } from "./services/source-audio.ts";
 import { LibraryService } from "./services/library-service.ts";
 import { SettingsService } from "./services/settings-service.ts";
 import { SystemService } from "./services/system-service.ts";
@@ -93,12 +94,14 @@ async function main(): Promise<void> {
   const extract = new ExtractTracks({ stems, songs, storage, stemsAvailable, demucs });
   const versions = new StemVersions({ stems, songs, storage, stemsAvailable });
   const replaceAccompany = new ReplaceAccompany({ stems, storage, removeStems: (id) => stemService.removeForSong(id) });
+  const sources = new SourceAudio({ songs, storage });
+  void sources.removeUnused().catch((e: Error) => log(`Uploads aufräumen: ${e.message}`));
   const worker = new GenerationWorker({
     songs, settings, storage, engineFactory, keepAwake: createKeepAwake(config.platform),
-    trackByTrack, extract, replaceAccompany, versions, nextStemJobSongId: () => stems.nextStemJobSongId(), log,
+    trackByTrack, extract, replaceAccompany, versions, sources, nextStemJobSongId: () => stems.nextStemJobSongId(), log,
   });
   const generation = new GenerationService({
-    songs, folders, storage, jobs: worker, removeStems: (id) => stemService.removeForSong(id), stemsAvailable,
+    songs, folders, storage, jobs: worker, removeStems: (id) => stemService.removeForSong(id), stemsAvailable, sources,
   });
   const library = new LibraryService({
     songs, folders, storage, stemCounts: () => stems.counts(), pendingStemJobs: () => stems.pendingStemJobs(),
@@ -129,7 +132,7 @@ async function main(): Promise<void> {
 
   // HTTP
   const router = new Router();
-  registerSongRoutes(router, generation, library);
+  registerSongRoutes(router, generation, library, sources);
   registerFolderRoutes(router, folderService, library);
   registerPresetRoutes(router, presets);
   registerSetupRoutes(router, setup);

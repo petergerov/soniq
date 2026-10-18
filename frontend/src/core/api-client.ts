@@ -1,5 +1,5 @@
 // Typisierter Zugriff auf die HTTP-API des Backends. Einzige Stelle, die fetch() für /api benutzt.
-import type { AnalyzeResult, ErrorBody, ExtractRequest, FolderOverview, GenerateRequest, GenerateResponse, HealthInfo, NewVersionRequest, Preset, PresetValues, QueueInfo, RepaintRequest, SetupRequest, SetupStatus, Stem, StemIntent, StemTrack, Settings, SettingsView, Song, SongPatch, UpdateCheck, UpdateStatus } from "../../../shared/api.ts";
+import type { AnalyzeResult, AudioRef, ErrorBody, ExtractRequest, FolderOverview, GenerateRequest, GenerateResponse, HealthInfo, NewVersionRequest, Preset, PresetValues, QueueInfo, RepaintRequest, SetupRequest, SetupStatus, Stem, StemIntent, StemTrack, Settings, SettingsView, Song, SongPatch, UpdateCheck, UpdateStatus } from "../../../shared/api.ts";
 
 export class ApiError extends Error {
   override name = "ApiError";
@@ -97,6 +97,13 @@ export class ApiClient {
   shutdown(): Promise<{ ok: true; packaged?: boolean }> { return this.send("POST", "/api/shutdown"); }
   checkUpdate(): Promise<UpdateCheck> { return this.send("GET", "/api/update/check"); }
   applyUpdate(): Promise<{ ok: true } & UpdateStatus> { return this.send("POST", "/api/update/apply"); }
+
+  /** Vorlage für Cover oder Klang-Referenz ablegen (WAV oder MP3) */
+  uploadAudio(file: File): Promise<AudioRef> {
+    const body = new FormData();
+    body.append("audio", file);
+    return this.send("POST", "/api/uploads", body);
+  }
 
   analyze(file: File): Promise<AnalyzeResult> {
     const body = new FormData();

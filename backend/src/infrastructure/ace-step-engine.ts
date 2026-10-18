@@ -8,10 +8,12 @@ import type { HealthInfo, Settings } from "../../../shared/api.ts";
 import type { SongResultMeta } from "../../../shared/api.ts";
 import {
   DIT_MODELS, EngineError, STEM_GUIDANCE, STEM_MODELS, STEM_SHIFT, STEM_STEPS,
-  type AnalysisResult, type GeneratedAudio, type MusicEngine, type ProgressReporter, type RepaintRequest, type StemRequest,
+  type AnalysisResult, type AudioFile, type CoverRequest, type GeneratedAudio, type MusicEngine, type ProgressReporter, type RepaintRequest,
+  type StemRequest,
 } from "../domain/music-engine.ts";
 import { DEFAULT_OUTPUT_FORMAT, OUTPUT_FORMATS, type AceOutputFormat } from "../domain/output-format.ts";
 import { parseMultipart } from "./multipart.ts";
+import { wavSeconds } from "./wav.ts";
 
 /** Felder, die an ace-server durchgereicht werden (Rest bleibt auf Server-Vorgaben). */
 const ACE_FIELDS = new Set([
@@ -48,6 +50,23 @@ function isConnectionError(e: unknown): boolean {
 
 function firstItem(value: unknown): Json {
   return (Array.isArray(value) ? value[0] : value) as Json;
+}
+
+/** /synth als Multipart: Anfrage-JSON plus Vorlage ("audio") und Klang-Referenz ("ref_audio") */
+function synthForm(req: Json, files: { audio?: AudioFile | undefined; ref_audio?: AudioFile | undefined }): FormData {
+  const form = new FormData();
+  form.append("request", new Blob([JSON.stringify(req)], { type: "application/json" }), "request.json");
+  for (const [part, file] of Object.entries(files)) {
+    if (file) form.append(part, new Blob([new Uint8Array(file.data)], { type: audioType(file.name) }), file.name);
+  }
+  return form;
+}
+
+/** Felder für den Modellserver; leere Werte bleiben auf seinen Vorgaben */
+function aceFields(params: Json, skip: readonly string[] = []): Json {
+  return Object.fromEntries(
+    Object.entries(params).filter(([k, v]) => ACE_FIELDS.has(k) && !skip.includes(k) && v !== null && v !== undefined && v !== ""),
+  );
 }
 
 export class AceStepEngine implements MusicEngine {
@@ -91,10 +110,8 @@ export class AceStepEngine implements MusicEngine {
     return info;
   }
 
-  async generate(params: Json, progress: ProgressReporter, signal: AbortSignal): Promise<GeneratedAudio> {
-    const req: Json = Object.fromEntries(
-      Object.entries(params).filter(([k, v]) => ACE_FIELDS.has(k) && v !== null && v !== undefined && v !== ""),
-    );
+  async generate(params: Json, progress: ProgressReporter, signal: AbortSignal, reference?: AudioFile): Promise<GeneratedAudio> {
+    const req = aceFields(params);
     req.use_cot_caption ??= false;      // Prompt wörtlich übernehmen
     Object.assign(req, this.outputFormat);   // Dateiformat aus den Einstellungen (Vorgabe: WAV 16 Bit)
     req.synth_model = this.ditModel;
@@ -111,8 +128,11 @@ export class AceStepEngine implements MusicEngine {
     Object.assign(enriched, this.outputFormat);
     enriched.synth_model = req.synth_model;
 
-    // 2) Synthese
-    const synthJob = await this.startJob(this.base, "/synth", { body: JSON.stringify(enriched), headers: { "content-type": "application/json" } }, signal);
+    // 2) Synthese, mit Klang-Referenz als Multipart
+    const body = reference
+      ? { body: synthForm(enriched, { ref_audio: reference }) }
+      : { body: JSON.stringify(enriched), headers: { "content-type": "application/json" } };
+    const synthJob = await this.startJob(this.base, "/synth", body, signal);
     const synthResult = await this.waitForJob(this.base, synthJob, "Synthese", start, progress, signal);
     const { audio, extension } = await this.extractAudio(synthResult);
     const meta = Object.fromEntries(META_FIELDS.map((k) => [k, enriched[k] ?? null]));
@@ -120,9 +140,7 @@ export class AceStepEngine implements MusicEngine {
   }
 
   async plan(params: Json, writeLyrics: boolean, progress: ProgressReporter, signal: AbortSignal): Promise<SongResultMeta> {
-    const req: Json = Object.fromEntries(
-      Object.entries(params).filter(([k, v]) => ACE_FIELDS.has(k) && v !== null && v !== undefined && v !== ""),
-    );
+    const req = aceFields(params);
     req.use_cot_caption ??= false;
     // Lyrics schreibt "generate" verlässlich (Audio-Codes werden hier nicht gebraucht); sonst "format" ohne Codes, ~3 s
     req.lm_mode = writeLyrics ? "generate" : "format";
@@ -143,10 +161,7 @@ export class AceStepEngine implements MusicEngine {
       output_format: "wav32",   // Gleitkomma: Spuren werden danach addiert, ohne Rundung dazwischen
     };
     for (const k of ["bpm", "keyscale", "timesignature", "duration", "seed"] as const) if (r[k] !== undefined && r[k] !== null && r[k] !== "") req[k] = r[k];
-    const form = new FormData();
-    form.append("request", new Blob([JSON.stringify(req)], { type: "application/json" }), "request.json");
-    const name = r.sourceName || "source.wav";
-    form.append("audio", new Blob([new Uint8Array(r.source)], { type: audioType(name) }), name);
+    const form = synthForm(req, { audio: { data: r.source, name: r.sourceName || "source.wav" } });
     const job = await this.startJob(this.base, "/synth", { body: form }, signal);
     const res = await this.waitForJob(this.base, job, r.track, performance.now(), progress, signal);
     const { audio, extension } = await this.extractAudio(res);
@@ -156,20 +171,28 @@ export class AceStepEngine implements MusicEngine {
 
   async repaint(r: RepaintRequest, progress: ProgressReporter, signal: AbortSignal): Promise<GeneratedAudio> {
     // Ohne Sprachmodell: Caption und Lyrics gehen wörtlich an das Klangmodell, die Länge gibt die Vorlage vor
-    const req: Json = Object.fromEntries(
-      Object.entries(r.params).filter(([k, v]) => ACE_FIELDS.has(k) && k !== "duration" && v !== null && v !== undefined && v !== ""),
-    );
+    const req = aceFields(r.params, ["duration", "lm_model"]);
     Object.assign(req, this.outputFormat, {
       task_type: "repaint", synth_model: this.ditModel, repainting_start: r.start, repainting_end: r.end,
     });
-    delete req.lm_model;
-    const form = new FormData();
-    form.append("request", new Blob([JSON.stringify(req)], { type: "application/json" }), "request.json");
-    form.append("audio", new Blob([new Uint8Array(r.source)], { type: audioType(r.sourceName) }), r.sourceName);
+    const form = synthForm(req, { audio: { data: r.source, name: r.sourceName } });
     const job = await this.startJob(this.base, "/synth", { body: form }, signal);
     const res = await this.waitForJob(this.base, job, "Repaint", performance.now(), progress, signal);
     const { audio, extension } = await this.extractAudio(res);
     const meta = Object.fromEntries(META_FIELDS.map((k) => [k, r.params[k] ?? null]));
+    return { audio, extension, meta };
+  }
+
+  async cover(r: CoverRequest, progress: ProgressReporter, signal: AbortSignal): Promise<GeneratedAudio> {
+    // Wie Repaint ohne Sprachmodell: Caption und Lyrics gehen wörtlich an das Klangmodell, die Länge gibt die Vorlage vor
+    const req = aceFields(r.params, ["duration", "lm_model"]);
+    Object.assign(req, this.outputFormat, { task_type: r.task, synth_model: this.ditModel, audio_cover_strength: r.strength });
+    const form = synthForm(req, { audio: r.source, ref_audio: r.reference });
+    const job = await this.startJob(this.base, "/synth", { body: form }, signal);
+    const res = await this.waitForJob(this.base, job, "Cover", performance.now(), progress, signal);
+    const { audio, extension } = await this.extractAudio(res);
+    const meta: SongResultMeta = Object.fromEntries(META_FIELDS.map((k) => [k, r.params[k] ?? null]));
+    meta.duration = (extension === "wav" ? Math.round(wavSeconds(audio) * 10) / 10 : 0) || meta.duration || null;
     return { audio, extension, meta };
   }
 

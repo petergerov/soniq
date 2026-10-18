@@ -1,11 +1,12 @@
 // Formular zum Erzeugen: liest die Eingaben, schickt den Auftrag, übernimmt Werte aus Songs und Analysen.
-import type { AnalyzeResult, GenerateRequest, PresetValues, Song } from "../../../../shared/api.ts";
+import type { AnalyzeResult, GenerateRequest, GenerationMode, PresetValues, Song } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { errorDialog } from "../../core/dialogs.ts";
 import { byId, restartAnimation, scrollToTop } from "../../core/dom.ts";
 import { setPackagedApp } from "../../core/stems-hint.ts";
 import { storage } from "../../core/storage.ts";
 import type { Translate } from "../../i18n/i18n.ts";
+import { AudioSources } from "./audio-sources.ts";
 import { BubbleSlider } from "./bubble-slider.ts";
 import { LyricsEditor } from "./lyrics-editor.ts";
 import { PresetPicker } from "./preset-picker.ts";
@@ -75,6 +76,7 @@ export class GeneratorForm {
   private readonly styleAxes: StyleAxisSliders;
   private readonly voice: VoicePicker;
   private readonly trackPicker: TrackPicker;
+  private readonly sources: AudioSources;
   private readonly lyrics: LyricsEditor;
   private readonly sliders: Record<"duration" | "bpm" | "steps" | "temperature" | "variants", BubbleSlider>;
   private readonly locked = new Set<LockableField>(storage.getJson<LockableField[]>(LOCKS_KEY, []));
@@ -87,6 +89,10 @@ export class GeneratorForm {
   private readonly presets: PresetPicker;
   /** Letzte Analyse, für „Ähnlich, aber anders“ */
   private lastAnalysis: AnalyzeResult | null = null;
+  /** Die analysierte Datei, für „Als Cover“ und „Klingt wie diese Datei“ */
+  private lastFile: File | null = null;
+  private readonly coverThisButton = byId<HTMLButtonElement>("coverThisBtn");
+  private readonly refThisButton = byId<HTMLButtonElement>("refThisBtn");
 
   constructor(deps: GeneratorFormDeps) {
     this.deps = deps;
@@ -103,8 +109,9 @@ export class GeneratorForm {
     this.styleAxes = new StyleAxisSliders(this.f.style, this.form.querySelector(".axes")!, () => this.remember());
     this.voice = new VoicePicker(this.f.style, byId("voiceBox"), () => this.remember());
     this.lyrics = new LyricsEditor({ instrumental: this.f.instrumental, lyrics: this.f.lyrics }, deps.t);
+    this.sources = new AudioSources({ api: deps.api, t: deps.t });
     // Nach dem Lyrics-Editor: die Spurauswahl fragt ihn, ob "Instrumental" gewählt ist
-    this.trackPicker = new TrackPicker({ t: deps.t, instrumental: () => this.lyrics.instrumental });
+    this.trackPicker = new TrackPicker({ t: deps.t, instrumental: () => this.lyrics.instrumental, onModeChange: (mode) => this.modeChanged(mode) });
     // Spur für Spur geht nur mit dem Spuren-Modell; die Einstellungen sagen, ob es da ist
     void deps.api.settings().then((s) => {
       setPackagedApp(s.packaged);
@@ -215,6 +222,7 @@ export class GeneratorForm {
     Object.values(this.sliders).forEach((s) => s.update());
     this.presets.refreshTexts();
     this.trackPicker.refreshTexts();
+    this.sources.refreshTexts();
     this.lyrics.sync();
     this.updateButton();
   }
@@ -229,6 +237,7 @@ export class GeneratorForm {
     this.blocks.sync();
     this.f.keep_caption.checked = true;          // Prompt wörtlich ist fest die Vorgabe
     this.lyrics.load(p.lyrics || "");
+    this.sources.apply(p);
     this.trackPicker.apply(p);
     this.sliders.duration.value = p.duration || DEFAULTS.duration;
     this.sliders.bpm.value = p.bpm || this.sliders.bpm.min;
@@ -244,10 +253,40 @@ export class GeneratorForm {
     scrollToTop();
   }
 
+  /**
+   * Cover eines Songs der Bibliothek: Original und seine Lyrics übernehmen; Prompt und Stil bleiben für den neuen
+   * Stil. Tempo, Tonart und Takt auf Auto: dann nimmt der Server die des Originals.
+   */
+  coverOf(song: Song): void {
+    const lyrics = song.result_meta?.lyrics || song.lyrics || "";
+    this.lyrics.load(lyrics);
+    const lang = song.result_meta?.vocal_language || song.params.vocal_language;
+    if (lang && [...this.f.vocal_language.options].some((o) => o.value === lang)) this.f.vocal_language.value = lang;
+    this.startCover({ song_id: song.id, name: song.title || song.caption.slice(0, 40), duration: song.result_meta?.duration || song.params.duration || 0 });
+  }
+
+  /** „Klingt wie“: Klangfarbe dieses Songs für die nächsten Songs */
+  soundsLike(song: Song): void {
+    this.sources.setReference({ song_id: song.id, name: song.title || song.caption.slice(0, 40), duration: song.result_meta?.duration || 0 });
+    byId("refBox").scrollIntoView({ block: "center" });
+  }
+
+  private startCover(source: Parameters<AudioSources["setCover"]>[0]): void {
+    this.sources.setCover(source);
+    this.trackPicker.setMode("cover");
+    this.f.title.value = source ? this.deps.t("cover_title", source.name) : "";
+    this.sliders.bpm.value = this.sliders.bpm.min;
+    setSelect(this.f.keyscale, "");
+    setSelect(this.f.timesignature, "");
+    scrollToTop();
+  }
+
   /** Ergebnis der Song-Analyse als Vorschlag übernehmen. */
-  applyAnalysis(r: AnalyzeResult): void {
+  applyAnalysis(r: AnalyzeResult, file?: File): void {
     this.lastAnalysis = r;
+    this.lastFile = file ?? null;
     this.similarButton.hidden = false;
+    this.coverThisButton.hidden = this.refThisButton.hidden = !file;
     this.remember();
     this.f.prompt.value = r.caption || "";
     this.f.style.value = "";
@@ -289,6 +328,27 @@ export class GeneratorForm {
     setSelect(this.f.timesignature, String(r.timesignature || ""));
   }
 
+  /** Die analysierte Datei als Original: Tempo und Tonart aus der Analyse, ihre Lyrics (Cover singt den Text nach) */
+  private async coverAnalyzed(): Promise<void> {
+    const file = this.lastFile, r = this.lastAnalysis;
+    if (!file || !r) return;
+    this.trackPicker.setMode("cover");
+    const source = await this.sources.uploadCover(file);
+    if (!source) return;
+    if (hasVocals(r.lyrics || "")) this.lyrics.setOwn(r.lyrics);
+    else this.lyrics.setInstrumental();
+    this.f.title.value = this.deps.t("cover_title", source.name);
+    if (r.bpm) this.sliders.bpm.value = r.bpm;
+    setSelect(this.f.keyscale, r.keyscale, true);
+    setSelect(this.f.timesignature, String(r.timesignature || ""));
+  }
+
+  /** Cover: Länge kommt vom Original */
+  private modeChanged(mode: GenerationMode): void {
+    this.sources.setMode(mode);
+    byId("lengthBox").hidden = mode === "cover";
+  }
+
   private read(): GenerateRequest {
     const instrumental = this.lyrics.instrumental;
     const seed = this.f.seed.value.trim();
@@ -311,6 +371,7 @@ export class GeneratorForm {
       inference_steps: this.sliders.steps.value,
       lm_temperature: this.sliders.temperature.value,
       ...this.trackPicker.request,
+      ...this.sources.request(),
     };
   }
 
@@ -335,6 +396,10 @@ export class GeneratorForm {
       this.blocks.sync();
     });
     this.similarButton.addEventListener("click", () => this.similar());
+    this.coverThisButton.addEventListener("click", () => void this.coverAnalyzed());
+    this.refThisButton.addEventListener("click", () => {
+      if (this.lastFile) void this.sources.uploadReference(this.lastFile);
+    });
     byId("randomBtn").addEventListener("click", () => this.random());
     byId("varyBtn").addEventListener("click", () => this.vary());
     this.undoButton.addEventListener("click", () => this.undo());
@@ -398,6 +463,11 @@ export class GeneratorForm {
         return;
       }
       if (this.button.disabled) return;
+      if (this.trackPicker.current === "cover" && !this.sources.cover) {
+        byId("coverPick").focus();
+        void errorDialog(this.deps.t, new Error(this.deps.t("cover_need_source")));
+        return;
+      }
       this.button.disabled = true;
       try {
         await this.deps.api.generate(this.read());

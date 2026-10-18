@@ -161,11 +161,12 @@ export class LibraryStore {
       await this.api.repaint(p.repaint.song_id, { start: p.repaint.start, end: p.repaint.end, caption: p.caption, lyrics: p.lyrics, count: 1 });
       return this.refresh();
     }
-    const { mode, tracks, keepers: _keepers, source: _source, repaint: _repaint, ...rest } = p;
+    const { mode, tracks, keepers: _keepers, source: _source, repaint: _repaint, cover, ...rest } = p;
     await this.api.generate({
       ...rest, instrumental: false, keep_caption: p.use_cot_caption !== true, title: song.title || "",
       seed: -1, variants: 1, group_id: song.group_id, folder_id: song.folder_id,
       ...(mode === "tracks" ? { mode, tracks } : {}),
+      ...(mode === "cover" && cover ? { mode, cover } : {}),
     });
     await this.refresh();
   }
