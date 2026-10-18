@@ -1,12 +1,14 @@
 // Stem Separation mit Demucs (demucs.cpp, MIT): ein eigenes Trennmodell statt ACE-Step extract.
-// Rechnet nur auf der CPU (auf dem Mac mit Accelerate), liefert alle Spuren eines Modells in einem Durchgang.
-// demucs.cpp liest nur 44,1 kHz: hin- und zurückgerechnet wird hier, die Spuren haben danach wieder die Song-Rate.
+// demucs.cpp rechnet nur auf der CPU (auf dem Mac mit Accelerate), liefert alle Spuren eines Modells in einem Durchgang.
+// Auf dem Mac rechnet htdemucs_6s als Core ML (soniq-demucs, macos/demucs-coreml.swift), wenn Programm und Modell da
+// sind: auf der GPU etwa neunmal so schnell, auf der CPU fünfmal (Einstellung demucs_device). Scheitert es, übernimmt
+// demucs.cpp. Beide lesen nur 44,1 kHz: hin- und zurückgerechnet wird hier, die Spuren haben danach die Song-Rate.
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { availableParallelism, totalmem } from "node:os";
 import { join } from "node:path";
-import type { DemucsModel, StemTrack } from "../../../shared/api.ts";
+import type { DemucsDevice, DemucsModel, StemTrack } from "../../../shared/api.ts";
 import { EngineError } from "../domain/music-engine.ts";
 import { encodeWav, parseWav, resample, type Pcm } from "./wav.ts";
 
@@ -22,6 +24,10 @@ interface ModelSpec {
 }
 
 const FOUR: readonly [string, StemTrack][] = [["drums", "drums"], ["bass", "bass"], ["other", "other"], ["vocals", "vocals"]];
+/** Core-ML-Programm neben den Programmen von demucs.cpp, und die Modelle, die es rechnen kann (STFT im Modell) */
+const COREML_BIN = "soniq-demucs";
+const COREML_PACKAGES: Partial<Record<DemucsModel, string>> = { demucs_6s: "demucs_6s_f32.mlpackage" };
+
 const SPECS: Record<DemucsModel, ModelSpec> = {
   demucs_ft: {
     bin: "demucs_ft_mt.cpp.main",
@@ -67,6 +73,9 @@ export interface DemucsDeps {
   /** Ordner für Zwischendateien (wird je Lauf angelegt und wieder gelöscht) */
   tmpDir: string;
   log: (message: string) => void;
+  /** Core ML auf GPU oder CPU (Einstellungen) */
+  device: () => DemucsDevice;
+  platform?: NodeJS.Platform;
 }
 
 export class DemucsSeparator {
@@ -81,11 +90,31 @@ export class DemucsSeparator {
     return Object.values(SPECS).every((spec) => existsSync(join(this.deps.binDir, spec.bin)));
   }
 
-  /** Programm und alle Modelldateien da? */
-  available(model: DemucsModel): boolean {
+  /** Core-ML-Programm da (macOS)? Dann lässt sich auch das Core-ML-Modell laden. */
+  coremlSupported(): boolean {
+    return (this.deps.platform ?? process.platform) === "darwin" && existsSync(join(this.deps.binDir, COREML_BIN));
+  }
+
+  /** Rechnet dieses Modell als Core ML (Programm und entpacktes Modell da)? */
+  coremlAvailable(model: DemucsModel): boolean {
+    const pkg = COREML_PACKAGES[model];
+    return !!pkg && this.coremlSupported() && existsSync(join(this.deps.modelsDir, DEMUCS_MODEL_DIR, pkg, "Manifest.json"));
+  }
+
+  coremlAvailability(): Record<DemucsModel, boolean> {
+    return { demucs_ft: this.coremlAvailable("demucs_ft"), demucs_6s: this.coremlAvailable("demucs_6s") };
+  }
+
+  /** demucs.cpp: Programm und alle Modelldateien da? */
+  private cppAvailable(model: DemucsModel): boolean {
     const spec = SPECS[model];
     return existsSync(join(this.deps.binDir, spec.bin))
       && spec.files.every((f) => existsSync(join(this.deps.modelsDir, DEMUCS_MODEL_DIR, f)));
+  }
+
+  /** Lässt sich das Modell rechnen (Core ML oder demucs.cpp)? */
+  available(model: DemucsModel): boolean {
+    return this.coremlAvailable(model) || this.cppAvailable(model);
   }
 
   availability(): Record<DemucsModel, boolean> {
@@ -100,13 +129,15 @@ export class DemucsSeparator {
     try {
       const input = join(dir, "song.wav");
       await writeFile(input, encodeWav(resample(song, DEMUCS_RATE), 32));
-      const modelArg = model === "demucs_ft"
-        ? join(this.deps.modelsDir, DEMUCS_MODEL_DIR)
-        : join(this.deps.modelsDir, DEMUCS_MODEL_DIR, spec.files[0]!);
       const out = join(dir, "out");
-      const threads = demucsThreads();
-      this.deps.log(`Demucs ${model}: ${threads} threads`);
-      await this.run(join(this.deps.binDir, spec.bin), [modelArg, input, out, String(threads)], signal);
+      if (!(await this.coreml(model, input, out, signal))) {
+        const modelArg = model === "demucs_ft"
+          ? join(this.deps.modelsDir, DEMUCS_MODEL_DIR)
+          : join(this.deps.modelsDir, DEMUCS_MODEL_DIR, spec.files[0]!);
+        const threads = demucsThreads();
+        this.deps.log(`Demucs ${model}: demucs.cpp, ${threads} threads`);
+        await this.run(join(this.deps.binDir, spec.bin), [modelArg, input, out, String(threads)], signal);
+      }
       const stems = new Map<StemTrack, Pcm>();
       for (const [i, [name, track]] of spec.outputs.entries()) {
         const file = join(out, `target_${i}_${name}.wav`);
@@ -116,6 +147,26 @@ export class DemucsSeparator {
       return stems;
     } finally {
       await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  /**
+   * Core ML versuchen. true = Spuren liegen in `out`; false = nicht möglich oder gescheitert (dann demucs.cpp, sofern
+   * dessen Dateien da sind; sonst geht der Fehler weiter).
+   */
+  private async coreml(model: DemucsModel, input: string, out: string, signal: AbortSignal): Promise<boolean> {
+    if (!this.coremlAvailable(model)) return false;
+    const device = this.deps.device();
+    const start = performance.now();
+    try {
+      await this.run(join(this.deps.binDir, COREML_BIN), [join(this.deps.modelsDir, DEMUCS_MODEL_DIR, COREML_PACKAGES[model]!), input, out, device], signal);
+      this.deps.log(`Demucs ${model}: Core ML (${device}), ${Math.round((performance.now() - start) / 1000)} s`);
+      return true;
+    } catch (e) {
+      if (signal.aborted || !this.cppAvailable(model)) throw e;
+      this.deps.log(`Demucs ${model}: Core ML failed (${(e as Error).message}), using demucs.cpp`);
+      await rm(out, { recursive: true, force: true });
+      return false;
     }
   }
 

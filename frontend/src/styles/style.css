@@ -674,3 +674,8 @@ button.info:focus-visible { outline: none; box-shadow: var(--focus); }
 .mixer-add-bar > .sek { width: auto; }
 .mixer-add-bar .chip { cursor: pointer; }
 .mixer-add-bar .chip:disabled { opacity: .35; cursor: not-allowed; }
+
+/* Einstellungen › Demucs: GPU oder CPU (Core ML) */
+.demucs-device { display: inline-flex; align-items: center; gap: 8px; }
+.demucs-device[hidden] { display: none; }
+.demucs-device select { width: auto; }

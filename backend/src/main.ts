@@ -90,7 +90,9 @@ async function main(): Promise<void> {
   const stemService = new StemService({ stems, songs, storage });
   const stemsAvailable = () => Object.values(STEM_MODELS).some(modelInstalled);
   const trackByTrack = new TrackByTrack({ stems, storage, removeStems: (id) => stemService.removeForSong(id) });
-  const demucs = new DemucsSeparator({ binDir: config.demucsBinDir, modelsDir: config.modelsDir, tmpDir: join(config.dataDir, "tmp"), log });
+  const demucs = new DemucsSeparator({
+    binDir: config.demucsBinDir, modelsDir: config.modelsDir, tmpDir: join(config.dataDir, "tmp"), log, device: () => settings.get().demucs_device,
+  });
   const extract = new ExtractTracks({ stems, songs, storage, stemsAvailable, demucs });
   const versions = new StemVersions({ stems, songs, storage, stemsAvailable });
   const replaceAccompany = new ReplaceAccompany({ stems, storage, removeStems: (id) => stemService.removeForSong(id) });
@@ -109,7 +111,8 @@ async function main(): Promise<void> {
   const folderService = new FolderService(folders, songs);
   const settingsService = new SettingsService({
     settings, songs, storage, modelsDir: config.modelsDir, packaged: config.packaged,
-    demucsAvailable: () => demucs.availability(), demucsSupported: () => demucs.supported(),
+    demucsAvailable: () => demucs.availability(), demucsSupported: () => demucs.supported(), demucsCoreml: () => demucs.coremlAvailability(),
+    demucsCoremlSupported: () => demucs.coremlSupported(),
   });
   const analysis = new AnalysisService(settings, engineFactory);
   const system = new SystemService({
@@ -123,7 +126,7 @@ async function main(): Promise<void> {
   });
   const setup = new SetupService({
     packaged: config.packaged, catalog: loadCatalog(config.root), modelsDir: config.modelsDir, engineConf, engine, synthPort: config.synthPort,
-    demucsSupported: () => demucs.supported(), log,
+    demucsSupported: () => demucs.supported(), demucsCoremlSupported: () => demucs.coremlSupported(), log,
   });
   const updates = new UpdateService({
     root: config.root, platform: config.platform, packaged: config.packaged, appVersion: config.appVersion, git: new Git(config.root), songs, launcher, port: config.port,

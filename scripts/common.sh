@@ -159,6 +159,37 @@ demucs_models() {
   done
 }
 
+# Demucs als Core ML (nur macOS, macos/demucs-coreml.swift): htdemucs_6s mit der STFT im Modell, auf GPU oder CPU
+# schneller als demucs.cpp. Gezipptes .mlpackage, entpackt nach $MODELS/demucs/. Datei:Größe in MB:SHA-256.
+DEMUCS_COREML_BASE="https://github.com/petergerov/gig-songbook/releases/download/1.0.0"
+DEMUCS_COREML_FILES="demucs_6s_f32.mlpackage.zip:240:3b3f70f8c73d4c0d66000358d8e516d235a8a79887fcb776c68a5b016a5ef7e3"
+
+# Programm für Demucs als Core ML nach <Ordner>/soniq-demucs bauen, sofern die Quelle neuer ist. [swiftc-Optionen]
+demucs_coreml_build() {
+  local out="$1/soniq-demucs" src="$ROOT/macos/demucs-coreml.swift"
+  shift
+  [ -x "$out" ] && [ "$out" -nt "$src" ] && return 0
+  mkdir -p "$(dirname "$out")" && swiftc -O "$@" -o "$out" "$src"
+}
+
+# Core-ML-Modelle laden, per SHA-256 prüfen und nach $MODELS/demucs entpacken (vorhandene bleiben). Rückgabe 1 bei Fehler.
+demucs_coreml_models() {
+  local dir="$MODELS/demucs" e f sha
+  mkdir -p "$dir"
+  for e in $DEMUCS_COREML_FILES; do
+    IFS=: read -r f _ sha <<< "$e"
+    if [ -f "$dir/${f%.zip}/Manifest.json" ]; then echo "  ✓ ${f%.zip}"; continue; fi
+    echo "  ↓ $f"
+    curl -L --fail -C - --progress-bar -o "$dir/$f.part" "$DEMUCS_COREML_BASE/$f" || return 1
+    if [ "$(sha256_of "$dir/$f.part")" != "$sha" ]; then
+      rm -f "$dir/$f.part"
+      echo "  Checksum of $f does not match, file deleted."
+      return 1
+    fi
+    rm -rf "$dir/${f%.zip}" && ditto -x -k "$dir/$f.part" "$dir" && rm -rf "$dir/__MACOSX" "$dir/$f.part" || return 1
+  done
+}
+
 # SHA-256 einer Datei (macOS: shasum, Linux: sha256sum)
 sha256_of() {
   if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi

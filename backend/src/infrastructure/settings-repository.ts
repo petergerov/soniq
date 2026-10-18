@@ -20,6 +20,7 @@ export function defaultSettings(engine: EngineValues, ports: Ports): Settings {
     stem_model: "standard",                 // Spuren-Modell: "standard" (Base 2B) oder "xl" (XL-Base 4B); Standard klang im Hörtest sauberer
     output_format: DEFAULT_OUTPUT_FORMAT,   // Dateiformat der Songs (siehe domain/output-format.ts)
     songs_dir: "",                          // leer = data/songs im Programmordner, sonst absoluter Pfad
+    demucs_device: "gpu",                   // Demucs als Core ML (macOS): GPU schneller, CPU genauer (macos/demucs-coreml.swift)
   };
 }
 

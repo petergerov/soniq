@@ -49,7 +49,7 @@ Nicht bei Spur-für-Spur, Replace oder Begleitung — die haben bereits Einzelsp
 | Wahl | Modell | Spuren | Dauer (Mac, 32 GB, 4 Threads) |
 |---|---|---|---|
 | Demucs · 4 Stems | `htdemucs_ft`: vier nachtrainierte Modelle (4 × 84 MB), beste Qualität | drums, bass, vocals, other | ~3,2 × Songlänge (90-s-Song: 288 s) |
-| Demucs · 6 Stems | `htdemucs_6s` (55 MB) | drums, bass, guitar, keyboard (Klavier), vocals, other | ~0,9 × Songlänge (90 s: 78 s, 165 s: ~2 min) |
+| Demucs · 6 Stems | `htdemucs_6s` (55 MB; Mac: Core ML 340 MB) | drums, bass, guitar, keyboard (Klavier), vocals, other | demucs.cpp ~0,9 × Songlänge (90 s: 78 s); Mac mit Core ML: GPU ~0,1 ×, CPU ~0,15 × |
 | ACE-Step | Spuren-Modell, `extract` je Spur | 2 / 4 / 6 nach festem Set | je Spur etwa so lange wie der Song |
 
 **Demucs** ist ein eigenes Trennmodell (Meta, über [demucs.cpp](https://github.com/sevagh/demucs.cpp), MIT): es teilt den
@@ -57,6 +57,14 @@ vorhandenen Mix auf, alle Spuren in einem Durchgang, auf der CPU (Mac: Accelerat
 ergeben zusammen wieder den Song (Rest bei „Amber Echoes“, htdemucs_6s: −23,5 dB). Die Gewichte sind die
 Originale von Meta in halber Genauigkeit (htdemucs_6s 55 MB = offizieller Checkpoint `5c90dfd2-34c22ccb.th`); ein
 größeres 6-Spur-Demucs gibt es nicht. Das Klavier von htdemucs_6s ist laut den Entwicklern noch unsauber.
+**Core ML (Mac, htdemucs_6s):** `soniq-demucs` (`macos/demucs-coreml.swift`) rechnet htdemucs_6s als Core-ML-Modell
+mit der STFT im Modell (`demucs_6s_f32.mlpackage`, 32 Bit, aus der App Gig Songbook), Segmente wie `demucs.apply_model`
+(7,8 s, 25 % Überlappung, Dreiecks-Gewichte, Mix normiert). Einstellung `demucs_device`: GPU (Vorgabe) oder CPU.
+Gemessen an „Slow Tide“ (90 s, M2 Pro) gegen die echten Spuren (Spur-für-Spur-Song, SI-SDR): demucs.cpp −3,2 dB in 57 s,
+Core ML CPU −2,9 dB in 11 s, Core ML GPU −4,2 dB in 6 s. Die GPU rechnet also ungenauer (Bass −0,3 statt 2,4 dB), die CPU
+so genau wie demucs.cpp (Übereinstimmung 10 dB, Drums 16,5 dB). Scheitert Core ML, rechnet demucs.cpp. htdemucs_ft
+(4 Stems) läuft weiter mit demucs.cpp: das 4-Spur-Core-ML-Modell braucht die STFT außerhalb und ist kein ft-Modell.
+
 Ablauf (`infrastructure/demucs-separator.ts`): Song auf 44,1 kHz (das liest demucs.cpp) als Float-WAV in `data/tmp`,
 `demucs_mt.cpp.main` bzw. `demucs_ft_mt.cpp.main` mit 1–4 Threads je nach Arbeitsspeicher (je Thread ~1,7 GB), Spuren
 zurück auf 48 kHz. Nur für WAV-Songs (ein MP3-Decoder fehlt dem Server bewusst; MP3-Songs → ACE-Step). Die Restspur
@@ -72,7 +80,9 @@ Die fertige Mac-App und das Debian-Paket bringen demucs.cpp portabel gebaut mit 
 `-march=native`; Mac `-mcpu=apple-m1` mit Accelerate, Linux OpenMP, amd64 zusätzlich ein AVX2/FMA-Build in
 `bin/demucs/avx2`, den das Backend nach `/proc/cpuinfo` wählt). Die Gewichte lädt dort Zahnrad › Demucs
 (`POST /api/setup/demucs`, nach `<Modelle>/demucs`, ohne Neustart des Modellservers). Windows liefert Demucs noch
-nicht mit; dort fehlen die Demucs-Knöpfe.
+nicht mit; dort fehlen die Demucs-Knöpfe. Auf dem Mac baut `install.command` zusätzlich `soniq-demucs` (swiftc, neben
+die Programme von demucs.cpp) und lädt das Core-ML-Modell (`DEMUCS_COREML_FILES`, ZIP mit SHA-256, entpackt nach
+`models/demucs`); die Mac-App bringt `soniq-demucs` mit und lädt das Modell unter Zahnrad › Demucs dazu.
 
 ---
 

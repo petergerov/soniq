@@ -378,6 +378,13 @@
     </div>
     <div class="field" id="demucsField" hidden><span class="lbl" title="" data-i18n-title="demucs_tip" data-i18n="demucs_model">Demucs</span>
       <span class="small" id="demucsState"></span>
+      <label class="small demucs-device" id="demucsDeviceRow" hidden title="Gilt für 6 Spuren (Core ML). GPU: etwa doppelt so schnell wie die CPU, aber etwas ungenauer (vor allem beim Bass). 4 Spuren rechnet weiter demucs.cpp auf der CPU." data-i18n-title="demucs_device_tip">
+        <span data-i18n="demucs_device">Rechnet auf</span>
+        <select name="demucs_device" class="mini">
+          <option value="gpu" data-i18n="demucs_gpu">GPU (schneller)</option>
+          <option value="cpu" data-i18n="demucs_cpu">CPU (genauer)</option>
+        </select>
+      </label>
       <button type="button" id="demucsGet" class="sek" hidden data-i18n="demucs_get">Demucs laden (390 MB)</button>
     </div>
     <label class="field"><span class="lbl" title="" data-i18n-title="out_fmt_tip" data-i18n="out_fmt">Ausgabeformat</span>

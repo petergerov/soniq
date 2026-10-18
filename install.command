@@ -124,6 +124,10 @@ for e in $DEMUCS_FILES; do   # Demucs (Stem Separation) gehört immer dazu
   IFS=: read -r f mb _ <<< "$e"
   [ -f "$MODELS/demucs/$f" ] || NEED_MB=$(( NEED_MB + mb ))
 done
+for e in $DEMUCS_COREML_FILES; do   # ebenso als Core ML (gezippt; entpackt etwa anderthalbmal so groß)
+  IFS=: read -r f mb _ <<< "$e"
+  [ -f "$MODELS/demucs/${f%.zip}/Manifest.json" ] || NEED_MB=$(( NEED_MB + mb * 5 / 2 ))
+done
 NEED_GB=$(( (NEED_MB + 1023) / 1024 + 3 ))   # + Build, Node.js und etwas Platz für Songs
 echo "  Download: $(( (NEED_MB + 1023) / 1024 )) GB · about $NEED_GB GB free space needed in total"
 [ "$FREE_GB" -ge "$NEED_GB" ] || abbruch "Not enough disk space: $FREE_GB GB free, about $NEED_GB GB needed."
@@ -180,6 +184,9 @@ engine_rpath
 # --- 4b. Stem Separation: demucs.cpp (auf dem Mac mit Accelerate, ohne Zusatzpakete) ----
 schritt "Stem separation demucs.cpp (${DEMUCS_REV:0:7})"
 demucs_build > "$DATA/demucs-build.log" 2>&1 || abbruch "Building demucs.cpp failed, details in data/demucs-build.log"
+# Dazu Demucs als Core ML (GPU), neben den Programmen von demucs.cpp; ohne Xcode-Kommandozeilenwerkzeuge bleibt demucs.cpp
+demucs_coreml_build "$DEMUCS_DIR/build" >> "$DATA/demucs-build.log" 2>&1 \
+  || echo "  Demucs on the GPU (Core ML) could not be built, details in data/demucs-build.log; demucs.cpp is used instead."
 echo "  done"
 
 # --- 5. Modelle -----------------------------------------------------------------
@@ -202,6 +209,7 @@ for e in $FILES; do
 done
 echo "  Demucs (stem separation):"
 demucs_models || abbruch "Downloading the Demucs models failed. Running install again resumes the download."
+demucs_coreml_models || abbruch "Downloading the Demucs Core ML model failed. Running install again resumes the download."
 # Der Modellserver liest die Modellliste nur beim Start: nach neuen Modellen laufende Server beenden, ON startet sie neu.
 if [ "$NEW_MODELS" = 1 ]; then
   for p in "$SYNTH_PORT" "$LM_PORT"; do laeuft "$p" && kill $(lsof -i :"$p" -sTCP:LISTEN -t) 2>/dev/null; done

@@ -1,9 +1,11 @@
 // Einrichtung der fertigen App (MG_PACKAGED): Modelle laden, Grafikchip testen, Modellserver starten.
 // Macht dasselbe wie der Installer (install.command), nur aus der Oberfläche heraus und im Hintergrund.
+import { execFile } from "node:child_process";
 import { mkdirSync, statfsSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { totalmem } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import type { LmSize, SetupRequest, SetupStatus } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
 import { baseFile, fixedFiles, lmFile, lmFileName, LM_SIZES, recommendedLm, requiredFiles, xlBaseFile, xlFile } from "../domain/model-plan.ts";
@@ -24,6 +26,8 @@ export interface SetupServiceDeps {
   synthPort: number;
   /** Programme von demucs.cpp liegen bei (sonst lassen sich die Demucs-Modelle nicht laden) */
   demucsSupported: () => boolean;
+  /** Core-ML-Programm liegt bei (macOS): dann gehört das Core-ML-Modell zu Demucs dazu */
+  demucsCoremlSupported: () => boolean;
   log: (message: string) => void;
 }
 
@@ -58,6 +62,12 @@ export class SetupService {
     return this.deps.catalog.demucs.files.filter((f) => !isFileSync(join(this.demucsDir, f.name)));
   }
 
+  /** Core-ML-Modelle (gezippt geladen, entpackt als <name>.mlpackage) nur mit Core-ML-Programm */
+  private missingDemucsCoreml(): ModelFile[] {
+    if (!this.deps.demucsCoremlSupported()) return [];
+    return this.deps.catalog.demucsCoreml.files.filter((f) => !isFileSync(join(this.demucsDir, f.name.replace(/\.zip$/, ""), "Manifest.json")));
+  }
+
   private get busy(): boolean {
     return this.phase === "verifying" || this.phase === "downloading" || this.phase === "testing" || this.phase === "starting";
   }
@@ -89,8 +99,8 @@ export class SetupService {
       stems: { mb: stems?.mb ?? 0, present: !!stems && this.has(stems.name) },
       stems_xl: { mb: xlStems?.mb ?? 0, present: !!xlStems && this.has(xlStems.name) },
       demucs: {
-        mb: catalog.demucs.files.reduce((sum, f) => sum + f.mb, 0),
-        present: catalog.demucs.files.length > 0 && !this.missingDemucs().length,
+        mb: [...catalog.demucs.files, ...(this.deps.demucsCoremlSupported() ? catalog.demucsCoreml.files : [])].reduce((sum, f) => sum + f.mb, 0),
+        present: catalog.demucs.files.length > 0 && !this.missingDemucs().length && !this.missingDemucsCoreml().length,
         supported: this.deps.demucsSupported(),
       },
       base_mb: fixedFiles(catalog).filter((f) => !this.has(f.name)).reduce((sum, f) => sum + f.mb, 0),
@@ -125,16 +135,30 @@ export class SetupService {
     if (!this.deps.packaged || !this.deps.demucsSupported()) throw new AppError("bad_request", "setup_unavailable");
     if (this.busy) throw new AppError("conflict", "setup_busy");
     const missing = this.missingDemucs();
-    this.checkDisk(missing);
+    const coreml = this.missingDemucsCoreml();
+    // Entpackt braucht das Core-ML-Modell etwa anderthalbmal so viel wie die ZIP-Datei, die bis dahin liegen bleibt
+    this.checkDisk([...missing, ...coreml.map((f) => ({ ...f, mb: Math.ceil(f.mb * 2.5) }))]);
     mkdirSync(this.demucsDir, { recursive: true });
     this.error = "";
     this.abort = new AbortController();
     const signal = this.abort.signal;
     void this.guard(signal, async () => {
       await this.download(this.deps.catalog.demucs.baseUrl, this.demucsDir, missing, signal);
+      await this.download(this.deps.catalog.demucsCoreml.baseUrl, this.demucsDir, coreml, signal);
+      for (const f of coreml) await this.unzip(f.name);
       this.phase = "done";
     });
     return this.status();
+  }
+
+  /** Geladene ZIP-Datei im Demucs-Ordner entpacken und löschen (ditto gehört zu macOS) */
+  private async unzip(name: string): Promise<void> {
+    const zip = join(this.demucsDir, name);
+    await rm(join(this.demucsDir, name.replace(/\.zip$/, "")), { recursive: true, force: true });
+    await promisify(execFile)("ditto", ["-x", "-k", zip, this.demucsDir]);
+    await rm(join(this.demucsDir, "__MACOSX"), { recursive: true, force: true });
+    await rm(zip, { force: true });
+    this.deps.log(`Model ${name} unpacked`);
   }
 
   private checkDisk(missing: ModelFile[]): void {

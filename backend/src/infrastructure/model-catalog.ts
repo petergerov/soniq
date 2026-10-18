@@ -16,6 +16,8 @@ export interface ModelCatalog {
   acestepRev: string;
   /** Demucs-Gewichte für demucs.cpp (eigenes Repo, eigene Revision) */
   demucs: { baseUrl: string; files: ModelFile[] };
+  /** Demucs als Core ML (nur macOS): gezippte .mlpackage, nach dem Laden entpackt */
+  demucsCoreml: { baseUrl: string; files: ModelFile[] };
 }
 
 /** Wert einer Zuweisung NAME="…" (auch mehrzeilig). */
@@ -35,6 +37,7 @@ export function parseCatalog(commonSh: string): ModelCatalog {
   return {
     baseUrl: shellValue(commonSh, "HF_BASE"), files: fileList(commonSh, "MODEL_FILES"), acestepRev: shellValue(commonSh, "ACESTEP_REV"),
     demucs: { baseUrl: shellValue(commonSh, "DEMUCS_HF"), files: fileList(commonSh, "DEMUCS_FILES") },
+    demucsCoreml: { baseUrl: shellValue(commonSh, "DEMUCS_COREML_BASE"), files: fileList(commonSh, "DEMUCS_COREML_FILES") },
   };
 }
 

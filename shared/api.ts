@@ -368,6 +368,9 @@ export type StemModel = "standard" | "xl";
 /** Dateiformat der erzeugten Songs. */
 export type OutputFormat = "wav16" | "wav24" | "wav32" | "mp3-320" | "mp3-192" | "mp3-128";
 
+/** Demucs als Core ML (macOS): GPU (schneller) oder CPU (genauer) */
+export type DemucsDevice = "gpu" | "cpu";
+
 export interface Settings {
   server_url: string;
   lm_url: string;
@@ -378,6 +381,7 @@ export interface Settings {
   stem_model: StemModel;
   output_format: OutputFormat;
   songs_dir: string;
+  demucs_device: DemucsDevice;
 }
 
 export interface SettingsView extends Settings {
@@ -391,6 +395,10 @@ export interface SettingsView extends Settings {
   demucs: Record<DemucsModel, boolean>;
   /** Programme von demucs.cpp vorhanden (dann lassen sich die Demucs-Modelle laden) */
   demucs_supported: boolean;
+  /** Demucs-Modelle, die als Core ML rechnen (macOS: Programm und Modell da); dann gilt demucs_device */
+  demucs_coreml: Record<DemucsModel, boolean>;
+  /** Core-ML-Programm vorhanden (macOS): das Core-ML-Modell lässt sich laden */
+  demucs_coreml_supported: boolean;
   /** Fertige App: XL lässt sich über die Einrichtung nachladen statt über den Installer */
   packaged: boolean;
 }

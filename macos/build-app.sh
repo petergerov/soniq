@@ -76,6 +76,8 @@ cp "$CACHE/node-$NODE_VERSION" "$C/MacOS/node"
 cp "$EB/ace-server" "$C/MacOS/ace-server"
 # Demucs: braucht nur Systembibliotheken (Accelerate, libc++); die Gewichte lädt die App bei Bedarf nach
 cp "$DB/demucs_mt.cpp.main" "$DB/demucs_ft_mt.cpp.main" "$C/MacOS/"
+# Demucs als Core ML (GPU); das Modell lädt die App ebenfalls bei Bedarf nach
+swiftc -O -target "arm64-apple-macos$MIN_MACOS" -o "$C/MacOS/soniq-demucs" macos/demucs-coreml.swift
 # Bibliotheken des Modellservers nach Frameworks (unter den Namen, die ace-server erwartet)
 for lib in $(otool -L "$EB/ace-server" | sed -n 's|^[[:space:]]*@rpath/\([^ ]*\).*|\1|p'); do
   cp -L "$EB/$lib" "$C/Frameworks/$lib"
@@ -127,6 +129,7 @@ for lib in "$C/Frameworks/"*.dylib; do sign "$lib"; done
 sign "$C/MacOS/ace-server"
 sign "$C/MacOS/demucs_mt.cpp.main"
 sign "$C/MacOS/demucs_ft_mt.cpp.main"
+sign "$C/MacOS/soniq-demucs"
 sign --entitlements macos/node.entitlements "$C/MacOS/node"
 sign "$APP"
 codesign --verify --deep --strict "$APP" && echo "  ok"

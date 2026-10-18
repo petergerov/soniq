@@ -14,6 +14,7 @@ interface SettingsControls extends HTMLFormControlsCollection {
   dit: HTMLSelectElement;
   stem_model: HTMLSelectElement;
   output_format: HTMLSelectElement;
+  demucs_device: HTMLSelectElement;
 }
 
 const DEFAULT_TIMEOUT = 30;
@@ -27,6 +28,8 @@ export class SettingsDialog {
   private readonly onGetStems: () => void;
   private readonly onGetXlStems: () => void;
   private readonly onGetDemucs: () => void;
+  /** Rechnet ein Demucs-Modell als Core ML? Sonst gibt es die Auswahl GPU/CPU nicht. */
+  private demucsCoreml = false;
   /** Liegt beim Öffnen ein Spuren-Modell im Ordner? Sonst wird die Auswahl nicht gespeichert. */
   private stemsAvailable = false;
   private readonly dialog = byId<HTMLDialogElement>("settingsDlg");
@@ -96,11 +99,19 @@ export class SettingsDialog {
     this.f.stem_model.querySelector<HTMLOptionElement>('option[value="xl"]')!.disabled = !s.stems_xl_available;
     byId("stemsXlHint").hidden = !s.stems_available || s.stems_xl_available || s.packaged;
     byId("stemsGetXl").hidden = !s.stems_available || s.stems_xl_available || !s.packaged;
-    // Demucs: installiert, in der fertigen App nachladbar (wenn die Programme dabei sind), sonst Hinweis auf den Installer
-    const demucsReady = Object.values(s.demucs).every(Boolean);
+    // Demucs: installiert, in der fertigen App nachladbar (wenn die Programme dabei sind), sonst Hinweis auf den Installer.
+    // Auf dem Mac gehört das Core-ML-Modell dazu; fehlt nur es, lädt der Knopf es nach.
+    const coremlMissing = s.demucs_coreml_supported && !s.demucs_coreml.demucs_6s;
+    const demucsReady = Object.values(s.demucs).every(Boolean) && !coremlMissing;
     byId("demucsField").hidden = s.packaged && !s.demucs_supported;
     byId("demucsState").textContent = demucsReady ? this.t("stems_model_ok") : s.packaged ? "" : this.t("demucs_missing_install");
-    byId("demucsGet").hidden = demucsReady || !s.packaged;
+    const get = byId("demucsGet");
+    get.hidden = demucsReady || !s.packaged;
+    get.textContent = this.t(Object.values(s.demucs).every(Boolean) && coremlMissing ? "demucs_get_gpu" : s.demucs_coreml_supported ? "demucs_get_mac" : "demucs_get");
+    // GPU oder CPU, sobald ein Modell als Core ML rechnet
+    this.demucsCoreml = Object.values(s.demucs_coreml).some(Boolean);
+    byId("demucsDeviceRow").hidden = !this.demucsCoreml;
+    this.f.demucs_device.value = s.demucs_device;
     this.onOpen();
     this.dialog.showModal();
   }
@@ -115,6 +126,7 @@ export class SettingsDialog {
         dit: this.f.dit.value === "xl" ? "xl" : "standard",
         ...(this.stemsAvailable ? { stem_model: this.f.stem_model.value === "xl" ? "xl" : "standard" } : {}),
         output_format: this.f.output_format.value as OutputFormat,   // Optionen im HTML, der Server prüft den Wert
+        ...(this.demucsCoreml ? { demucs_device: this.f.demucs_device.value === "cpu" ? "cpu" as const : "gpu" as const } : {}),
       });
       this.onSaved();
     } catch (err) {

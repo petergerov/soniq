@@ -19,6 +19,10 @@ export interface SettingsServiceDeps {
   demucsAvailable: () => Record<DemucsModel, boolean>;
   /** Programme von demucs.cpp vorhanden */
   demucsSupported: () => boolean;
+  /** Demucs-Modelle, die als Core ML rechnen (macOS) */
+  demucsCoreml: () => Record<DemucsModel, boolean>;
+  /** Core-ML-Programm vorhanden */
+  demucsCoremlSupported: () => boolean;
 }
 
 const POSITIVE_NUMBERS = ["timeout_minutes", "poll_interval"] as const;
@@ -41,6 +45,8 @@ export class SettingsService {
       stems_xl_available: this.has(STEM_MODELS.xl),
       demucs: this.deps.demucsAvailable(),
       demucs_supported: this.deps.demucsSupported(),
+      demucs_coreml: this.deps.demucsCoreml(),
+      demucs_coreml_supported: this.deps.demucsCoremlSupported(),
       packaged: this.deps.packaged,
     };
   }
@@ -57,6 +63,7 @@ export class SettingsService {
     if ("dit" in values) values.dit = this.validDit(values.dit);
     if ("stem_model" in values) values.stem_model = this.validStemModel(values.stem_model);
     if ("output_format" in values && !isOutputFormat(values.output_format)) throw new AppError("invalid", "bad_format");
+    if ("demucs_device" in values && values.demucs_device !== "gpu" && values.demucs_device !== "cpu") throw new AppError("invalid", "bad_format");
     if ("songs_dir" in values) values.songs_dir = await this.changeSongsDir(String(values.songs_dir ?? "").trim());
     return this.deps.settings.save(values as Partial<Settings>);
   }
