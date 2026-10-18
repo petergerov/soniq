@@ -6,7 +6,9 @@
 // Versionen: Jede Spur ist ein Kanal mit einer oder mehreren Versionen ("Takes"), die alle mitlaufen; zu hören ist
 // nur die aktive. Mit mehreren Versionen lässt sich der Kanal aufklappen, um sie zu sehen und umzuschalten (sofort,
 // auch während der Wiedergabe). ✦ öffnet das Feld für eine neue Version (Knöpfe, Regler, Freitext); die alte bleibt.
-import { activeTakes, OTHER_TRACK, SOURCE_CHANNEL, VARIATION_AXES, type Song, type Stem, type StemRecipe, type StemStatus, type StemTrack, type VariationAxis } from "../../../../shared/api.ts";
+// „+ Spur“ (ideas.md, Idee 26): ein Instrument, das der Song noch nicht hat, als Entwurfskanal mit demselben Feld;
+// es hört alle Spuren in ihrer gewählten Version. Eine so hinzugefügte Spur lässt sich ganz wieder löschen.
+import { activeTakes, OTHER_TRACK, SOURCE_CHANNEL, STEM_TRACKS, VARIATION_AXES, type StemKind, type Song, type Stem, type StemRecipe, type StemStatus, type StemTrack, type VariationAxis } from "../../../../shared/api.ts";
 import { AXIS_MAX, chipsFor, MAX_VERSION_COUNT, MAX_VERSION_TEXT, variationTags, type VariationChip } from "../../../../shared/track-variation.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { confirmDialog, errorDialog } from "../../core/dialogs.ts";
@@ -14,7 +16,7 @@ import { byId, closest, escapeHtml as esc, saveBlob } from "../../core/dom.ts";
 import { formatDuration } from "../../core/format.ts";
 import { stemsMissingText } from "../../core/stems-hint.ts";
 import type { Translate } from "../../i18n/i18n.ts";
-import { displayTitle } from "../library/song-row.ts";
+import { displayTitle, generatedLyrics } from "../library/song-row.ts";
 import type { AudioEngine } from "../player/audio-engine.ts";
 import { Waveform } from "../player/waveform.ts";
 
@@ -45,6 +47,7 @@ export interface MixerViewDeps {
 /** Eine Version eines Kanals: Spur-ID (oder SOURCE_CHANNEL für die Vorlage), ihre Wellenform und, sobald geladen, ihr Audio */
 interface Take {
   id: string;
+  kind: StemKind | null;
   version: number;
   status: StemStatus;
   message: string | null;
@@ -69,6 +72,10 @@ interface Channel {
   volume: number;
   muted: boolean;
   solo: boolean;
+  /** Nur neue Versionen, kein Original: im Mixer hinzugefügte Spur (ganz löschbar) */
+  added: boolean;
+  /** „+ Spur“ gewählt, aber noch nicht erzeugt: verschwindet mit Abbrechen */
+  draft: boolean;
 }
 
 /** Wünsche im ✦-Feld, solange es offen ist */
@@ -92,6 +99,10 @@ export class MixerView {
   private readonly scrub = byId<HTMLInputElement>("mixerScrub");
   private readonly mixButton = byId<HTMLButtonElement>("mixerMixDl");
   private readonly zipLink = byId<HTMLAnchorElement>("mixerZip");
+  private readonly addBar = byId("mixerAddBar");
+  private readonly addButton = byId<HTMLButtonElement>("mixerAddTrack");
+  private readonly addPick = byId("mixerAddPick");
+  private song: Song | null = null;
   private channels: Channel[] = [];
   private songId: string | null = null;
   /** Alle beim Öffnen vorhandenen Versionen sind geladen (und spielen in der Engine); später fertige steigen synchron ein */
@@ -113,6 +124,11 @@ export class MixerView {
     deps.engine.onTick(() => this.updateTransport());
     this.tracksEl.addEventListener("click", (e) => this.onTrackClick(e));
     this.tracksEl.addEventListener("input", (e) => this.onTrackInput(e));
+    this.addButton.addEventListener("click", () => this.toggleAddPick());
+    this.addPick.addEventListener("click", (e) => {
+      const track = closest<HTMLElement>(e.target, "[data-track]")?.dataset.track as StemTrack | undefined;
+      if (track) this.startAdd(track);
+    });
     document.addEventListener("pointerdown", (e) => {
       if (!this.channels.length) return;
       if (closest(e.target, ".mixer-vol.is-open")) return;
@@ -141,33 +157,35 @@ export class MixerView {
       catch { this.showEmpty(this.deps.t("mixer_missing")); return; }
     }
     this.title.textContent = displayTitle(song);
+    this.song = song;
 
     let stems: Stem[];
     try { stems = await this.deps.api.stems(songId); }
     catch { this.showEmpty(this.deps.t("mixer_missing")); return; }
     if (this.songId !== songId) return;
 
-    // Ein Kanal je Spur mit mindestens einer fertigen Version, in der Reihenfolge der Spuren
-    const tracks = activeTakes(stems).map((s) => s.track);
+    // Ein Kanal je Spur mit einer fertigen Version oder einer neuen (auch wartend: hinzugefügte Spur), nach Position
+    const tracks = channelTracks(stems);
     if (!tracks.length && !song.source_url) {
       this.showEmpty(this.deps.t("mixer_no_stems"));
       return;
     }
 
     this.tracksEl.innerHTML = "";
-    this.channels = tracks.map((track) => this.createChannel({ key: track, track, label: `track_${track}`, muted: false }));
+    this.channels = [];
     this.syncStems(stems);
     // Vorlage zuletzt: beim Ersetzen stumm (darin stecken die ersetzten Instrumente, zum Vergleichen per Solo),
     // beim Begleiten hörbar (die Aufnahme gehört zum Song, die Spuren begleiten sie nur)
     if (song.source_url) {
       const ch = this.createChannel({ key: SOURCE_CHANNEL, track: null, label: "source_track", muted: song.params.mode !== "accompany" });
       this.channels.push(ch);
-      this.addTake(ch, { id: SOURCE_CHANNEL, version: 1, status: "done", message: null, url: song.source_url, recipe: null });
+      this.addTake(ch, { id: SOURCE_CHANNEL, kind: null, version: 1, status: "done", message: null, url: song.source_url, recipe: null });
       ch.activeId = SOURCE_CHANNEL;
       this.renderChannel(ch);
     }
     this.zipLink.href = `/api/songs/${songId}/stems.zip`;
     this.zipLink.hidden = false;
+    this.renderAddBar();
     this.applyGains();
     this.root.classList.remove("loading");
     this.updateTransport();
@@ -199,6 +217,7 @@ export class MixerView {
       this.renderChannel(ch);
     });
     if (this.editor) this.renderEditor();
+    this.renderAddBar();
     this.updateMixButton();
   }
 
@@ -232,17 +251,39 @@ export class MixerView {
         <input type="range" min="0" max="100" value="100" data-a="vol" aria-label="${t("mixer_volume")}">
       </div>
       <div class="mixer-ver" hidden></div>`;
-    this.tracksEl.appendChild(row);
-    return { key: o.key, track: o.track, label: o.label, row, takes: [], activeId: "", volume: 1, muted: o.muted, solo: false };
+    const ch: Channel = { key: o.key, track: o.track, label: o.label, row, takes: [], activeId: "", volume: 1, muted: o.muted, solo: false, added: false, draft: false };
+    // Spuren vor die Vorlage (sie steht immer zuletzt)
+    const source = this.channels.findIndex((c) => !c.track);
+    if (o.track && source >= 0) {
+      this.tracksEl.insertBefore(row, this.channels[source]!.row);
+      this.channels.splice(source, 0, ch);
+    } else {
+      this.tracksEl.appendChild(row);
+      this.channels.push(ch);
+    }
+    return ch;
   }
 
   /** Versionen der Kanäle an den Stand des Servers angleichen: neue Spalten, fertige Waveforms, Gelöschtes weg. */
   private syncStems(stems: Stem[]): void {
     const active = new Map(activeTakes(stems).map((s) => [s.track, s.id]));
-    for (const ch of this.channels) {
+    for (const track of channelTracks(stems)) {
+      if (!this.channels.some((c) => c.key === track)) this.createChannel({ key: track, track, label: `track_${track}`, muted: false });
+    }
+    for (const ch of [...this.channels]) {
       if (!ch.track) continue;
       // Fertige Versionen; wartende und fehlgeschlagene nur bei neuen Versionen (fehlerhaftes Herauslösen nicht)
       const mine = stems.filter((s) => s.track === ch.track && (s.status === "done" || s.kind === "version"));
+      if (!mine.length && !ch.draft) {   // hinzugefügte Spur ganz gelöscht
+        ch.takes.forEach((take) => this.removeTake(ch, take));
+        ch.row.remove();
+        this.channels = this.channels.filter((c) => c !== ch);
+        continue;
+      }
+      if (mine.length) {
+        ch.added = mine.every((s) => s.kind === "version");
+        ch.draft = false;
+      }
       for (const take of [...ch.takes]) {
         if (!mine.some((s) => s.id === take.id)) this.removeTake(ch, take);
       }
@@ -251,7 +292,7 @@ export class MixerView {
         if (!take) this.addTake(ch, stem);
         else {
           const finished = take.status !== "done" && stem.status === "done";
-          Object.assign(take, { status: stem.status, message: stem.message, url: stem.url, recipe: stem.recipe });
+          Object.assign(take, { kind: stem.kind, status: stem.status, message: stem.message, url: stem.url, recipe: stem.recipe });
           if (finished) this.loadTake(take);
         }
       }
@@ -261,10 +302,11 @@ export class MixerView {
       ch.activeId = active.get(ch.track) ?? ch.takes.find((x) => x.status === "done")?.id ?? "";
       this.renderChannel(ch);
     }
+    this.renderAddBar();
     this.applyGains();
   }
 
-  private addTake(ch: Channel, s: Pick<Take, "id" | "version" | "status" | "message" | "url" | "recipe">): void {
+  private addTake(ch: Channel, s: Pick<Take, "id" | "kind" | "version" | "status" | "message" | "url" | "recipe">): void {
     const lane = document.createElement("div");
     lane.className = "mixer-lane";
     lane.dataset.take = s.id;
@@ -312,6 +354,8 @@ export class MixerView {
   private renderChannel(ch: Channel): void {
     const { t } = this.deps;
     const many = ch.takes.length > 1;
+    // Noch keine fertige Version (hinzugefügte Spur): Zeilen mit Status zeigen, sonst wäre der Kanal leer
+    ch.row.classList.toggle("is-new", !!ch.track && !ch.takes.some((x) => x.status === "done"));
     const fold = ch.row.querySelector<HTMLButtonElement>(".mixer-title")!;
     fold.disabled = !many;
     if (!many) ch.row.classList.remove("is-open");
@@ -345,8 +389,10 @@ export class MixerView {
       : `<span class="s err" title="${esc(take.message)}">${t(take.message === "cancelled" ? "cancelled" : "error")}</span>`;
     const desc = this.describe(ch, take);
     const dl = take.url ? `<a class="sek icon mini" href="${take.url}?download=1" download title="${t("download")}" aria-label="${t("download")}">↓</a>` : "";
-    // Die hörbare Version und laufende lassen sich nicht löschen (erst umschalten bzw. abbrechen)
-    const deletable = ch.track && !on && take.status !== "queued" && take.status !== "running" && ch.takes.length > 1;
+    // Die hörbare Version und laufende lassen sich nicht löschen (erst umschalten bzw. abbrechen); eine hinzugefügte
+    // Spur schon, auch ihre letzte Version: dann ist die Spur weg
+    const idle = take.status !== "queued" && take.status !== "running";
+    const deletable = ch.track && idle && (ch.added || (!on && ch.takes.length > 1));
     const del = deletable ? `<button type="button" class="sek icon mini" data-a="ver-del" title="${t("ver_del")}" aria-label="${t("ver_del")}">✕</button>` : "";
     // Nachbauen: Wünsche und Seed dieser Version ins ✦-Feld (nur Versionen mit gespeichertem Seed)
     const seed = take.recipe?.seed;
@@ -484,7 +530,7 @@ export class MixerView {
         if (take) void this.activate(ch, take);
         return;
       case "ver-del":
-        if (take) void this.deleteTake(take);
+        if (take) void this.deleteTake(ch, take);
         return;
       case "ver-redo":
         if (take?.recipe) this.openEditor(ch, take.recipe);
@@ -528,10 +574,12 @@ export class MixerView {
     }
   }
 
-  private async deleteTake(take: Take): Promise<void> {
+  private async deleteTake(ch: Channel, take: Take): Promise<void> {
     const { t } = this.deps;
+    const last = ch.added && ch.takes.length === 1;
     const ok = await confirmDialog({
-      title: t("ver_del_q", take.version), message: t("ver_del_msg"), confirmLabel: t("del"), cancelLabel: t("cancel"), danger: true,
+      title: last ? t("add_del_q", t(ch.label)) : t("ver_del_q", take.version), message: last ? t("add_del_msg") : t("ver_del_msg"),
+      confirmLabel: t("del"), cancelLabel: t("cancel"), danger: true,
     });
     if (!ok) return;
     try {
@@ -626,6 +674,12 @@ export class MixerView {
     const ch = this.channels.find((c) => c.key === this.editor!.key);
     this.editor = null;
     if (!ch) return;
+    if (ch.draft) {   // „+ Spur“ abgebrochen
+      ch.row.remove();
+      this.channels = this.channels.filter((c) => c !== ch);
+      this.renderAddBar();
+      return;
+    }
     const box = ch.row.querySelector<HTMLElement>(".mixer-ver")!;
     box.hidden = true;
     box.innerHTML = "";
@@ -648,7 +702,7 @@ export class MixerView {
       `<button type="button" class="chip" data-a="ver-count" data-count="${n}" aria-pressed="false">${n}</button>`).join("");
     const box = ch.row.querySelector<HTMLElement>(".mixer-ver")!;
     box.innerHTML = `
-      <div class="mixer-ver-head"><strong>${esc(t("ver_title", t(ch.label)))}</strong><span class="small">${esc(t("ver_keep"))}</span></div>
+      <div class="mixer-ver-head"><strong>${esc(t(ch.draft ? "add_title" : "ver_title", t(ch.label)))}</strong><span class="small">${esc(t(ch.draft ? "add_keep" : "ver_keep"))}</span></div>
       <div class="mixer-ver-chips">${chips}</div>
       <div class="axes mixer-ver-axes">${axes}</div>
       <input type="text" class="mixer-ver-text" maxlength="${MAX_VERSION_TEXT}" value="${esc(ed.text)}" placeholder="${esc(t("ver_text_ph"))}" aria-label="${esc(t("ver_text_ph"))}">
@@ -776,12 +830,16 @@ export class MixerView {
   private async createVersions(ch: Channel, btn: HTMLButtonElement): Promise<void> {
     const ed = this.editor;
     const base = ch.takes.find((x) => x.id === ch.activeId);
-    if (!ed || !base) return;
+    if (!ed || !this.songId || !ch.track || (!base && !ch.draft)) return;
     btn.disabled = true;
     try {
       const axes = Object.fromEntries(VARIATION_AXES.filter((a) => ed.axes[a]).map((a) => [a, ed.axes[a]]));
       const seed = ed.seed.trim() === "" ? undefined : Number(ed.seed);
-      const stems = await this.deps.api.createVersions(base.id, { axes, chips: [...ed.chips], text: ed.text.trim(), count: ed.count, seed });
+      const request = { axes, chips: [...ed.chips], text: ed.text.trim(), count: ed.count, seed };
+      const stems = ch.draft
+        ? await this.deps.api.addTrack(this.songId, { track: ch.track, ...request })
+        : await this.deps.api.createVersions(base!.id, request);
+      ch.draft = false;   // ab jetzt ein echter Kanal: Schließen entfernt ihn nicht mehr
       this.closeEditor();
       ch.row.classList.add("is-open");
       this.syncStems(stems);
@@ -822,6 +880,45 @@ export class MixerView {
     this.updateMixButton();
   }
 
+  // ——— Neue Spur (+ Spur) ———
+
+  /** „+ Spur“ nur mit Spuren-Modell, bei einem fertigen Song mit mindestens einer Spur; die Auswahl zeigt fehlende Spuren. */
+  private renderAddBar(): void {
+    const { t } = this.deps;
+    const song = this.song;
+    const hasTracks = this.channels.some((c) => c.track && !c.draft);
+    this.addBar.hidden = !song || song.status !== "done" || !hasTracks;
+    this.addButton.disabled = !this.deps.stemsAvailable();
+    this.addButton.title = this.deps.stemsAvailable() ? t("add_track_tip") : stemsMissingText(t);
+    if (this.addPick.hidden) return;
+    const present = new Set(this.channels.map((c) => c.key));
+    // Gesang nur mit gesungenen Lyrics: lego singt den Text des Songs
+    const lyrics = !!song && !!generatedLyrics(song);
+    this.addPick.innerHTML = STEM_TRACKS.filter((track) => !present.has(track)).map((track) => {
+      const blocked = (track === "vocals" || track === "backing_vocals") && !lyrics;
+      return `<button type="button" class="chip" data-track="${track}" ${blocked ? `disabled title="${esc(t("add_vocals_no_lyrics"))}"` : ""}>${esc(t(`track_${track}`))}</button>`;
+    }).join("") || `<span class="small">${esc(t("add_none_left"))}</span>`;
+  }
+
+  private toggleAddPick(): void {
+    this.addPick.hidden = !this.addPick.hidden;
+    this.addButton.setAttribute("aria-expanded", String(!this.addPick.hidden));
+    this.renderAddBar();
+    if (!this.addPick.hidden) this.addPick.querySelector<HTMLElement>("button:not(:disabled)")?.focus();
+  }
+
+  /** Spur gewählt: Entwurfskanal mit offenem ✦-Feld; erst „Erzeugen“ legt die Spur auf dem Server an. */
+  private startAdd(track: StemTrack): void {
+    this.addPick.hidden = true;
+    this.addButton.setAttribute("aria-expanded", "false");
+    this.closeEditor();
+    const ch = this.createChannel({ key: track, track, label: `track_${track}`, muted: false });
+    ch.draft = ch.added = true;
+    this.renderChannel(ch);
+    this.openEditor(ch);
+    ch.row.scrollIntoView({ block: "nearest" });
+  }
+
   private destroy(): void {
     clearTimeout(this.pollTimer);
     this.channels.forEach((ch) => ch.takes.forEach((x) => { x.wave?.destroy(); x.wave = null; }));
@@ -829,6 +926,16 @@ export class MixerView {
     this.editor = null;
     this.progress = null;
     this.loaded = false;
+    this.song = null;
     this.tracksEl.innerHTML = "";
+    this.addBar.hidden = true;
+    this.addPick.hidden = true;
   }
+}
+
+/** Spuren mit Kanal: eine fertige Version oder eine neue (auch wartend oder fehlgeschlagen), nach Position und Version */
+function channelTracks(stems: readonly Stem[]): StemTrack[] {
+  const shown = stems.filter((s) => s.status === "done" || s.kind === "version")
+    .sort((a, b) => a.position - b.position || a.version - b.version);
+  return [...new Set(shown.map((s) => s.track))];
 }

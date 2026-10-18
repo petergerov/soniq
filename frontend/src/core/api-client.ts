@@ -46,6 +46,8 @@ export class ApiClient {
   deleteStem(stemId: string): Promise<Stem[]> { return this.send("DELETE", `/api/stems/${stemId}`); }
   /** Neue Version(en) einer Spur einreihen; die alte bleibt erhalten. */
   createVersions(stemId: string, request: NewVersionRequest): Promise<Stem[]> { return this.send("POST", `/api/stems/${stemId}/versions`, request); }
+  /** Neue Spur für einen Song mit Spuren (Mixer › + Spur); sie hört alle Spuren in ihrer gewählten Version. */
+  addTrack(songId: string, request: NewVersionRequest & { track: StemTrack }): Promise<Stem[]> { return this.send("POST", `/api/songs/${songId}/stems/add`, request); }
   /** Diese Version ihrer Spur hörbar machen (Mixer, Mix-Download, ZIP). */
   activateStem(stemId: string): Promise<Stem[]> { return this.send("PUT", `/api/stems/${stemId}/active`); }
   /** Mix nach Reglerstellung als WAV: Kanal-ID (Spur oder Vorlage) → Lautstärke 0…1, fehlende Kanäle sind stumm. */

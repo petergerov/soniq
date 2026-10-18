@@ -195,6 +195,13 @@ export function parseNewVersion(input: Input): NewVersionRequest {
   };
 }
 
+/** Neue Spur: Spurname (wie bei Spur für Spur) und dieselben Wünsche wie bei einer neuen Version. */
+export function parseAddTrack(input: Input): NewVersionRequest & { track: StemTrack } {
+  const track = input.track;
+  if (!isStemTrack(track)) invalid("track", "track name expected");
+  return { track, ...parseNewVersion(input) };
+}
+
 /** `gains=<id>:<0…1>,…` des Mixers (Spur-IDs und "source"); fehlende Kanäle sind stumm. */
 export function parseMixGains(value: string | null): Map<string, number> {
   const gains = new Map<string, number>();

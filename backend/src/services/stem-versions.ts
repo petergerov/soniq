@@ -1,12 +1,15 @@
 // Neue Version einer Spur (Mixer › Neue Version): `lego` auf der Summe der übrigen Spuren (in ihrer aktiven Version,
 // beim Begleiten dazu die Aufnahme), mit den Wünschen in der Caption. Die alte Version bleibt erhalten; die neue wird
 // hörbar, sobald sie fertig ist. Läuft wie das Herauslösen in der Warteschlange, der Song bleibt "done".
-import { activeTakes, type SongParams, type SongResultMeta, type StemRecipe, type StemTrack, type VersionRecipe } from "../../../shared/api.ts";
+// Neue Spur (Mixer › + Spur, ideas.md Idee 26): eine Version 1 eines Instruments, das der Song noch nicht hat; sie
+// hört alle Spuren in ihrer aktiven Version (Mute und Solo des Mixers kennt der Server nicht).
+import { activeTakes, STEM_TRACKS, type SongParams, type SongResultMeta, type StemRecipe, type StemTrack, type VersionRecipe } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
 import { newId, randomSeed } from "../domain/ids.ts";
 import type { MusicEngine, ProgressReporter } from "../domain/music-engine.ts";
 import { INSTRUMENTAL, nowIso } from "../domain/song.ts";
 import { formatElapsed, stemFileName, versionCaption, VOCAL_TRACKS, type StemRecord } from "../domain/stem.ts";
+import { sungLineCount } from "./track-by-track.ts";
 import type { SongRepository } from "../infrastructure/song-repository.ts";
 import type { SongStorage } from "../infrastructure/song-storage.ts";
 import type { StemRepository } from "../infrastructure/stem-repository.ts";
@@ -37,14 +40,37 @@ export class StemVersions {
     const song = stem && songs.find(stem.song_id);
     if (!stem || !song) throw new AppError("not_found");
     if (song.status !== "done" || stem.status !== "done") throw new AppError("bad_request", "version_not_ready");
-    const track = stem.track as StemTrack;
-    const params = JSON.parse(song.params) as SongParams;
-    const caption = versionCaption(track, recipe, song.caption || params.caption || "");
-    const first = stems.maxVersion(song.id, track) + 1;
+    this.insert(song.id, stem.track as StemTrack, stem.position, song.caption || (JSON.parse(song.params) as SongParams).caption || "", recipe, count, seed);
+  }
+
+  /**
+   * Neue Spur für einen fertigen Song mit Spuren. Gesangsspuren nur, wenn der Song gesungene Lyrics hat: sonst hätte
+   * die Stimme keinen Text (lego singt die Lyrics des Songs).
+   */
+  enqueueTrack(songId: string, track: StemTrack, recipe: VersionRecipe, count: number, seed?: number): void {
+    const { stems, songs } = this.deps;
+    if (!this.deps.stemsAvailable()) throw new AppError("bad_request", "stems_model_missing");
+    const song = songs.find(songId);
+    if (!song) throw new AppError("not_found");
+    if (!(STEM_TRACKS as readonly string[]).includes(track)) throw new AppError("invalid", "add_track_unknown");
+    const own = stems.forSong(songId);
+    if (song.status !== "done" || !own.some((s) => s.status === "done")) throw new AppError("bad_request", "add_track_no_stems");
+    if (own.some((s) => s.track === track && s.status !== "error")) throw new AppError("conflict", "add_track_exists");
+    const meta = song.result_meta ? JSON.parse(song.result_meta) as SongResultMeta : null;
+    if (VOCAL_TRACKS.includes(track) && !sungLineCount(meta?.lyrics || song.lyrics)) throw new AppError("bad_request", "add_track_no_lyrics");
+    const position = Math.max(...own.map((s) => s.position)) + 1;
+    this.insert(songId, track, position, song.caption || (JSON.parse(song.params) as SongParams).caption || "", recipe, count, seed);
+  }
+
+  /** Caption und Seed stehen ab jetzt fest; ohne `seed` würfelt jede Version einen eigenen, sonst zählen sie hoch. */
+  private insert(songId: string, track: StemTrack, position: number, styleCaption: string, recipe: VersionRecipe, count: number, seed?: number): void {
+    const { stems } = this.deps;
+    const caption = versionCaption(track, recipe, styleCaption);
+    const first = stems.maxVersion(songId, track) + 1;
     const at = nowIso();
     for (let i = 0; i < count; i++) {
       const recipeJson = JSON.stringify({ ...recipe, caption, seed: seed === undefined ? randomSeed() : (seed + i) % 2 ** 32 });
-      stems.insert({ id: newId(), songId: song.id, track, kind: "version", position: stem.position, createdAt: at, version: first + i, recipe: recipeJson });
+      stems.insert({ id: newId(), songId, track, kind: "version", position, createdAt: at, version: first + i, recipe: recipeJson });
     }
   }
 

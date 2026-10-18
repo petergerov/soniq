@@ -9,7 +9,7 @@ import type { StemVersions } from "../../services/stem-versions.ts";
 import { HttpError, queryBool, readFormData, readJson } from "../request.ts";
 import { DownloadResponse, FileResponse, ZipResponse } from "../responses.ts";
 import type { Router } from "../router.ts";
-import { parseExtractRequest, parseMixGains, parseNewVersion, parseStemUploadCommand } from "../validation.ts";
+import { parseAddTrack, parseExtractRequest, parseMixGains, parseNewVersion, parseStemUploadCommand } from "../validation.ts";
 
 export interface StemRouteServices {
   stems: StemService;
@@ -57,6 +57,13 @@ export function registerStemRoutes(router: Router, s: StemRouteServices): void {
       return s.stems.list(s.stems.songOf(params.id!));
     })
     .put("/api/stems/:id/active", ({ params }) => s.stems.activate(params.id!))
+    // Neue Spur für einen Song mit Spuren (Mixer › + Spur)
+    .post("/api/songs/:id/stems/add", async ({ req, params }) => {
+      const { track, count, seed, ...recipe } = parseAddTrack(await readJson(req));
+      s.versions.enqueueTrack(params.id!, track, recipe, count, seed);
+      s.jobs.wake();
+      return s.stems.list(params.id!);
+    })
     .delete("/api/songs/:id/stems", ({ params }) => {
       s.jobs.cancel(params.id!);
       s.extract.cancel(params.id!);

@@ -157,6 +157,10 @@ Songs with tracks get a **Tracks** button (play, download each track, all as ZIP
 mute and solo per track). The mixer downloads each track (**↓**), all tracks as **ZIP**, or the **Mix** exactly as it
 sounds with the current settings. Replace and accompany keep your upload as **Original**: playable and downloadable in
 the track list, a channel in the mixer (muted after replacing, for comparing) and part of the ZIP.
+**+ Track** below the mixer's tracks adds an instrument the song does not have yet: pick it, add wishes as for a new
+version if you like, and **Generate**. The new track hears all other tracks in their selected version (mute and solo
+do not matter). Like a new version it changes the mixer, the mix download and the ZIP, not the song in the library.
+Vocal tracks need a song with lyrics. An added track can be deleted again with ✕.
 Details: [docs/stems.md](../stems.md) (German).
 
 ## Folders
