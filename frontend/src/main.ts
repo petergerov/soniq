@@ -158,7 +158,8 @@ void setup.check().then(async (packaged) => {
   gear.classList.add("has-update");
   gear.title = t("upd_badge");
 });
-new SettingsDialog(api, t, () => updates.reset(), () => void health.check(), () => void setup.addXl(), () => void setup.addStems(), () => void setup.addXlStems());
+new SettingsDialog(api, t, () => updates.reset(), () => void health.check(), () => void setup.addXl(), () => void setup.addStems(), () => void setup.addXlStems(),
+  () => void setup.addDemucs());
 new ServerControl(api, t, () => store.stopPolling(), () => void store.refresh());
 
 i18n.onChange(() => {

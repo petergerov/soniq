@@ -68,7 +68,11 @@ zurück auf 48 kHz. Nur für WAV-Songs (ein MP3-Decoder fehlt dem Server bewusst
 
 **Installation:** `install.command` und `arch_linux.sh` bauen demucs.cpp (feste Revision `DEMUCS_REV` in
 `scripts/common.sh`) nach `engine/demucs.cpp/build` und laden die Gewichte mit SHA-256-Prüfung nach `models/demucs`.
-Die fertige Mac-App, das Debian-Paket und Windows liefern Demucs noch nicht mit; dort fehlen die beiden Demucs-Knöpfe.
+Die fertige Mac-App und das Debian-Paket bringen demucs.cpp portabel gebaut mit (`demucs_build_portable`: ohne
+`-march=native`; Mac `-mcpu=apple-m1` mit Accelerate, Linux OpenMP, amd64 zusätzlich ein AVX2/FMA-Build in
+`bin/demucs/avx2`, den das Backend nach `/proc/cpuinfo` wählt). Die Gewichte lädt dort Zahnrad › Demucs
+(`POST /api/setup/demucs`, nach `<Modelle>/demucs`, ohne Neustart des Modellservers). Windows liefert Demucs noch
+nicht mit; dort fehlen die Demucs-Knöpfe.
 
 ---
 

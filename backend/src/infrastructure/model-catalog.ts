@@ -14,6 +14,8 @@ export interface ModelCatalog {
   baseUrl: string;
   files: ModelFile[];
   acestepRev: string;
+  /** Demucs-Gewichte für demucs.cpp (eigenes Repo, eigene Revision) */
+  demucs: { baseUrl: string; files: ModelFile[] };
 }
 
 /** Wert einer Zuweisung NAME="…" (auch mehrzeilig). */
@@ -21,12 +23,19 @@ function shellValue(text: string, name: string): string {
   return new RegExp(`^${name}="([^"]*)"`, "m").exec(text)?.[1] ?? "";
 }
 
-export function parseCatalog(commonSh: string): ModelCatalog {
-  const files = shellValue(commonSh, "MODEL_FILES").split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((line) => {
-    const [name = "", mb = "0", sha256 = ""] = line.split(":");
-    return { name, mb: Number(mb), sha256 };
+/** Dateiliste "name:MB:SHA-256", eine Datei je Zeile */
+function fileList(text: string, name: string): ModelFile[] {
+  return shellValue(text, name).split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((line) => {
+    const [file = "", mb = "0", sha256 = ""] = line.split(":");
+    return { name: file, mb: Number(mb), sha256 };
   });
-  return { baseUrl: shellValue(commonSh, "HF_BASE"), files, acestepRev: shellValue(commonSh, "ACESTEP_REV") };
+}
+
+export function parseCatalog(commonSh: string): ModelCatalog {
+  return {
+    baseUrl: shellValue(commonSh, "HF_BASE"), files: fileList(commonSh, "MODEL_FILES"), acestepRev: shellValue(commonSh, "ACESTEP_REV"),
+    demucs: { baseUrl: shellValue(commonSh, "DEMUCS_HF"), files: fileList(commonSh, "DEMUCS_FILES") },
+  };
 }
 
 /** Katalog des Programmordners. MG_HF_BASE ersetzt die Download-Adresse (z. B. für Tests mit einem lokalen Server). */

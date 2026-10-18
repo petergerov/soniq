@@ -1,6 +1,6 @@
 #!/bin/bash
 # Baut SONIQ.app (und mit --dmg zusätzlich SONIQ.dmg) nach dist-mac/. Läuft lokal und in der GitHub Action.
-# Braucht: Apple Silicon, Xcode-Kommandozeilenwerkzeuge (swiftc, codesign), git und cmake für den Modellserver.
+# Braucht: Apple Silicon, Xcode-Kommandozeilenwerkzeuge (swiftc, codesign), git und cmake für Modellserver und Demucs.
 # VERSION=1.2.3 setzt die Versionsnummer (sonst aus package.json).
 #
 #   macos/build-app.sh [--dmg]
@@ -18,6 +18,7 @@ CACHE="$OUT/cache"
 VERSION="${VERSION:-$(sed -n 's/^  "version": "\(.*\)",$/\1/p' package.json)}"   # VERSION: z. B. aus dem Release-Tag
 MIN_MACOS="13.5"   # Node.js 24 braucht macOS 13.5
 EB="$ENGINE/build-app"   # eigener Build des Modellservers, getrennt vom normalen build/ der Installation
+DB="$DEMUCS_DIR/build-app"   # ebenso für demucs.cpp (Stem Separation)
 SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 schritt() { echo ""; echo "▸ $1"; }
 
@@ -46,6 +47,12 @@ if ! "$EB/ace-server" --help 2>&1 | head -1 | grep -q "${ACESTEP_REV:0:7}"; then
 fi
 echo "  ok"
 
+schritt "Stem separation demucs.cpp (${DEMUCS_REV:0:7}, portable build)"
+# -mcpu=apple-m1 statt -march=native: läuft auf jedem Apple-Silicon-Mac; rechnet mit Accelerate (BLAS)
+demucs_build_portable "$DB" "-mcpu=apple-m1 -DEIGEN_USE_BLAS" -DCMAKE_OSX_DEPLOYMENT_TARGET="$MIN_MACOS" \
+  > "$OUT/demucs-build.log" 2>&1 || { tail -30 "$OUT/demucs-build.log"; exit 1; }
+echo "  ok"
+
 schritt "Node.js $NODE_VERSION"
 entry=$(echo "$NODE_FILES" | grep "^node-v$NODE_VERSION-darwin-arm64\.")
 file=${entry%%:*}; sha=${entry##*:}
@@ -67,6 +74,8 @@ mkdir -p "$C/MacOS" "$C/Frameworks" "$C/Resources/app/scripts" "$C/Resources/app
 swiftc -O -target "arm64-apple-macos$MIN_MACOS" -o "$C/MacOS/SONIQ" macos/SONIQ/main.swift
 cp "$CACHE/node-$NODE_VERSION" "$C/MacOS/node"
 cp "$EB/ace-server" "$C/MacOS/ace-server"
+# Demucs: braucht nur Systembibliotheken (Accelerate, libc++); die Gewichte lädt die App bei Bedarf nach
+cp "$DB/demucs_mt.cpp.main" "$DB/demucs_ft_mt.cpp.main" "$C/MacOS/"
 # Bibliotheken des Modellservers nach Frameworks (unter den Namen, die ace-server erwartet)
 for lib in $(otool -L "$EB/ace-server" | sed -n 's|^[[:space:]]*@rpath/\([^ ]*\).*|\1|p'); do
   cp -L "$EB/$lib" "$C/Frameworks/$lib"
@@ -116,6 +125,8 @@ sign() { codesign --force --timestamp=none --sign "$SIGN_IDENTITY" "$@"; }
 [ "$SIGN_IDENTITY" != "-" ] && sign() { codesign --force --timestamp --options runtime --sign "$SIGN_IDENTITY" "$@"; }
 for lib in "$C/Frameworks/"*.dylib; do sign "$lib"; done
 sign "$C/MacOS/ace-server"
+sign "$C/MacOS/demucs_mt.cpp.main"
+sign "$C/MacOS/demucs_ft_mt.cpp.main"
 sign --entitlements macos/node.entitlements "$C/MacOS/node"
 sign "$APP"
 codesign --verify --deep --strict "$APP" && echo "  ok"

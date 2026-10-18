@@ -1,4 +1,4 @@
-// Einstellungs-Dialog (Zahnrad): Server-Adressen, Timeout, Klangmodell, Spuren-Modell, Ausgabeformat, Song-Ordner.
+// Einstellungs-Dialog (Zahnrad): Server-Adressen, Timeout, Klangmodell, Spuren-Modell, Demucs, Ausgabeformat, Song-Ordner.
 import type { OutputFormat } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { errorDialog } from "../../core/dialogs.ts";
@@ -26,6 +26,7 @@ export class SettingsDialog {
   private readonly onGetXl: () => void;
   private readonly onGetStems: () => void;
   private readonly onGetXlStems: () => void;
+  private readonly onGetDemucs: () => void;
   /** Liegt beim Öffnen ein Spuren-Modell im Ordner? Sonst wird die Auswahl nicht gespeichert. */
   private stemsAvailable = false;
   private readonly dialog = byId<HTMLDialogElement>("settingsDlg");
@@ -37,8 +38,10 @@ export class SettingsDialog {
    * @param onGetXl  fertige App: XL-Klangmodell nachladen (über die Einrichtung)
    * @param onGetStems fertige App: Spuren-Modell nachladen (über die Einrichtung)
    * @param onGetXlStems fertige App: XL-Spuren-Modell nachladen (über die Einrichtung)
+   * @param onGetDemucs fertige App: Demucs-Modelle nachladen (über die Einrichtung)
    */
-  constructor(api: ApiClient, t: Translate, onOpen: () => void, onSaved: () => void, onGetXl: () => void, onGetStems: () => void, onGetXlStems: () => void) {
+  constructor(api: ApiClient, t: Translate, onOpen: () => void, onSaved: () => void, onGetXl: () => void, onGetStems: () => void,
+    onGetXlStems: () => void, onGetDemucs: () => void) {
     this.api = api;
     this.t = t;
     this.onOpen = onOpen;
@@ -46,6 +49,11 @@ export class SettingsDialog {
     this.onGetXl = onGetXl;
     this.onGetStems = onGetStems;
     this.onGetXlStems = onGetXlStems;
+    this.onGetDemucs = onGetDemucs;
+    byId("demucsGet").addEventListener("click", () => {
+      this.dialog.close();
+      this.onGetDemucs();
+    });
     byId("stemsGet").addEventListener("click", () => {
       this.dialog.close();
       this.onGetStems();
@@ -88,6 +96,11 @@ export class SettingsDialog {
     this.f.stem_model.querySelector<HTMLOptionElement>('option[value="xl"]')!.disabled = !s.stems_xl_available;
     byId("stemsXlHint").hidden = !s.stems_available || s.stems_xl_available || s.packaged;
     byId("stemsGetXl").hidden = !s.stems_available || s.stems_xl_available || !s.packaged;
+    // Demucs: installiert, in der fertigen App nachladbar (wenn die Programme dabei sind), sonst Hinweis auf den Installer
+    const demucsReady = Object.values(s.demucs).every(Boolean);
+    byId("demucsField").hidden = s.packaged && !s.demucs_supported;
+    byId("demucsState").textContent = demucsReady ? this.t("stems_model_ok") : s.packaged ? "" : this.t("demucs_missing_install");
+    byId("demucsGet").hidden = demucsReady || !s.packaged;
     this.onOpen();
     this.dialog.showModal();
   }

@@ -24,5 +24,9 @@ export function registerSetupRoutes(router: Router, setup: SetupService): void {
       requireLangHeader(ctx);
       return setup.addXlStems();
     })
+    .post("/api/setup/demucs", (ctx) => {
+      requireLangHeader(ctx);
+      return setup.addDemucs();
+    })
     .post("/api/setup/cancel", () => setup.cancel());
 }

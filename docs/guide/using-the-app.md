@@ -110,7 +110,8 @@ Each track takes about as long as a whole song of the same length.
   before. The mix is exactly the sum of the tracks.
 - **Stem Separation** (library, ⋮ menu of a song): split a finished song into tracks. **Demucs · 4 stems** (best quality:
   drums, bass, vocals, other) or **Demucs · 6 stems** (adds guitar and piano) split the actual mix, all tracks in one
-  pass on the CPU; WAV songs only. **ACE-Step** re-generates 2, 4 or 6 tracks with the track model, so they follow the
+  pass on the CPU; WAV songs only. In the Mac app and the Debian package, download the Demucs models once under
+  Gear › Demucs (390 MB). **ACE-Step** re-generates 2, 4 or 6 tracks with the track model, so they follow the
   song but are no exact split of the mix.
 - **Replace / accompany** (tab **Replace**): upload a file and replace chosen instruments, or add new accompaniment
   tracks to a single take, for example vocals. The upload is ready at once; length comes from the file. **Detect tempo

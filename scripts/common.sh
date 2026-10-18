@@ -98,26 +98,47 @@ lade_conf() {   # engine.conf als key=value lesen, nicht ausführen
   [ -n "$MODE" ] || MODE=split
 }
 
-# CMake speichert den absoluten Build-Ordner als Suchpfad. Nach einem Umbenennen des
-# Projektordners findet macOS die ggml-Bibliotheken nicht mehr, obwohl sie neben der
-# Binary liegen. @loader_path sucht dort, unabhängig vom Ordnernamen.
-# demucs.cpp auf DEMUCS_REV bringen und die beiden Programme bauen (ein Modell / htdemucs_ft), sofern nötig.
-# Weitere cmake-Optionen als Argumente (Linux: -DUSE_OPENBLAS=OFF, dann OpenMP). Ausgabe nach stdout/stderr.
-demucs_build() {
+# demucs.cpp auf DEMUCS_REV bringen (Klon, Checkout, Submodule).
+demucs_checkout() {
   if [ ! -d "$DEMUCS_DIR/.git" ]; then
     mkdir -p "$(dirname "$DEMUCS_DIR")" && git clone --quiet "$DEMUCS_REPO" "$DEMUCS_DIR" || return 1
   fi
   ( cd "$DEMUCS_DIR" \
     && { git cat-file -e "$DEMUCS_REV^{commit}" 2>/dev/null || git fetch --quiet origin; } \
     && git checkout --quiet "$DEMUCS_REV" \
-    && git submodule update --init --recursive --quiet ) || return 1
-  local B="$DEMUCS_DIR/build"
-  if [ "$(cat "$B/.soniq-rev" 2>/dev/null)" = "$DEMUCS_REV" ] && [ -x "$B/demucs_mt.cpp.main" ] && [ -x "$B/demucs_ft_mt.cpp.main" ]; then
+    && git submodule update --init --recursive --quiet )
+}
+
+# Die beiden Programme bauen (ein Modell / htdemucs_ft), sofern nötig, für diesen Rechner (-march=native).
+# Weitere cmake-Optionen als Argumente (Linux: -DUSE_OPENBLAS=OFF, dann OpenMP). Ausgabe nach stdout/stderr.
+demucs_build() {
+  demucs_checkout || return 1
+  demucs_compile "$DEMUCS_DIR/build" Release "" "$@"
+}
+
+# Release-Flags von demucs.cpp ohne -march=native. Das CMakeLists setzt sie fest, darum ein eigener Build-Typ.
+DEMUCS_FAST="-Ofast -fno-unsafe-math-optimizations -freciprocal-math -fno-signed-zeros -DNDEBUG"
+
+# Portabel für die fertigen Pakete: <Build-Ordner> <CPU-Flags, z. B. -mcpu=apple-m1> [cmake-Optionen].
+# Mit Accelerate bzw. OpenBLAS gehört -DEIGEN_USE_BLAS in die Flags (das CMakeLists setzt es nur für Release).
+demucs_build_portable() {
+  local B="$1" flags="$2"
+  shift 2
+  demucs_checkout || return 1
+  demucs_compile "$B" Portable "portable $flags" -DCMAKE_CXX_FLAGS_PORTABLE="$DEMUCS_FAST $flags" "$@"
+}
+
+# <Build-Ordner> <Build-Typ> <Kennung zusätzlich zur Revision> [cmake-Optionen]; baut nur, wenn sich etwas geändert hat
+demucs_compile() {
+  local B="$1" type="$2" stamp="$DEMUCS_REV${3:+ $3}"
+  shift 3
+  if [ "$(cat "$B/.soniq-rev" 2>/dev/null)" = "$stamp" ] && [ -x "$B/demucs_mt.cpp.main" ] && [ -x "$B/demucs_ft_mt.cpp.main" ]; then
     return 0
   fi
-  cmake -S "$DEMUCS_DIR" -B "$B" -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 "$@" \
+  rm -rf "$B"
+  cmake -S "$DEMUCS_DIR" -B "$B" -DCMAKE_BUILD_TYPE="$type" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 "$@" \
     && cmake --build "$B" --target demucs_mt.cpp.main demucs_ft_mt.cpp.main -j "$(getconf _NPROCESSORS_ONLN)" \
-    && echo "$DEMUCS_REV" > "$B/.soniq-rev"
+    && echo "$stamp" > "$B/.soniq-rev"
 }
 
 # Gewichte von Demucs nach $MODELS/demucs laden und per SHA-256 prüfen (vorhandene bleiben). Rückgabe 1 bei Fehler.
@@ -143,6 +164,9 @@ sha256_of() {
   if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi
 }
 
+# CMake speichert den absoluten Build-Ordner als Suchpfad. Nach einem Umbenennen des
+# Projektordners findet macOS die ggml-Bibliotheken nicht mehr, obwohl sie neben der
+# Binary liegen. @loader_path sucht dort, unabhängig vom Ordnernamen.
 engine_rpath() {
   [ "$(uname)" = "Darwin" ] || return 0
   command -v install_name_tool >/dev/null 2>&1 || return 0

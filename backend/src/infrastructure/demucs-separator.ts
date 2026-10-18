@@ -2,7 +2,7 @@
 // Rechnet nur auf der CPU (auf dem Mac mit Accelerate), liefert alle Spuren eines Modells in einem Durchgang.
 // demucs.cpp liest nur 44,1 kHz: hin- und zurückgerechnet wird hier, die Spuren haben danach wieder die Song-Rate.
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { availableParallelism, totalmem } from "node:os";
 import { join } from "node:path";
@@ -46,6 +46,21 @@ export function demucsThreads(ramBytes = totalmem(), cores = availableParallelis
   return Math.max(1, Math.min(byRam, cores));
 }
 
+/**
+ * Debian-Paket (amd64): die Programme liegen zweimal bei, für jede x86-64-CPU und im Unterordner avx2/ für CPUs mit
+ * AVX2 und FMA (seit 2013/2017, etwa doppelt so schnell). Hier den passenden Ordner wählen.
+ */
+function pickBinDir(binDir: string): string {
+  const fast = join(binDir, "avx2");
+  if (process.platform !== "linux" || !existsSync(fast)) return binDir;
+  try {
+    const flags = /^flags\s*:(.*)$/m.exec(readFileSync("/proc/cpuinfo", "utf8"))?.[1]?.split(/\s+/) ?? [];
+    return flags.includes("avx2") && flags.includes("fma") ? fast : binDir;
+  } catch {
+    return binDir;
+  }
+}
+
 export interface DemucsDeps {
   binDir: string;
   modelsDir: string;
@@ -58,7 +73,12 @@ export class DemucsSeparator {
   private readonly deps: DemucsDeps;
 
   constructor(deps: DemucsDeps) {
-    this.deps = deps;
+    this.deps = { ...deps, binDir: pickBinDir(deps.binDir) };
+  }
+
+  /** Beide Programme da (dann lassen sich die Modelle laden)? */
+  supported(): boolean {
+    return Object.values(SPECS).every((spec) => existsSync(join(this.deps.binDir, spec.bin)));
   }
 
   /** Programm und alle Modelldateien da? */

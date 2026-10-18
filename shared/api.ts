@@ -320,6 +320,8 @@ export interface SettingsView extends Settings {
   stems_xl_available: boolean;
   /** Demucs-Modelle samt Programm installiert (Stem Separation) */
   demucs: Record<DemucsModel, boolean>;
+  /** Programme von demucs.cpp vorhanden (dann lassen sich die Demucs-Modelle laden) */
+  demucs_supported: boolean;
   /** Fertige App: XL lässt sich über die Einrichtung nachladen statt über den Installer */
   packaged: boolean;
 }
@@ -389,6 +391,8 @@ export interface SetupStatus {
   stems: { mb: number; present: boolean };
   /** XL-Spuren-Modell (XL-Base), nur über Einstellungen › Spuren-Modell nachladbar */
   stems_xl: { mb: number; present: boolean };
+  /** Demucs-Modelle (htdemucs_ft und htdemucs_6s) für die Stem Separation; supported = Programme sind dabei */
+  demucs: { mb: number; present: boolean; supported: boolean };
   /** Noch fehlende feste Dateien (VAE, Text-Embedding, Klangmodell) in MB */
   base_mb: number;
   /** Datei, die gerade geladen wird */

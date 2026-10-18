@@ -33,6 +33,7 @@ jobs:
         id: v
         run: |
           echo "acestep=$(sed -n 's/^ACESTEP_REV="\(.*\)"/\1/p' scripts/common.sh)" >> "$GITHUB_OUTPUT"
+          echo "demucs=$(sed -n 's/^DEMUCS_REV="\(.*\)"/\1/p' scripts/common.sh)" >> "$GITHUB_OUTPUT"
           echo "node=$(sed -n 's/^NODE_VERSION="\(.*\)"/\1/p' scripts/common.sh)" >> "$GITHUB_OUTPUT"
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then v="${GITHUB_REF_NAME#v}"; else v="$(sed -n 's/^  "version": "\(.*\)",$/\1/p' package.json)"; fi
           echo "app=$v" >> "$GITHUB_OUTPUT"
@@ -42,6 +43,10 @@ jobs:
         with:
           path: engine/acestep.cpp
           key: acestep-${{ steps.v.outputs.acestep }}-${{ hashFiles('macos/build-app.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: engine/demucs.cpp
+          key: demucs-${{ steps.v.outputs.demucs }}-${{ hashFiles('macos/build-app.sh', 'scripts/common.sh') }}
       - uses: actions/cache@v4
         with:
           path: dist-mac/cache

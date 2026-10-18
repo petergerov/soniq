@@ -17,6 +17,8 @@ export interface SettingsServiceDeps {
   packaged: boolean;
   /** Demucs-Modelle samt Programm installiert (Stem Separation) */
   demucsAvailable: () => Record<DemucsModel, boolean>;
+  /** Programme von demucs.cpp vorhanden */
+  demucsSupported: () => boolean;
 }
 
 const POSITIVE_NUMBERS = ["timeout_minutes", "poll_interval"] as const;
@@ -38,6 +40,7 @@ export class SettingsService {
       stems_available: Object.values(STEM_MODELS).some((f) => this.has(f)),
       stems_xl_available: this.has(STEM_MODELS.xl),
       demucs: this.deps.demucsAvailable(),
+      demucs_supported: this.deps.demucsSupported(),
       packaged: this.deps.packaged,
     };
   }

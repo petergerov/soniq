@@ -5,6 +5,7 @@
 //
 // Aufbau des Bundles (siehe macos/build-app.sh):
 //   Contents/MacOS/SONIQ, node, ace-server      Programme
+//   Contents/MacOS/demucs_*.cpp.main            Stem Separation mit Demucs (Gewichte lädt die App nach)
 //   Contents/Frameworks/libggml*.dylib          Bibliotheken des Modellservers
 //   Contents/Resources/app/                     backend/src, shared, scripts/common.sh, frontend/dist
 // Daten und Modelle: ~/Library/Application Support/SONIQ/{data,models}
@@ -97,6 +98,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     serverEnv["MG_DATA_DIR"] = dataDir.path
     serverEnv["MG_MODELS_DIR"] = modelsDir.path
     serverEnv["MG_ENGINE_BIN"] = contents.appendingPathComponent("MacOS/ace-server").path
+    serverEnv["MG_DEMUCS_DIR"] = contents.appendingPathComponent("MacOS").path
     // Version der App (für die Update-Prüfung gegen GitHub-Releases)
     serverEnv["MG_APP_VERSION"] = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
     process.environment = serverEnv

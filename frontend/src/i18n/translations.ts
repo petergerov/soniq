@@ -146,7 +146,7 @@ export const TRANSLATIONS = {
     ver_chip_male: "Männlich", ver_chip_choir: "Chor", ver_chip_harmonies: "Harmonien",
     pause: "Pause",
     dit_xl_get: "XL-Klangmodell laden (5,1 GB)",
-    stem_model_tip: "Standard: Base-Modell mit 2 Mrd. Parametern. XL: XL-Base mit 4 Mrd., rechnet etwa doppelt so lange und braucht mehr Speicher. Gilt für Spur für Spur, neue Versionen, Herauslösen und Ersetzen.", stem_model_xl_missing: "XL-Spuren-Modell fehlt: install --xl-stems ausführen.", stem_model_xl_get: "XL-Spuren-Modell laden (5,3 GB)",
+    stem_model_tip: "Standard: Base-Modell mit 2 Mrd. Parametern. XL: XL-Base mit 4 Mrd., rechnet etwa doppelt so lange und braucht mehr Speicher. Gilt für Spur für Spur, neue Versionen, Herauslösen und Ersetzen.", stem_model_xl_missing: "XL-Spuren-Modell fehlt: install --xl-stems ausführen.", stem_model_xl_get: "XL-Spuren-Modell laden (5,3 GB)", demucs_model: "Demucs", demucs_tip: "Trennt Songs in ihre echten Spuren (Stem Separation mit 4 oder 6 Stems), unabhängig vom Spuren-Modell.", demucs_get: "Demucs laden (390 MB)", demucs_missing_install: "fehlt: install erneut ausführen",
   },
   en: {
     vocals: "Composition", instrumental: "Instrumental", song: "Song",
@@ -277,7 +277,7 @@ export const TRANSLATIONS = {
     ver_chip_male: "Male", ver_chip_choir: "Choir", ver_chip_harmonies: "Harmonies",
     pause: "Pause",
     dit_xl_get: "Download XL sound model (5.1 GB)",
-    stem_model_tip: "Standard: base model with 2 billion parameters. XL: XL base with 4 billion, takes about twice as long and needs more memory. Used for track by track, new versions, extracting and replacing.", stem_model_xl_missing: "XL track model missing: run install --xl-stems.", stem_model_xl_get: "Download XL track model (5.3 GB)",
+    stem_model_tip: "Standard: base model with 2 billion parameters. XL: XL base with 4 billion, takes about twice as long and needs more memory. Used for track by track, new versions, extracting and replacing.", stem_model_xl_missing: "XL track model missing: run install --xl-stems.", stem_model_xl_get: "Download XL track model (5.3 GB)", demucs_model: "Demucs", demucs_tip: "Splits songs into their real tracks (stem separation with 4 or 6 stems), independent of the track model.", demucs_get: "Download Demucs (390 MB)", demucs_missing_install: "missing: run install again",
   },
   es: {
     vocals: "Composición", instrumental: "Instrumental", song: "Canción",
@@ -408,7 +408,7 @@ export const TRANSLATIONS = {
     ver_chip_male: "Masculina", ver_chip_choir: "Coro", ver_chip_harmonies: "Armonías",
     pause: "Pausa",
     dit_xl_get: "Descargar modelo de sonido XL (5,1 GB)",
-    stem_model_tip: "Estándar: modelo base de 2 mil millones de parámetros. XL: base XL de 4 mil millones, tarda el doble y necesita más memoria. Se usa en pista a pista, nuevas versiones, extraer y reemplazar.", stem_model_xl_missing: "Falta el modelo de pistas XL: ejecuta install --xl-stems.", stem_model_xl_get: "Descargar modelo de pistas XL (5,3 GB)",
+    stem_model_tip: "Estándar: modelo base de 2 mil millones de parámetros. XL: base XL de 4 mil millones, tarda el doble y necesita más memoria. Se usa en pista a pista, nuevas versiones, extraer y reemplazar.", stem_model_xl_missing: "Falta el modelo de pistas XL: ejecuta install --xl-stems.", stem_model_xl_get: "Descargar modelo de pistas XL (5,3 GB)", demucs_model: "Demucs", demucs_tip: "Separa las canciones en sus pistas reales (separación de stems con 4 o 6 stems), independiente del modelo de pistas.", demucs_get: "Descargar Demucs (390 MB)", demucs_missing_install: "falta: vuelve a ejecutar install",
   },
   fr: {
     vocals: "Composition", instrumental: "Instrumental", song: "Chanson",
@@ -539,7 +539,7 @@ export const TRANSLATIONS = {
     ver_chip_male: "Masculin", ver_chip_choir: "Chœur", ver_chip_harmonies: "Harmonies",
     pause: "Pause",
     dit_xl_get: "Télécharger le modèle sonore XL (5,1 Go)",
-    stem_model_tip: "Standard : modèle base à 2 milliards de paramètres. XL : base XL à 4 milliards, environ deux fois plus long et plus gourmand en mémoire. Sert pour piste par piste, nouvelles versions, extraction et remplacement.", stem_model_xl_missing: "Modèle de pistes XL manquant : lance install --xl-stems.", stem_model_xl_get: "Télécharger le modèle de pistes XL (5,3 Go)",
+    stem_model_tip: "Standard : modèle base à 2 milliards de paramètres. XL : base XL à 4 milliards, environ deux fois plus long et plus gourmand en mémoire. Sert pour piste par piste, nouvelles versions, extraction et remplacement.", stem_model_xl_missing: "Modèle de pistes XL manquant : lance install --xl-stems.", stem_model_xl_get: "Télécharger le modèle de pistes XL (5,3 Go)", demucs_model: "Demucs", demucs_tip: "Sépare les morceaux en leurs vraies pistes (séparation en 4 ou 6 stems), indépendamment du modèle de pistes.", demucs_get: "Télécharger Demucs (390 Mo)", demucs_missing_install: "manquant : relance install",
   },
   it: {
     vocals: "Composizione", instrumental: "Strumentale", song: "Canzone",
@@ -670,7 +670,7 @@ export const TRANSLATIONS = {
     ver_chip_male: "Maschile", ver_chip_choir: "Coro", ver_chip_harmonies: "Armonie",
     pause: "Pausa",
     dit_xl_get: "Scarica il modello sonoro XL (5,1 GB)",
-    stem_model_tip: "Standard: modello base da 2 miliardi di parametri. XL: base XL da 4 miliardi, impiega circa il doppio e richiede più memoria. Vale per traccia per traccia, nuove versioni, estrazione e sostituzione.", stem_model_xl_missing: "Manca il modello tracce XL: esegui install --xl-stems.", stem_model_xl_get: "Scarica modello tracce XL (5,3 GB)",
+    stem_model_tip: "Standard: modello base da 2 miliardi di parametri. XL: base XL da 4 miliardi, impiega circa il doppio e richiede più memoria. Vale per traccia per traccia, nuove versioni, estrazione e sostituzione.", stem_model_xl_missing: "Manca il modello tracce XL: esegui install --xl-stems.", stem_model_xl_get: "Scarica modello tracce XL (5,3 GB)", demucs_model: "Demucs", demucs_tip: "Separa i brani nelle loro tracce reali (separazione in 4 o 6 stem), indipendente dal modello tracce.", demucs_get: "Scarica Demucs (390 MB)", demucs_missing_install: "mancante: esegui di nuovo install",
   },
   pt: {
     vocals: "Composição", instrumental: "Instrumental", song: "Canção",
@@ -801,7 +801,7 @@ export const TRANSLATIONS = {
     ver_chip_male: "Masculina", ver_chip_choir: "Coro", ver_chip_harmonies: "Harmonias",
     pause: "Pausa",
     dit_xl_get: "Baixar modelo de som XL (5,1 GB)",
-    stem_model_tip: "Padrão: modelo base com 2 bilhões de parâmetros. XL: base XL com 4 bilhões, leva cerca do dobro do tempo e exige mais memória. Vale para faixa por faixa, novas versões, extrair e substituir.", stem_model_xl_missing: "Falta o modelo de faixas XL: execute install --xl-stems.", stem_model_xl_get: "Baixar modelo de faixas XL (5,3 GB)",
+    stem_model_tip: "Padrão: modelo base com 2 bilhões de parâmetros. XL: base XL com 4 bilhões, leva cerca do dobro do tempo e exige mais memória. Vale para faixa por faixa, novas versões, extrair e substituir.", stem_model_xl_missing: "Falta o modelo de faixas XL: execute install --xl-stems.", stem_model_xl_get: "Baixar modelo de faixas XL (5,3 GB)", demucs_model: "Demucs", demucs_tip: "Separa as músicas em suas faixas reais (separação em 4 ou 6 stems), independente do modelo de faixas.", demucs_get: "Baixar Demucs (390 MB)", demucs_missing_install: "ausente: execute install novamente",
   },
   tr: {
     vocals: "Kompozisyon", instrumental: "Enstrümantal", song: "Şarkı",
@@ -932,7 +932,7 @@ export const TRANSLATIONS = {
     ver_chip_male: "Erkek", ver_chip_choir: "Koro", ver_chip_harmonies: "Armoniler",
     pause: "Duraklat",
     dit_xl_get: "XL ses modelini indir (5,1 GB)",
-    stem_model_tip: "Standart: 2 milyar parametreli base modeli. XL: 4 milyar parametreli XL base, yaklaşık iki kat uzun sürer ve daha fazla bellek ister. Kanal kanal üretim, yeni sürümler, ayırma ve değiştirmede kullanılır.", stem_model_xl_missing: "XL kanal modeli eksik: install --xl-stems çalıştır.", stem_model_xl_get: "XL kanal modelini indir (5,3 GB)",
+    stem_model_tip: "Standart: 2 milyar parametreli base modeli. XL: 4 milyar parametreli XL base, yaklaşık iki kat uzun sürer ve daha fazla bellek ister. Kanal kanal üretim, yeni sürümler, ayırma ve değiştirmede kullanılır.", stem_model_xl_missing: "XL kanal modeli eksik: install --xl-stems çalıştır.", stem_model_xl_get: "XL kanal modelini indir (5,3 GB)", demucs_model: "Demucs", demucs_tip: "Şarkıları gerçek kanallarına ayırır (4 veya 6 stem ile ayrıştırma), kanal modelinden bağımsız.", demucs_get: "Demucs'u indir (390 MB)", demucs_missing_install: "eksik: install'u yeniden çalıştır",
   },
   pl: {
     vocals: "Kompozycja", instrumental: "Instrumentalny", song: "Piosenka",
@@ -1063,7 +1063,7 @@ export const TRANSLATIONS = {
     ver_chip_male: "Męski", ver_chip_choir: "Chór", ver_chip_harmonies: "Harmonie",
     pause: "Pauza",
     dit_xl_get: "Pobierz model dźwięku XL (5,1 GB)",
-    stem_model_tip: "Standardowy: model base z 2 mld parametrów. XL: base XL z 4 mld, trwa około dwa razy dłużej i potrzebuje więcej pamięci. Dotyczy ścieżka po ścieżce, nowych wersji, wyodrębniania i zamiany.", stem_model_xl_missing: "Brak modelu ścieżek XL: uruchom install --xl-stems.", stem_model_xl_get: "Pobierz model ścieżek XL (5,3 GB)",
+    stem_model_tip: "Standardowy: model base z 2 mld parametrów. XL: base XL z 4 mld, trwa około dwa razy dłużej i potrzebuje więcej pamięci. Dotyczy ścieżka po ścieżce, nowych wersji, wyodrębniania i zamiany.", stem_model_xl_missing: "Brak modelu ścieżek XL: uruchom install --xl-stems.", stem_model_xl_get: "Pobierz model ścieżek XL (5,3 GB)", demucs_model: "Demucs", demucs_tip: "Rozdziela utwory na ich prawdziwe ścieżki (separacja na 4 lub 6 stemów), niezależnie od modelu ścieżek.", demucs_get: "Pobierz Demucs (390 MB)", demucs_missing_install: "brak: uruchom install ponownie",
   },
   ru: {
     vocals: "Композиция", instrumental: "Инструментал", song: "Песня",
@@ -1194,7 +1194,7 @@ export const TRANSLATIONS = {
     ver_chip_male: "Мужской", ver_chip_choir: "Хор", ver_chip_harmonies: "Гармонии",
     pause: "Пауза",
     dit_xl_get: "Загрузить звуковую модель XL (5,1 ГБ)",
-    stem_model_tip: "Стандартная: базовая модель с 2 млрд параметров. XL: базовая XL с 4 млрд, считает примерно вдвое дольше и требует больше памяти. Используется для генерации по дорожкам, новых версий, извлечения и замены.", stem_model_xl_missing: "Нет модели дорожек XL: запусти install --xl-stems.", stem_model_xl_get: "Загрузить модель дорожек XL (5,3 ГБ)",
+    stem_model_tip: "Стандартная: базовая модель с 2 млрд параметров. XL: базовая XL с 4 млрд, считает примерно вдвое дольше и требует больше памяти. Используется для генерации по дорожкам, новых версий, извлечения и замены.", stem_model_xl_missing: "Нет модели дорожек XL: запусти install --xl-stems.", stem_model_xl_get: "Загрузить модель дорожек XL (5,3 ГБ)", demucs_model: "Demucs", demucs_tip: "Разделяет песни на их настоящие дорожки (разделение на 4 или 6 стемов), независимо от модели дорожек.", demucs_get: "Загрузить Demucs (390 МБ)", demucs_missing_install: "нет: запусти install ещё раз",
   },
   uk: {
     vocals: "Композиція", instrumental: "Інструментал", song: "Пісня",
@@ -1325,7 +1325,7 @@ export const TRANSLATIONS = {
     ver_chip_male: "Чоловічий", ver_chip_choir: "Хор", ver_chip_harmonies: "Гармонії",
     pause: "Пауза",
     dit_xl_get: "Завантажити звукову модель XL (5,1 ГБ)",
-    stem_model_tip: "Стандартна: базова модель з 2 млрд параметрів. XL: базова XL з 4 млрд, рахує приблизно вдвічі довше й потребує більше пам'яті. Використовується для генерації доріжками, нових версій, видобування й заміни.", stem_model_xl_missing: "Немає моделі доріжок XL: запусти install --xl-stems.", stem_model_xl_get: "Завантажити модель доріжок XL (5,3 ГБ)",
+    stem_model_tip: "Стандартна: базова модель з 2 млрд параметрів. XL: базова XL з 4 млрд, рахує приблизно вдвічі довше й потребує більше пам'яті. Використовується для генерації доріжками, нових версій, видобування й заміни.", stem_model_xl_missing: "Немає моделі доріжок XL: запусти install --xl-stems.", stem_model_xl_get: "Завантажити модель доріжок XL (5,3 ГБ)", demucs_model: "Demucs", demucs_tip: "Розділяє пісні на їхні справжні доріжки (розділення на 4 або 6 стемів), незалежно від моделі доріжок.", demucs_get: "Завантажити Demucs (390 МБ)", demucs_missing_install: "немає: запусти install ще раз",
   },
   ja: {
     vocals: "構成", instrumental: "インスト", song: "歌あり",
@@ -1456,7 +1456,7 @@ export const TRANSLATIONS = {
     ver_chip_male: "男性", ver_chip_choir: "クワイア", ver_chip_harmonies: "ハーモニー",
     pause: "一時停止",
     dit_xl_get: "XL サウンドモデルをダウンロード (5.1 GB)",
-    stem_model_tip: "標準: 20 億パラメーターの Base モデル。XL: 40 億パラメーターの XL Base で、処理時間は約 2 倍、より多くのメモリが必要です。トラックごとの生成、新バージョン、抽出、差し替えに使われます。", stem_model_xl_missing: "XL トラックモデルがありません: install --xl-stems を実行してください。", stem_model_xl_get: "XL トラックモデルをダウンロード (5.3 GB)",
+    stem_model_tip: "標準: 20 億パラメーターの Base モデル。XL: 40 億パラメーターの XL Base で、処理時間は約 2 倍、より多くのメモリが必要です。トラックごとの生成、新バージョン、抽出、差し替えに使われます。", stem_model_xl_missing: "XL トラックモデルがありません: install --xl-stems を実行してください。", stem_model_xl_get: "XL トラックモデルをダウンロード (5.3 GB)", demucs_model: "Demucs", demucs_tip: "曲を実際のトラックに分離します (4 または 6 ステムの音源分離)。トラックモデルとは別です。", demucs_get: "Demucs をダウンロード (390 MB)", demucs_missing_install: "未インストール: install をもう一度実行",
   },
   zh: {
     vocals: "构成", instrumental: "纯音乐", song: "歌曲",
@@ -1587,6 +1587,6 @@ export const TRANSLATIONS = {
     ver_chip_male: "男声", ver_chip_choir: "合唱", ver_chip_harmonies: "和声",
     pause: "暂停",
     dit_xl_get: "下载 XL 声音模型 (5.1 GB)",
-    stem_model_tip: "标准: 20 亿参数的 Base 模型。XL: 40 亿参数的 XL Base, 耗时约为两倍, 需要更多内存。用于逐轨生成、新版本、提取和替换。", stem_model_xl_missing: "缺少 XL 分轨模型: 请运行 install --xl-stems。", stem_model_xl_get: "下载 XL 分轨模型 (5.3 GB)",
+    stem_model_tip: "标准: 20 亿参数的 Base 模型。XL: 40 亿参数的 XL Base, 耗时约为两倍, 需要更多内存。用于逐轨生成、新版本、提取和替换。", stem_model_xl_missing: "缺少 XL 分轨模型: 请运行 install --xl-stems。", stem_model_xl_get: "下载 XL 分轨模型 (5.3 GB)", demucs_model: "Demucs", demucs_tip: "将歌曲分离为真实的音轨 (4 或 6 轨的音源分离)，与分轨模型无关。", demucs_get: "下载 Demucs (390 MB)", demucs_missing_install: "缺失: 请重新运行 install",
   },
 } satisfies Record<Lang, Dictionary>;

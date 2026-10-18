@@ -82,6 +82,15 @@ export class SetupDialog {
     }
   }
 
+  /** Fertige App, Einstellungen › Demucs: die Demucs-Modelle nachladen; Fortschritt wie bei der Einrichtung. */
+  async addDemucs(): Promise<void> {
+    try {
+      this.show(await this.api.addDemucs());
+    } catch (e) {
+      void errorDialog(this.t, e);
+    }
+  }
+
   /** Texte neu setzen (nach Sprachwechsel). */
   refreshTexts(): void {
     if (this.status && this.dialog.open) this.show(this.status);

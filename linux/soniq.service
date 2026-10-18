@@ -14,6 +14,7 @@ Environment=MG_PACKAGED=1
 Environment=MG_DATA_DIR=/var/lib/soniq/data
 Environment=MG_MODELS_DIR=/var/lib/soniq/models
 Environment=MG_ENGINE_BIN=/opt/soniq/bin/ace-server
+Environment=MG_DEMUCS_DIR=/opt/soniq/bin/demucs
 Environment=LD_LIBRARY_PATH=/opt/soniq/lib
 ExecStart=/opt/soniq/bin/node --disable-warning=ExperimentalWarning /opt/soniq/app/backend/src/main.ts
 Restart=on-failure

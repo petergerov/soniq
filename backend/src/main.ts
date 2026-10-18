@@ -105,7 +105,8 @@ async function main(): Promise<void> {
   });
   const folderService = new FolderService(folders, songs);
   const settingsService = new SettingsService({
-    settings, songs, storage, modelsDir: config.modelsDir, packaged: config.packaged, demucsAvailable: () => demucs.availability(),
+    settings, songs, storage, modelsDir: config.modelsDir, packaged: config.packaged,
+    demucsAvailable: () => demucs.availability(), demucsSupported: () => demucs.supported(),
   });
   const analysis = new AnalysisService(settings, engineFactory);
   const system = new SystemService({
@@ -118,7 +119,8 @@ async function main(): Promise<void> {
     synthPort: config.synthPort, lmPort: config.lmPort, engineConf, log,
   });
   const setup = new SetupService({
-    packaged: config.packaged, catalog: loadCatalog(config.root), modelsDir: config.modelsDir, engineConf, engine, synthPort: config.synthPort, log,
+    packaged: config.packaged, catalog: loadCatalog(config.root), modelsDir: config.modelsDir, engineConf, engine, synthPort: config.synthPort,
+    demucsSupported: () => demucs.supported(), log,
   });
   const updates = new UpdateService({
     root: config.root, platform: config.platform, packaged: config.packaged, appVersion: config.appVersion, git: new Git(config.root), songs, launcher, port: config.port,

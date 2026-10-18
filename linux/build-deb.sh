@@ -1,7 +1,9 @@
 #!/bin/bash
 # Builds a Debian/Ubuntu server package: soniq_<version>_<amd64|arm64>.deb → dist-linux/
-# Bundles portable Node.js, a Vulkan ace-server (GGML_NATIVE=OFF), the web UI, and a systemd unit.
-# Models are not included — first open in the browser runs the packaged setup (same as SONIQ.app).
+# Bundles portable Node.js, a Vulkan ace-server (GGML_NATIVE=OFF), demucs.cpp for stem separation (OpenMP,
+# no -march=native; amd64 also ships an AVX2/FMA build the server picks at runtime), the web UI, and a systemd unit.
+# Models are not included — first open in the browser runs the packaged setup (same as SONIQ.app); the Demucs
+# weights download from Settings › Demucs.
 #
 #   linux/build-deb.sh
 #
@@ -55,6 +57,18 @@ if ! "$EB/ace-server" --help 2>&1 | head -1 | grep -q "${ACESTEP_REV:0:7}"; then
 fi
 echo "  ok"
 
+schritt "Stem separation demucs.cpp (${DEMUCS_REV:0:7}, OpenMP, portable)"
+DB="$DEMUCS_DIR/build-deb"
+{
+  case "$DEB_ARCH" in
+    # Baseline for any x86-64 CPU, plus AVX2/FMA (Haswell, Zen and newer: about twice as fast)
+    amd64) demucs_build_portable "$DB" "-march=x86-64-v2" -DUSE_OPENBLAS=OFF \
+             && demucs_build_portable "$DB-avx2" "-march=x86-64-v3" -DUSE_OPENBLAS=OFF ;;
+    arm64) demucs_build_portable "$DB" "-march=armv8-a" -DUSE_OPENBLAS=OFF ;;
+  esac
+} > "$OUT/demucs-build.log" 2>&1 || { echo "demucs.cpp build failed:"; tail -40 "$OUT/demucs-build.log"; exit 1; }
+echo "  ok"
+
 schritt "Node.js $NODE_VERSION ($NODE_PLAT)"
 entry=$(echo "$NODE_FILES" | grep "^node-v$NODE_VERSION-$NODE_PLAT\.") \
   || { echo "No Node.js build for $NODE_PLAT in scripts/common.sh."; exit 1; }
@@ -84,6 +98,13 @@ mkdir -p "$OPT/bin" "$OPT/lib" "$OPT/app/scripts" "$OPT/app/frontend" "$OPT/app/
 cp "$NODE_BIN" "$OPT/bin/node"
 cp "$EB/ace-server" "$OPT/bin/ace-server"
 chmod 755 "$OPT/bin/node" "$OPT/bin/ace-server"
+# Demucs: only system libraries (libstdc++, libgomp); avx2/ is chosen at runtime when the CPU supports it
+mkdir -p "$OPT/bin/demucs"
+install -m 755 "$DB/demucs_mt.cpp.main" "$DB/demucs_ft_mt.cpp.main" "$OPT/bin/demucs/"
+if [ "$DEB_ARCH" = amd64 ]; then
+  mkdir -p "$OPT/bin/demucs/avx2"
+  install -m 755 "$DB-avx2/demucs_mt.cpp.main" "$DB-avx2/demucs_ft_mt.cpp.main" "$OPT/bin/demucs/avx2/"
+fi
 
 # Bundle non-system shared libs from the build tree (Vulkan ICD stays on the host)
 while read -r lib; do
@@ -121,13 +142,14 @@ Section: sound
 Priority: optional
 Architecture: $DEB_ARCH
 Maintainer: Petar Gerov <peter@gerov.com>
-Depends: adduser, libvulkan1
+Depends: adduser, libvulkan1, libgomp1
 Recommends: mesa-vulkan-drivers | nvidia-driver | vulkan-tools
 Homepage: https://github.com/petergerov/soniq
 Description: SONIQ local music generator (server)
  Web UI and ACE-Step 1.5 model server for headless Debian/Ubuntu.
  Models download on first setup in the browser. Needs a Vulkan-capable GPU
- for generation (CPU fallback via acestep.cpp is limited).
+ for generation (CPU fallback via acestep.cpp is limited). Stem separation
+ with Demucs runs on the CPU; its weights download from the settings.
 EOF
 
 cat > "$STAGE/DEBIAN/postinst" <<'EOF'
