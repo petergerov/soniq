@@ -47,3 +47,18 @@ Status: ✅ done · 🚧 in progress · 💡 open
 | # | Idea | Status | Notes |
 |---|---|---|---|
 | 17 | **Library on its own page:** form and library were too much for one screen | ✅ | Two pages with tabs in the header: Create (`#/`) and Library (`#/library`), see `core/router.ts`. The library tab shows the number of running and waiting songs. Reuse and Cross switch to Create. Replaces the former Layout setting (stacked / side by side). |
+
+## Edit and transform songs
+
+Ideas 19–25 come from [Ace-Step-Web](https://github.com/Saganaki22/Ace-Step-Web) (2026-10-18). acestep.cpp already
+supports everything they need (`src/task-types.h`, `tools/ace-server.cpp`), SONIQ does not use it yet.
+
+| # | Idea | Status | Notes |
+|---|---|---|---|
+| 19 | **Repaint a section:** regenerate only seconds X–Y of a song, optionally with new lyrics or caption | 💡 | `task_type: "repaint"` with `repainting_start` / `repainting_end` and the song as `audio`. Select a region on the player or mixer waveform → "Repaint…". The result is a new version in the song's group, so A/B (idea 11) compares it with the original at the same position. Fixes one bad chorus without re-rolling the whole song. |
+| 20 | **Cover / remix:** a library song or an uploaded file in a new style | 💡 | `task_type: "cover"`, `audio_cover_strength` (how far from the source, default 1.0), `cover_noise_strength`. "Cover…" in the song menu (source = that song) and as an option next to the analysis upload. Dice, style sliders and themes work on the new style as usual. |
+| 21 | **Reference audio:** "make it sound like this file" | 💡 | Optional `ref_audio` part on `/synth` (timbre reference, shared by every request of a batch). Next to the upload on Create; the analysis takes tempo and key from a file, the reference would carry its sound as well. |
+| 22 | **Example songs:** read-only starter presets with full caption and tagged lyrics | 💡 | Ace-Step-Web ships 14 genre examples (funk rock, hip hop, lo-fi, phonk, chiptune …). A few in the preset picker (idea 16), marked as built-in, show beginners what a good caption and `[Verse]` / `[Chorus]` lyrics look like, which the dice do not. Translated names, English content. |
+| 23 | **Advanced sampling:** LM top-p / top-k / CFG / negative prompt, DiT solver | 💡 | Request fields `lm_top_p` (0.9), `lm_top_k` (0 = off), `lm_cfg_scale`, `lm_negative_prompt`, `solver` (`euler` default, `sde`, `dpm3m`, `stork4`). Collapsed "Advanced" block in the form, shown in the song row's parameter summary like the temperature. Low priority for most users. |
+| 24 | **ⓘ help on every control:** a short explanation next to each field and slider | 💡 | Ace-Step-Web has one on nearly every control. Check which SONIQ controls still lack a tooltip; texts in all 12 languages. |
+| 25 | **LoRA adapters:** pick a style adapter and its strength | 💡 | Not from Ace-Step-Web. acestep.cpp loads PEFT, ComfyUI and LyCORIS adapters from `--adapters <folder>`, per request `adapter` and `adapter_scale` (default 1.0), see `engine/acestep.cpp/adapters/README.md`. Gear › Adapters (folder, list) and a picker in the form; saved with presets. |
