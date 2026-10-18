@@ -648,3 +648,8 @@ dialog.repaint-dlg { width: min(640px, calc(100vw - 32px)); }
 .cover-box > .small { line-height: 1.45; }
 .cover-close { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
 .slider-ends { display: flex; justify-content: space-between; color: var(--faint); margin-top: -2px; }
+
+/* Erweitert › Sampling */
+details.sampling { margin: 4px 0 14px; }
+.sampling-help { margin: 8px 0 12px; line-height: 1.45; }
+.sampling > .sek { width: auto; }

@@ -79,6 +79,12 @@ function metaLine(song: Song, t: Translate): string {
     m.bpm && `${m.bpm}BPM`,
     p.inference_steps ? `${p.inference_steps}IT` : null,
     p.lm_temperature != null ? `${Number(p.lm_temperature).toFixed(1)}VAR` : null,
+    // Sampling nur, wenn abweichend von der Vorgabe (siehe SAMPLING_DEFAULTS)
+    p.lm_cfg_scale != null && `${Number(p.lm_cfg_scale).toFixed(1)}CFG`,
+    p.lm_top_p != null && `P${Number(p.lm_top_p).toFixed(2)}`,
+    p.lm_top_k && `K${p.lm_top_k}`,
+    p.solver && p.solver.toUpperCase(),
+    p.lm_negative_prompt && `−${p.lm_negative_prompt.length > 24 ? p.lm_negative_prompt.slice(0, 23) + "…" : p.lm_negative_prompt}`,
     m.keyscale,
     m.duration && formatDuration(m.duration),
   ].filter(Boolean).join(" · ");

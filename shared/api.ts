@@ -3,8 +3,30 @@
 
 export type SongStatus = "queued" | "running" | "done" | "error" | "cancelled";
 
+/** Diffusions-Verfahren des Klangmodells (acestep.cpp src/solvers) */
+export const SOLVERS = ["euler", "sde", "dpm3m", "stork4"] as const;
+export type Solver = (typeof SOLVERS)[number];
+
+/**
+ * Feineinstellungen der Erzeugung (Erweitert › Sampling). Ein fehlendes Feld heißt Vorgabe des Modellservers
+ * (SAMPLING_DEFAULTS); gespeichert werden nur abweichende Werte.
+ */
+export interface Sampling {
+  /** Classifier-Free Guidance des Sprachmodells beim Planen der Audio-Codes (1 = aus) */
+  lm_cfg_scale?: number;
+  /** Nucleus-Sampling des Sprachmodells (1 = aus) */
+  lm_top_p?: number;
+  /** Top-K des Sprachmodells (0 = aus) */
+  lm_top_k?: number;
+  /** Was das Sprachmodell vermeiden soll (Gegenbeschreibung für CFG) */
+  lm_negative_prompt?: string;
+  solver?: Solver;
+}
+
+export const SAMPLING_DEFAULTS: Required<Sampling> = { lm_cfg_scale: 2.0, lm_top_p: 0.9, lm_top_k: 0, lm_negative_prompt: "", solver: "euler" };
+
 /** Parameter, mit denen ein Song erzeugt wurde (so an den Modellserver geschickt). */
-export interface SongParams {
+export interface SongParams extends Sampling {
   prompt?: string;
   style?: string;
   caption: string;
@@ -119,7 +141,7 @@ export interface Song {
   source_url: string | null;
 }
 
-export interface GenerateRequest {
+export interface GenerateRequest extends Sampling {
   prompt?: string;
   style?: string;
   caption?: string;
@@ -159,7 +181,7 @@ export interface SongPatch {
 }
 
 /** Einstellungen einer Vorlage: alles außer Idee (Prompt), Titel, Lyrics und Seed. */
-export interface PresetValues {
+export interface PresetValues extends Sampling {
   style: string;
   /** Gesang: "instrumental" oder "song" (Lyrics schreibt dann das Modell, sofern keine eigenen da sind) */
   vocals: "instrumental" | "song";

@@ -7,6 +7,8 @@ const FORMATS: Record<string, Formatter> = {
   dur: (v) => ({ text: formatDuration(v) }),
   int: (v) => ({ text: String(v) }),
   temp: (v) => ({ text: v.toFixed(2) }),
+  dec1: (v) => ({ text: v.toFixed(1) }),
+  off: (v, min) => (v <= min ? { text: "OFF", small: true } : { text: String(v) }),   // ganz links = aus
   bpm: (v, min) => (v <= min ? { text: "AUTO", small: true } : { text: String(v) }),   // ganz links = Auto
 };
 

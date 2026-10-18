@@ -1,5 +1,5 @@
 // Prüft und normalisiert JSON-Eingaben, bevor sie an die Services gehen.
-import { COVER_LEVELS, MIN_REPAINT_SECONDS, SEPARATORS, type AudioRef, type CoverSettings, type GenerationMode, VARIATION_AXES, type DemucsModel, type ExtractRequest, type NewVersionRequest, type PresetValues, type SongPatch, type StemTrack } from "../../../shared/api.ts";
+import { COVER_LEVELS, MIN_REPAINT_SECONDS, SAMPLING_DEFAULTS, SEPARATORS, SOLVERS, type Sampling, type AudioRef, type CoverSettings, type GenerationMode, VARIATION_AXES, type DemucsModel, type ExtractRequest, type NewVersionRequest, type PresetValues, type SongPatch, type StemTrack } from "../../../shared/api.ts";
 import { AXIS_MAX, MAX_VERSION_COUNT, MAX_VERSION_TEXT } from "../../../shared/track-variation.ts";
 import { isStemTrack, orderTracks } from "../domain/stem.ts";
 import type { GenerateCommand, RepaintCommand } from "../services/generation-service.ts";
@@ -67,7 +67,28 @@ export function parseGenerateCommand(input: Input): GenerateCommand {
     groupId: optionalId(input, "group_id"),
     folderId: optionalId(input, "folder_id"),
     ...generationMode(input),
+    sampling: parseSampling(input),
   };
+}
+
+/** Längste Gegenbeschreibung (Zeichen) */
+const MAX_NEGATIVE_PROMPT = 500;
+
+/** Feineinstellungen; nur Werte, die von der Vorgabe abweichen (fehlend = Vorgabe des Modellservers). */
+export function parseSampling(input: Input): Sampling {
+  const d = SAMPLING_DEFAULTS;
+  const solver = str(input, "solver", d.solver);
+  if (!(SOLVERS as readonly string[]).includes(solver)) invalid("solver", `one of ${SOLVERS.join(", ")} expected`);
+  const negative = str(input, "lm_negative_prompt").trim();
+  if (negative.length > MAX_NEGATIVE_PROMPT) invalid("lm_negative_prompt", `at most ${MAX_NEGATIVE_PROMPT} characters`);
+  const values: Required<Sampling> = {
+    lm_cfg_scale: num(input, "lm_cfg_scale", d.lm_cfg_scale, { min: 1, max: 5 }),
+    lm_top_p: num(input, "lm_top_p", d.lm_top_p, { min: 0.1, max: 1 }),
+    lm_top_k: num(input, "lm_top_k", d.lm_top_k, { integer: true, min: 0, max: 200 }),
+    lm_negative_prompt: negative,
+    solver: solver as Required<Sampling>["solver"],
+  };
+  return Object.fromEntries(Object.entries(values).filter(([k, v]) => v !== d[k as keyof Sampling])) as Sampling;
 }
 
 /** mode "tracks" mit mindestens einer bekannten Spur, "cover" mit Vorlage; sonst ganzer Song. */
@@ -135,6 +156,7 @@ export function parsePresetValues(input: Input): PresetValues {
     lm_temperature: num(input, "lm_temperature", 0.85, { min: 0, max: 2 }),
     variants: num(input, "variants", 2, { integer: true, min: 1, max: 50 }),
     theme: str(input, "theme", "all"),
+    ...parseSampling(input),
   };
 }
 

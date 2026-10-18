@@ -12,6 +12,7 @@ import { BubbleSlider } from "./bubble-slider.ts";
 import { LyricsEditor } from "./lyrics-editor.ts";
 import { PresetPicker } from "./preset-picker.ts";
 import { PromptBlocks } from "./prompt-blocks.ts";
+import { SamplingControls } from "./sampling-controls.ts";
 import { isThemeId, promptBlock, randomPrompt, randomStyle, randomTitle, setPromptBlock, type DiceOptions, type ThemeId, varyPrompt, varyStyle } from "./random-content.ts";
 import { StyleAxisSliders } from "./style-axis-sliders.ts";
 import { TrackPicker } from "./track-picker.ts";
@@ -78,6 +79,7 @@ export class GeneratorForm {
   private readonly voice: VoicePicker;
   private readonly trackPicker: TrackPicker;
   private readonly coverSource: CoverSource;
+  private readonly sampling: SamplingControls;
   private readonly lyrics: LyricsEditor;
   private readonly sliders: Record<"duration" | "bpm" | "steps" | "temperature" | "variants", BubbleSlider>;
   private readonly locked = new Set<LockableField>(storage.getJson<LockableField[]>(LOCKS_KEY, []));
@@ -107,6 +109,7 @@ export class GeneratorForm {
     this.voice = new VoicePicker(this.f.style, byId("voiceBox"), () => this.remember());
     this.lyrics = new LyricsEditor({ instrumental: this.f.instrumental, lyrics: this.f.lyrics }, deps.t);
     this.coverSource = new CoverSource({ api: deps.api, t: deps.t });
+    this.sampling = new SamplingControls(deps.t);
     // Nach dem Lyrics-Editor: die Spurauswahl fragt ihn, ob "Instrumental" gewählt ist
     this.trackPicker = new TrackPicker({ t: deps.t, instrumental: () => this.lyrics.instrumental, onModeChange: (mode) => this.modeChanged(mode) });
     // Spur für Spur geht nur mit dem Spuren-Modell; die Einstellungen sagen, ob es da ist
@@ -145,6 +148,7 @@ export class GeneratorForm {
       lm_temperature: this.sliders.temperature.value,
       variants: this.sliders.variants.value,
       theme: this.theme,
+      ...this.sampling.value,
     };
   }
 
@@ -160,6 +164,7 @@ export class GeneratorForm {
     this.sliders.steps.value = v.inference_steps;
     this.sliders.temperature.value = v.lm_temperature;
     this.sliders.variants.value = v.variants;
+    this.sampling.set(v);   // ältere Vorlagen ohne Sampling: Vorgaben
     setSelect(this.f.keyscale, v.keyscale, true);
     setSelect(this.f.timesignature, v.timesignature);
     if (isThemeId(v.theme)) {
@@ -235,6 +240,7 @@ export class GeneratorForm {
     this.presets.refreshTexts();
     this.trackPicker.refreshTexts();
     this.coverSource.refreshTexts();
+    this.sampling.refreshTexts();
     this.lyrics.sync();
     this.updateButton();
   }
@@ -256,6 +262,7 @@ export class GeneratorForm {
     this.sliders.steps.value = p.inference_steps || DEFAULTS.inferenceSteps;
     this.sliders.temperature.value = p.lm_temperature ?? DEFAULTS.lmTemperature;   // ältere Songs liefen mit der Modell-Vorgabe
     this.sliders.variants.value = 1;
+    this.sampling.set(p);
     this.updateButton();
     setSelect(this.f.keyscale, p.keyscale, true);
     setSelect(this.f.timesignature, p.timesignature);
@@ -377,6 +384,7 @@ export class GeneratorForm {
       lm_temperature: this.sliders.temperature.value,
       ...this.trackPicker.request,
       ...this.coverSource.request(),
+      ...this.sampling.value,
     };
   }
 

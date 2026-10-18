@@ -33,7 +33,7 @@ While songs are being generated or waiting, the Library tab shows how many (hove
 | 5 | **Length** | 10 seconds to 5 minutes, default 1:30. |
 | 6 | **BPM** | Tempo. Far left = Auto, the model decides. |
 | 7 | **Composition** | Below the presets: switch between **Instrumental** and **Song**. With Song: pick the language and the **voice**: Female, Male or Duet, plus a type (a range like soprano or baritone, or a character like breathy, raspy or rap). The voice is written as words into the style, so it also works when you type them there yourself. Then type your own lyrics, or leave the field empty (dice: “Automatic”) and the model writes its own lyrics when generating. |
-| 8 | **Advanced** | Iterations (quality), variance (variety), key, time signature, seed. |
+| 8 | **Advanced** | Iterations (quality), variance (variety), key, time signature, seed, and **Sampling** (see below). |
 | 9 | **Generate** | Pick the number of versions (1 to 10) and go. Several versions are named A, B, C … The bar stays visible while scrolling. |
 | 10 | **Gear** | Settings, see [below](#settings). Next to it: interface language (twelve languages, from German to Chinese). |
 | 11 | **Presets** | Save the current settings under a name and load them again, see below. |
@@ -51,6 +51,15 @@ film score, chiptune, deep house). Unlike a preset, an example also fills in tit
 `[verse]` / `[chorus]` markers: a good starting point to see what a full description looks like, or to edit into your own
 song. Iterations, variance, number of versions and dice theme stay as they are; ↶ brings back the previous prompt and
 style. Examples cannot be deleted.
+
+**Sampling** (Advanced › Sampling, collapsed) is for fine-tuning; the defaults almost always fit. **Prompt
+adherence** (1–4, default 2.0) sets how strictly the language model follows the prompt when it plans the music; higher
+sticks closer to it with less variety, 1 turns it off. **Top-P** and **Top-K** limit the language model to its most
+likely choices (lower = safer; Top-K far left = off). **Avoid** names what the music should not be, e.g. "distorted,
+harsh vocals"; it works through prompt adherence, so not at 1.0. **Solver** is how the sound model computes: Euler
+(default, same seed = same song), SDE, DPM++ 3M or STORK 4. **Defaults** resets all five. Changed values are shown in
+the song's line in the library (e.g. `3.0CFG · K40 · SDE`) and are kept by presets, the arrow (reuse) and the plus
+button.
 
 The **lock** next to the prompt and style dice keeps that field as it is: Random and Variation then only change the other one.
 

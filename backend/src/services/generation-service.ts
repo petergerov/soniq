@@ -1,5 +1,5 @@
 // Neue Songs in Auftrag geben, wiederholen, abbrechen oder löschen.
-import { MIN_REPAINT_SECONDS, type CoverSettings, type GenerateResponse, type GenerationMode, type SongParams, type SongResultMeta, type StemIntent, type StemTrack } from "../../../shared/api.ts";
+import { MIN_REPAINT_SECONDS, type CoverSettings, type Sampling, type GenerateResponse, type GenerationMode, type SongParams, type SongResultMeta, type StemIntent, type StemTrack } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
 import { newId, randomSeed } from "../domain/ids.ts";
 import { INSTRUMENTAL, nowIso } from "../domain/song.ts";
@@ -34,6 +34,7 @@ export interface GenerateCommand {
   mode: GenerationMode;    // "tracks" = Spur für Spur (siehe services/track-by-track.ts)
   tracks: StemTrack[];     // bei "tracks", schon in Reihenfolge
   cover: CoverSettings | null;     // bei "cover"
+  sampling: Sampling;              // nur von der Vorgabe abweichende Werte
 }
 
 /** Geprüfte Anfrage für Ersetzen / Begleiten (Upload + JSON). */
@@ -114,6 +115,7 @@ export class GenerationService {
       inference_steps: cmd.inferenceSteps,
       lm_temperature: cmd.lmTemperature,
       use_cot_caption: !cmd.keepCaption,
+      ...cmd.sampling,
       ...(tracks.length ? { mode: "tracks" as const, tracks } : {}),
       ...(cover && cmd.cover ? { mode: "cover" as const, cover: { source: cover.ref, closeness: cmd.cover.closeness } } : {}),
     };

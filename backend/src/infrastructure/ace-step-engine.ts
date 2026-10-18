@@ -18,7 +18,8 @@ import { wavSeconds } from "./wav.ts";
 /** Felder, die an ace-server durchgereicht werden (Rest bleibt auf Server-Vorgaben). */
 const ACE_FIELDS = new Set([
   "caption", "lyrics", "bpm", "duration", "keyscale", "timesignature", "vocal_language", "seed", "lm_temperature",
-  "lm_cfg_scale", "inference_steps", "guidance_scale", "output_format", "mp3_bitrate", "lm_model", "synth_model", "use_cot_caption",
+  "lm_cfg_scale", "lm_top_p", "lm_top_k", "lm_negative_prompt", "solver",
+  "inference_steps", "guidance_scale", "output_format", "mp3_bitrate", "lm_model", "synth_model", "use_cot_caption",
 ]);
 const META_FIELDS = ["bpm", "duration", "keyscale", "timesignature", "vocal_language", "lyrics", "caption"] as const;
 const REQUEST_TIMEOUT_MS = 60_000;

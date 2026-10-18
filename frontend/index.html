@@ -218,6 +218,38 @@
           </label>
           <label class="field"><span class="lbl" title="Gleicher Seed + gleiche Einstellungen = gleicher Song" data-i18n-title="seed_tip">Seed</span><input name="seed" type="number" placeholder="zufällig" data-i18n-ph="seed_ph"></label>
         </div>
+        <details id="samplingBox" class="sampling">
+          <summary><span data-i18n="sampling">Sampling</span> <span id="samplingHint" class="sumhint"></span></summary>
+          <p class="small sampling-help" data-i18n="sampling_help">Für Fortgeschrittene. Die Vorgaben passen fast immer; Abweichungen stehen in der Bibliothek beim Song.</p>
+        <div class="field adv"><span class="lbl" title="Wie streng das Sprachmodell beim Planen der Musik dem Prompt folgt. 1 = aus, höher = näher am Prompt, aber weniger Abwechslung (Vorgabe: 2,0)." data-i18n-title="cfg_tip" data-i18n="cfg">Prompt-Treue</span>
+          <div class="slider" data-fmt="dec1">
+            <div class="fill"></div><div class="knob"><span></span></div>
+            <input name="lm_cfg_scale" type="range" min="1" max="4" step="0.1" value="2" aria-label="Prompt-Treue" data-i18n-aria="cfg">
+          </div>
+        </div>
+        <div class="field adv"><span class="lbl" title="Das Sprachmodell wählt nur unter den wahrscheinlichsten Möglichkeiten, die zusammen diesen Anteil ausmachen. Niedriger = sicherer, 1 = aus (Vorgabe: 0,90)." data-i18n-title="top_p_tip" data-i18n="top_p">Top-P</span>
+          <div class="slider" data-fmt="temp">
+            <div class="fill"></div><div class="knob"><span></span></div>
+            <input name="lm_top_p" type="range" min="0.5" max="1" step="0.05" value="0.9" aria-label="Top-P" data-i18n-aria="top_p">
+          </div>
+        </div>
+        <div class="field adv"><span class="lbl" title="Das Sprachmodell wählt nur unter so vielen wahrscheinlichsten Möglichkeiten. Ganz links = aus (Vorgabe)." data-i18n-title="top_k_tip" data-i18n="top_k">Top-K</span>
+          <div class="slider" data-fmt="off">
+            <div class="fill"></div><div class="knob"><span></span></div>
+            <input name="lm_top_k" type="range" min="0" max="100" step="5" value="0" aria-label="Top-K" data-i18n-aria="top_k">
+          </div>
+        </div>
+          <label class="field adv"><span class="lbl" title="Was die Musik nicht sein soll, z. B. „distorted, harsh, lo-fi“. Wirkt über die Prompt-Treue, also nicht bei 1,0." data-i18n-title="neg_tip" data-i18n="neg">Vermeiden</span>
+            <input name="lm_negative_prompt" maxlength="500" placeholder="z. B. distorted, harsh vocals" data-i18n-ph="neg_ph"></label>
+          <label class="field adv"><span class="lbl" title="Rechenverfahren des Klangmodells. Euler ist die Vorgabe und bei gleichem Seed reproduzierbar; die anderen klingen etwas anders bei gleicher Rechenzeit." data-i18n-title="solver_tip" data-i18n="solver">Verfahren</span>
+            <select name="solver">
+              <option value="euler" data-i18n="solver_euler">Euler (Standard)</option>
+              <option value="sde">SDE</option>
+              <option value="dpm3m">DPM++ 3M</option>
+              <option value="stork4">STORK 4</option>
+            </select></label>
+          <button type="button" id="samplingReset" class="sek" data-i18n="sampling_reset">Vorgaben</button>
+        </details>
       </details>
 
       <div class="genbar">
