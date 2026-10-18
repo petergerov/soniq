@@ -20,6 +20,9 @@ While songs are being generated or waiting, the Library tab shows how many (hove
 
 **Time estimate:** running and waiting songs show “~2:10 left” or “done in ~6:40” in the library. The estimate comes from how long your last songs took per second of music, so it appears after the first finished song and gets better with every one.
 
+**ⓘ** next to a label explains that control: click it (or tap it on a phone or tablet) for a short text; click
+anywhere else or press Esc to close it. On a computer the same text also appears when you hover over the label.
+
 **Bell** (top right, next to the gear): turn it on to hear a short sound when a song is done (two notes up) or failed (two notes down). If the tab is in the background, the browser also shows a notification; clicking it opens the library. The browser asks once for permission.
 
 ![The form with numbered elements](images/form.png)
@@ -57,7 +60,8 @@ adherence** (1–4, default 2.0) sets how strictly the language model follows th
 sticks closer to it with less variety, 1 turns it off. **Top-P** and **Top-K** limit the language model to its most
 likely choices (lower = safer; Top-K far left = off). **Avoid** names what the music should not be, e.g. "distorted,
 harsh vocals"; it works through prompt adherence, so not at 1.0. **Solver** is how the sound model computes: Euler
-(default, same seed = same song), SDE, DPM++ 3M or STORK 4. **Defaults** resets all five. Changed values are shown in
+(default), SDE, DPM++ 3M or STORK 4; with the same seed, DPM++ 3M and STORK 4 give almost the same song as Euler, SDE a
+clearly different one. **Defaults** resets all five. Changed values are shown in
 the song's line in the library (e.g. `3.0CFG · K40 · SDE`) and are kept by presets, the arrow (reuse) and the plus
 button.
 

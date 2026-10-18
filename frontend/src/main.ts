@@ -5,6 +5,7 @@ import { ApiClient } from "./core/api-client.ts";
 import { errorDialog } from "./core/dialogs.ts";
 import { byId, enableKeyboardButtons } from "./core/dom.ts";
 import { formatDuration } from "./core/format.ts";
+import { InfoTips } from "./core/info-tips.ts";
 import { Router } from "./core/router.ts";
 import { setPackagedApp } from "./core/stems-hint.ts";
 import { Dropzone } from "./features/analyze/dropzone.ts";
@@ -34,6 +35,9 @@ const { t } = i18n;
 i18n.apply();
 i18n.bindSelect(byId<HTMLSelectElement>("uiLang"));
 enableKeyboardButtons();
+// ⓘ neben jeder Beschriftung mit Erklärung (nach dem Übersetzen: leere Erklärungen bekommen keinen Knopf)
+const infoTips = new InfoTips(t);
+infoTips.attach();
 
 const api = new ApiClient(() => i18n.lang);
 const router = new Router();
@@ -169,6 +173,7 @@ new SettingsDialog(api, t, () => updates.reset(), () => void health.check(), () 
 new ServerControl(api, t, () => store.stopPolling(), () => void store.refresh());
 
 i18n.onChange(() => {
+  infoTips.refreshTexts();
   form.refreshTexts();
   replace.refreshTexts();
   songList.render();

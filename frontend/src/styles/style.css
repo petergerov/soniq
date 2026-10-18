@@ -423,7 +423,7 @@ dialog.confirm-dlg { width: min(400px, calc(100vw - 32px)); padding: 22px 24px 2
 .seg button[aria-pressed=true] { background: var(--surface-3); color: var(--text); border-color: var(--line-strong); }
 .voice-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .lyrics-panel .field.voice { flex-direction: row; align-items: center; gap: 12px; margin: 0 0 10px; }
-.lyrics-panel .field.voice > .lbl { margin: 0; }
+.lyrics-panel .field.voice > .lbl, .lyrics-panel .field.voice > .lbl-wrap { margin: 0; }
 .vocals .seg button[aria-pressed=true], .voice .seg button[aria-pressed=true], .genmode .seg button[aria-pressed=true] { color: var(--accent-soft); border-color: rgba(167, 139, 250, .45); background: var(--accent-tint); }
 .upd-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .upd-row .small { font-size: 12px; color: var(--muted); }
@@ -653,3 +653,15 @@ dialog.repaint-dlg { width: min(640px, calc(100vw - 32px)); }
 details.sampling { margin: 4px 0 14px; }
 .sampling-help { margin: 8px 0 12px; line-height: 1.45; }
 .sampling > .sek { width: auto; }
+
+/* ⓘ neben Beschriftungen: zeigt deren Erklärung (title) als Hinweis, auch ohne Hover */
+.lbl-wrap { display: inline-flex; align-items: center; min-width: 0; }
+.field > .lbl-wrap { align-self: flex-start; }
+button.info { flex: none; align-self: center; display: inline-grid; place-items: center; width: 16px; height: 16px; padding: 0;
+  margin: 0 0 0 6px; border: 1px solid var(--line-strong); border-radius: 50%; background: transparent; color: var(--muted);
+  font: 600 10px/1 Georgia, "Times New Roman", serif; font-style: italic; cursor: pointer; vertical-align: middle; }
+button.info:hover, button.info[aria-expanded=true] { color: var(--text); border-color: var(--accent-soft); background: var(--accent-tint); }
+button.info:focus-visible { outline: none; box-shadow: var(--focus); }
+.info-pop { position: fixed; z-index: 1000; padding: 9px 12px; border-radius: var(--radius-sm); border: 1px solid var(--line-strong);
+  background: var(--surface-2); color: var(--text); font-size: 12.5px; line-height: 1.5; box-shadow: var(--shadow); white-space: normal; }
+.info-pop[hidden] { display: none; }

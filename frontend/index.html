@@ -47,7 +47,7 @@
 
   <section class="card" data-route="generate">
     <div class="field analyze">
-      <span class="lbl" data-i18n="analyze">Song als Vorlage</span>
+      <span class="lbl" title="Einen vorhandenen Song als Ausgangspunkt: Tempo und Stil für einen neuen Song übernehmen oder ihn in neuem Stil covern." data-i18n-title="analyze_tip" data-i18n="analyze">Song als Vorlage</span>
       <div id="dropzone" class="dropzone" tabindex="0" role="button"
            aria-label="Song hochladen" data-i18n-aria="drop_aria">
         <input id="fileInput" type="file" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg" hidden>
@@ -65,19 +65,19 @@
     </div>
     <form id="genForm">
       <div class="presetrow">
-        <span class="lbl" data-i18n="presets">Vorlagen</span>
+        <span class="lbl" title="Eigene Einstellungen speichern und mit einem Klick laden. Darunter fertige Beispiel-Songs zum Ausprobieren." data-i18n-title="presets_tip" data-i18n="presets">Vorlagen</span>
         <select id="presetSelect" class="mini" aria-label="Vorlage laden" data-i18n-aria="preset_pick"></select>
         <button type="button" id="presetSave" class="sek" title="Aktuelle Einstellungen als Vorlage speichern (ohne Prompt, Titel, Lyrics und Seed)" data-i18n-title="preset_save_tip" data-i18n="preset_save">Speichern</button>
         <button type="button" id="presetDelete" class="sek icon" title="Vorlage löschen" aria-label="Vorlage löschen" data-i18n-title="preset_del" data-i18n-aria="preset_del" disabled>✕</button>
       </div>
-      <div id="lyricsBox" class="field vocals"><span class="lbl" data-i18n="vocals">Komposition</span>
+      <div id="lyricsBox" class="field vocals"><span class="lbl" title="Instrumental: ohne Gesang. Song: mit Gesang; Sprache und Stimme sind wählbar, die Lyrics schreibst du oder das Modell." data-i18n-title="vocals_tip" data-i18n="vocals">Komposition</span>
         <div class="seg" role="group" aria-label="Komposition" data-i18n-aria="vocals">
           <button type="button" class="sek" data-vocals="instrumental" aria-pressed="true" data-i18n="instrumental">Instrumental</button>
           <button type="button" class="sek" data-vocals="song" aria-pressed="false" data-i18n="song">Song</button>
         </div>
       </div>
 
-      <div id="genModeBox" class="field genmode"><span class="lbl" data-i18n="gen_mode">Erzeugung</span>
+      <div id="genModeBox" class="field genmode"><span class="lbl" title="Ganzer Song: alles in einem Durchgang. Spur für Spur: jedes Instrument einzeln, danach im Mixer bearbeitbar. Cover: ein vorhandener Song in neuem Stil." data-i18n-title="gen_mode_tip" data-i18n="gen_mode">Erzeugung</span>
         <div class="seg" role="group" aria-label="Erzeugung" data-i18n-aria="gen_mode">
           <button type="button" class="sek" data-genmode="full" aria-pressed="true" data-i18n="gen_full">Ganzer Song</button>
           <button type="button" class="sek" data-genmode="tracks" aria-pressed="false" data-i18n="gen_tracks">Spur für Spur</button>
@@ -108,13 +108,13 @@
       <div id="lyricsPanel" class="lyrics-panel" hidden>
         <div class="lblrow"><span class="lbl" title="Leer lassen: Das Modell schreibt eigene Lyrics. Die Sprache wählst du darunter (Standard: Englisch)." data-i18n-title="lyrics_tip"><span data-i18n="lyrics">Lyrics</span> <span id="lyricsHint" class="sumhint"></span></span>
           <button type="button" id="lyricsDice" class="dice" title="Lyrics automatisch schreiben lassen (erst beim Generieren)" aria-label="Lyrics automatisch schreiben lassen" data-i18n-title="lyrics_dice" data-i18n-aria="lyrics_dice"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg></button></div>
-        <div class="field lang"><span class="lbl" data-i18n="language">Sprache</span>
+        <div class="field lang"><span class="lbl" title="Sprache, in der gesungen wird und in der das Modell Lyrics schreibt." data-i18n-title="language_tip" data-i18n="language">Sprache</span>
           <select name="vocal_language" aria-label="Sprache der Lyrics" data-i18n-aria="language_aria">
             <option value="en" selected data-i18n="en">Englisch</option><option value="de" data-i18n="de">Deutsch</option><option value="fr" data-i18n="fr">Französisch</option>
             <option value="es" data-i18n="es">Spanisch</option><option value="it" data-i18n="it">Italienisch</option><option value="pt" data-i18n="pt">Portugiesisch</option>
             <option value="ja" data-i18n="ja">Japanisch</option><option value="ko" data-i18n="ko">Koreanisch</option><option value="zh" data-i18n="zh">Chinesisch</option><option value="ru" data-i18n="ru">Russisch</option>
           </select></div>
-        <div id="voiceBox" class="field voice"><span class="lbl" data-i18n="voice">Stimme</span>
+        <div id="voiceBox" class="field voice"><span class="lbl" title="Wer singt: Frau, Mann oder Duett, dazu eine Stimmlage oder ein Charakter. Wird als Wörter in den Stil geschrieben." data-i18n-title="voice_tip" data-i18n="voice">Stimme</span>
           <div class="voice-row">
             <div class="seg" role="group" aria-label="Stimme" data-i18n-aria="voice">
               <button type="button" class="sek" data-voice="" aria-pressed="true" data-i18n="voice_auto">Auto</button>
@@ -163,7 +163,7 @@
       <input type="checkbox" name="instrumental" checked hidden>
       <input type="checkbox" name="keep_caption" checked hidden>
 
-      <div id="lengthBox" class="field"><span class="lbl" data-i18n="length">Länge</span>
+      <div id="lengthBox" class="field"><span class="lbl" title="Länge des Songs, 10 Sekunden bis 5 Minuten. Längere Songs rechnen entsprechend länger." data-i18n-title="length_lbl_tip" data-i18n="length">Länge</span>
         <div class="slider" data-fmt="dur">
           <div class="fill"></div><div class="knob"><span></span></div>
           <input name="duration" type="range" min="10" max="300" step="5" value="90" aria-label="Länge" title="0:10 bis 5:00" data-i18n-aria="length" data-i18n-title="length_tip">
@@ -192,7 +192,7 @@
           </div>
         </div>
         <div class="grid">
-          <label class="field"><span class="lbl" data-i18n="key">Tonart</span>
+          <label class="field"><span class="lbl" title="Tonart des Songs. Auto: das Modell wählt." data-i18n-title="key_tip" data-i18n="key">Tonart</span>
             <select name="keyscale">
             <option value="">Auto</option>
             <option value="C major">C major</option>
@@ -207,7 +207,7 @@
             <option value="C minor">C minor</option>
             </select>
           </label>
-          <label class="field"><span class="lbl" data-i18n="timesig">Takt</span>
+          <label class="field"><span class="lbl" title="Taktart. Auto: das Modell wählt, meist 4/4." data-i18n-title="timesig_tip" data-i18n="timesig">Takt</span>
             <select name="timesignature">
             <option value="">Auto</option>
             <option value="4" data-i18n="ts_default">4/4 (Standard)</option>
@@ -241,7 +241,7 @@
         </div>
           <label class="field adv"><span class="lbl" title="Was die Musik nicht sein soll, z. B. „distorted, harsh, lo-fi“. Wirkt über die Prompt-Treue, also nicht bei 1,0." data-i18n-title="neg_tip" data-i18n="neg">Vermeiden</span>
             <input name="lm_negative_prompt" maxlength="500" placeholder="z. B. distorted, harsh vocals" data-i18n-ph="neg_ph"></label>
-          <label class="field adv"><span class="lbl" title="Rechenverfahren des Klangmodells. Euler ist die Vorgabe und bei gleichem Seed reproduzierbar; die anderen klingen etwas anders bei gleicher Rechenzeit." data-i18n-title="solver_tip" data-i18n="solver">Verfahren</span>
+          <label class="field adv"><span class="lbl" title="Rechenverfahren des Klangmodells. Euler ist die Vorgabe. DPM++ 3M und STORK 4 ergeben bei gleichem Seed fast denselben Song, SDE einen deutlich anderen." data-i18n-title="solver_tip" data-i18n="solver">Verfahren</span>
             <select name="solver">
               <option value="euler" data-i18n="solver_euler">Euler (Standard)</option>
               <option value="sde">SDE</option>
@@ -288,7 +288,7 @@
       </div>
       <span class="small" id="replaceNewLbl" data-i18n="replace_new">Neu erzeugen</span>
       <div id="replaceNew" class="chips track-chips"></div>
-      <label class="field"><span class="lbl" data-i18n="style">Stil</span>
+      <label class="field"><span class="lbl" title="Stil der neuen Spuren: Genre, Instrumente, Klang. „Tempo und Tonart erkennen“ trägt einen zur Aufnahme passenden Stil ein." data-i18n-title="replace_style_tip" data-i18n="style">Stil</span>
         <textarea id="replaceStyle" rows="2" data-i18n-ph="replace_style_ph" placeholder="optional, z. B. flamenco"></textarea>
       </label>
       <div class="extract-bar">
@@ -357,7 +357,7 @@
     <label class="field"><span class="lbl" title="Sprachmodell, auf CPU. Leer = gleicher Server wie Synthese." data-i18n-title="lm_tip" data-i18n="lm_srv">Sprachmodell-Server</span>
       <input name="lm_url" placeholder="http://127.0.0.1:8086">
     </label>
-    <label class="field"><span class="lbl" data-i18n="timeout">Timeout (Min.)</span>
+    <label class="field"><span class="lbl" title="So lange darf ein Song rechnen, bevor er abgebrochen wird." data-i18n-title="timeout_tip" data-i18n="timeout">Timeout (Min.)</span>
       <input name="timeout_minutes" type="number" min="1" max="600">
     </label>
     <label class="field"><span class="lbl" title="" data-i18n-title="dit_tip" data-i18n="dit">Klangmodell</span>
@@ -365,7 +365,7 @@
       <span class="small" id="ditHint" hidden data-i18n="dit_xl_missing"></span>
       <button type="button" id="ditGetXl" class="sek" hidden data-i18n="dit_xl_get">XL-Klangmodell laden (5,1 GB)</button>
     </label>
-    <div class="field"><span class="lbl" data-i18n="stems_model">Spuren-Modell</span>
+    <div class="field"><span class="lbl" title="Standard: Base-Modell mit 2 Mrd. Parametern. XL: XL-Base mit 4 Mrd." data-i18n-title="stem_model_tip" data-i18n="stems_model">Spuren-Modell</span>
       <span class="small" id="stemsState"></span>
       <button type="button" id="stemsGet" class="sek" hidden data-i18n="stems_get">Spuren-Modell laden (2,5 GB)</button>
       <select name="stem_model" title="" data-i18n-title="stem_model_tip"><option value="standard" data-i18n="dit_standard">Standard</option><option value="xl" data-i18n="dit_xl">XL</option></select>
@@ -389,13 +389,13 @@
     <label class="field"><span class="lbl" title="Leer = data/songs im Programmordner. Beim Ändern werden die vorhandenen Songs dorthin verschoben." data-i18n-title="songs_dir_tip" data-i18n="songs_dir">Song-Ordner</span>
       <input name="songs_dir" placeholder="">
     </label>
-    <div class="field"><span class="lbl" data-i18n="version">Version</span>
+    <div class="field"><span class="lbl" title="Installierte Version. Hier nach Updates suchen und sie einspielen; deine Songs bleiben erhalten." data-i18n-title="version_tip" data-i18n="version">Version</span>
       <div class="upd-row"><button type="button" id="updCheck" class="sek" data-i18n="upd_check">Nach Updates suchen</button><span id="updInfo" class="small"></span></div>
       <ul id="updList" class="upd-list" hidden></ul>
       <button type="button" id="updApply" class="aktion" hidden data-i18n="upd_apply">JETZT AKTUALISIEREN</button>
       <a id="updDownload" class="aktion" hidden target="_blank" rel="noopener" data-i18n="upd_download">NEUE VERSION LADEN</a>
     </div>
-    <div class="field"><span class="lbl" data-i18n="servers">Server</span>
+    <div class="field"><span class="lbl" title="Beendet die App und die Modellserver. Wieder starten mit start." data-i18n-title="servers_tip" data-i18n="servers">Server</span>
       <div class="upd-row"><button type="button" id="stopBtn" class="sek danger" data-i18n="stop">Server stoppen</button><span id="stopInfo" class="small"></span></div>
     </div>
     <div class="field"><span class="lbl">GitHub</span>
