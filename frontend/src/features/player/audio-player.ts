@@ -23,6 +23,8 @@ export interface AudioPlayerDeps {
 export interface PlayOptions {
   /** A/B-Vergleich: an derselben Stelle weiterspielen statt von vorn */
   keepPosition?: boolean;
+  /** Ab dieser Stelle (Sekunden) spielen, auch wenn der Song schon läuft (Repaint: Abschnitt vorhören) */
+  at?: number;
 }
 
 /** Szene der Engine für einen Song im Player */
@@ -102,13 +104,15 @@ export class AudioPlayer implements PlaybackState {
   async play(song: Song, options: PlayOptions = {}): Promise<void> {
     this.ensureUi();
     if (this.current === song.id && this.follows()) {
-      this.engine.toggle();
+      if (options.at === undefined) return this.engine.toggle();
+      this.engine.seek(options.at);
+      this.engine.play();
       return;
     }
     const seq = ++this.requestSeq;
     const keep = options.keepPosition === true && this.follows();
     // Derselbe Song (nach dem Mixer eines anderen) macht an seiner Stelle weiter, ein anderer beginnt vorn
-    const resumeAt = this.current === song.id ? this.parkedAt : 0;
+    const resumeAt = options.at ?? (this.current === song.id ? this.parkedAt : 0);
     // Ein anderer Song verstummt sofort; beim A/B-Vergleich läuft der bisherige, bis der neue geladen ist
     if (!keep) this.engine.pause();
     this.setSong(song);

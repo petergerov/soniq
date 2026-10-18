@@ -1,5 +1,5 @@
 // Neue Songs in Auftrag geben, wiederholen, abbrechen oder löschen.
-import type { GenerateResponse, GenerationMode, SongParams, StemIntent, StemTrack } from "../../../shared/api.ts";
+import { MIN_REPAINT_SECONDS, type GenerateResponse, type GenerationMode, type SongParams, type SongResultMeta, type StemIntent, type StemTrack } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
 import { newId, randomSeed } from "../domain/ids.ts";
 import { INSTRUMENTAL, nowIso } from "../domain/song.ts";
@@ -49,6 +49,15 @@ export interface StemUploadCommand {
   vocalLanguage: string;
   seed: number;
   folderId: string | null;
+}
+
+/** Geprüfte Anfrage für Repaint (siehe http/validation.ts). */
+export interface RepaintCommand {
+  start: number;
+  end: number;
+  caption: string | undefined;   // fehlt = Beschreibung des Songs
+  lyrics: string | undefined;    // fehlt = Lyrics des Songs
+  count: number;
 }
 
 export type RemoveOutcome = { cancelled: true } | { deleted: true };
@@ -146,6 +155,44 @@ export class GenerationService {
     });
     this.deps.jobs.wake();
     return { group_id: id, ids: [id] };
+  }
+
+  /**
+   * Abschnitt eines fertigen Songs neu erzeugen: neue Versionen in seiner Gruppe (A/B-Vergleich an derselben Stelle).
+   * Die Vorlage bleibt der Song selbst (params.repaint.song_id), der Worker liest seine Datei erst beim Rechnen.
+   */
+  enqueueRepaint(songId: string, cmd: RepaintCommand): GenerateResponse {
+    const song = this.deps.songs.find(songId);
+    if (!song) throw new AppError("not_found");
+    if (song.status !== "done" || !song.file) throw new AppError("bad_request", "repaint_done_only");
+    const p = JSON.parse(song.params) as SongParams;
+    const meta = (song.result_meta ? JSON.parse(song.result_meta) : {}) as SongResultMeta;
+    const duration = meta.duration || p.duration || 0;
+    const end = duration > 0 ? Math.min(cmd.end, duration) : cmd.end;
+    if (end - cmd.start < MIN_REPAINT_SECONDS) throw new AppError("invalid", "repaint_region");
+    const caption = cmd.caption?.trim() || meta.caption || song.caption;
+    // Lyrics des ganzen Songs, damit der Gesang im Abschnitt an der richtigen Stelle des Texts weitermacht
+    const lyrics = cmd.lyrics?.trim() || meta.lyrics || song.lyrics || INSTRUMENTAL;
+    const base: Omit<SongParams, "seed"> = {
+      ...(p.prompt !== undefined ? { prompt: p.prompt } : {}),
+      ...(p.style !== undefined ? { style: p.style } : {}),
+      caption, lyrics, duration,
+      bpm: meta.bpm ?? p.bpm, keyscale: meta.keyscale ?? p.keyscale, timesignature: meta.timesignature ?? p.timesignature,
+      vocal_language: meta.vocal_language ?? p.vocal_language, inference_steps: p.inference_steps || 0,
+      mode: "repaint", repaint: { song_id: song.id, start: cmd.start, end },
+    };
+    const ids: string[] = [];
+    for (let i = 0; i < cmd.count; i++) {
+      const seed = randomSeed();
+      const id = newId();
+      this.deps.songs.insert({
+        id, group_id: song.group_id, created_at: nowIso(), title: song.title, caption, lyrics, seed,
+        params: JSON.stringify({ ...base, seed }), folder_id: song.folder_id,
+      });
+      ids.push(id);
+    }
+    this.deps.jobs.wake();
+    return { group_id: song.group_id, ids };
   }
 
   retry(id: string): void {

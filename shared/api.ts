@@ -26,9 +26,32 @@ export interface SongParams {
   keepers?: StemTrack[];
   /** Bei replace/accompany: Dateiname der hochgeladenen Vorlage */
   source?: string;
+  /** Bei mode "repaint": dieser Abschnitt (Sekunden) von Song song_id wird neu erzeugt, der Rest bleibt */
+  repaint?: RepaintRegion;
 }
 
-export type GenerationMode = "full" | "tracks" | "replace" | "accompany";
+export type GenerationMode = "full" | "tracks" | "replace" | "accompany" | "repaint";
+
+export interface RepaintRegion {
+  song_id: string;
+  start: number;
+  end: number;
+}
+
+/** POST /api/songs/:id/repaint: Abschnitt start–end neu erzeugen, als neue Version(en) in der Gruppe des Songs. */
+export interface RepaintRequest {
+  start: number;
+  end: number;
+  /** Beschreibung; fehlt = die des Songs */
+  caption?: string;
+  /** Lyrics des ganzen Songs; fehlt = die des Songs */
+  lyrics?: string;
+  /** Anzahl Versionen mit verschiedenen Seeds (1–3) */
+  count?: number;
+}
+
+/** Kürzester Abschnitt, den Repaint neu erzeugt (Sekunden) */
+export const MIN_REPAINT_SECONDS = 2;
 export type StemIntent = "replace" | "accompany";
 
 /** Vom Modell ergänzte Werte. */

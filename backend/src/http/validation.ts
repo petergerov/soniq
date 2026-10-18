@@ -1,8 +1,8 @@
 // Prüft und normalisiert JSON-Eingaben, bevor sie an die Services gehen.
-import { SEPARATORS, VARIATION_AXES, type DemucsModel, type ExtractRequest, type NewVersionRequest, type PresetValues, type SongPatch, type StemTrack } from "../../../shared/api.ts";
+import { MIN_REPAINT_SECONDS, SEPARATORS, VARIATION_AXES, type DemucsModel, type ExtractRequest, type NewVersionRequest, type PresetValues, type SongPatch, type StemTrack } from "../../../shared/api.ts";
 import { AXIS_MAX, MAX_VERSION_COUNT, MAX_VERSION_TEXT } from "../../../shared/track-variation.ts";
 import { isStemTrack, orderTracks } from "../domain/stem.ts";
-import type { GenerateCommand } from "../services/generation-service.ts";
+import type { GenerateCommand, RepaintCommand } from "../services/generation-service.ts";
 import { HttpError } from "./request.ts";
 
 type Input = Record<string, unknown>;
@@ -78,6 +78,16 @@ function tracksMode(input: Input): { mode: "full" | "tracks"; tracks: StemTrack[
   const tracks = input.tracks;
   if (!Array.isArray(tracks) || !tracks.length || !tracks.every(isStemTrack)) invalid("tracks", "non-empty list of track names expected");
   return { mode, tracks: orderTracks(tracks) };
+}
+
+/** Repaint: Abschnitt in Sekunden (mindestens MIN_REPAINT_SECONDS lang), optional Beschreibung und Lyrics, Anzahl 1–3. */
+export function parseRepaintCommand(input: Input): RepaintCommand {
+  const start = num(input, "start", 0, { min: 0 });
+  const end = num(input, "end", 0, { min: 0 });
+  if (end - start < MIN_REPAINT_SECONDS) invalid("end", `at least ${MIN_REPAINT_SECONDS} s after start`);
+  const caption = input.caption === undefined || input.caption === null ? undefined : str(input, "caption");
+  const lyrics = input.lyrics === undefined || input.lyrics === null ? undefined : str(input, "lyrics");
+  return { start, end, caption, lyrics, count: num(input, "count", 1, { integer: true, min: 1, max: MAX_VERSION_COUNT }) };
 }
 
 export function parseSongPatch(input: Input): SongPatch {

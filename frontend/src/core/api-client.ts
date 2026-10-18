@@ -1,5 +1,5 @@
 // Typisierter Zugriff auf die HTTP-API des Backends. Einzige Stelle, die fetch() für /api benutzt.
-import type { AnalyzeResult, ErrorBody, ExtractRequest, FolderOverview, GenerateRequest, GenerateResponse, HealthInfo, NewVersionRequest, Preset, PresetValues, QueueInfo, SetupRequest, SetupStatus, Stem, StemIntent, StemTrack, Settings, SettingsView, Song, SongPatch, UpdateCheck, UpdateStatus } from "../../../shared/api.ts";
+import type { AnalyzeResult, ErrorBody, ExtractRequest, FolderOverview, GenerateRequest, GenerateResponse, HealthInfo, NewVersionRequest, Preset, PresetValues, QueueInfo, RepaintRequest, SetupRequest, SetupStatus, Stem, StemIntent, StemTrack, Settings, SettingsView, Song, SongPatch, UpdateCheck, UpdateStatus } from "../../../shared/api.ts";
 
 export class ApiError extends Error {
   override name = "ApiError";
@@ -67,6 +67,8 @@ export class ApiClient {
     return this.send("POST", "/api/stems/upload", body);
   }
   updateSong(id: string, patch: SongPatch): Promise<Song> { return this.send("PATCH", `/api/songs/${id}`, patch); }
+  /** Abschnitt neu erzeugen: neue Version(en) in der Gruppe des Songs */
+  repaint(songId: string, request: RepaintRequest): Promise<GenerateResponse> { return this.send("POST", `/api/songs/${songId}/repaint`, request); }
   retrySong(id: string): Promise<Song> { return this.send("POST", `/api/songs/${id}/retry`); }
   deleteSong(id: string): Promise<{ cancelled?: true; deleted?: true }> { return this.send("DELETE", `/api/songs/${id}`); }
 

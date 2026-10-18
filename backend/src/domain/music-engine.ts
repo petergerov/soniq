@@ -43,6 +43,19 @@ export interface StemRequest {
   seed?: number;
 }
 
+/** Abschnitt eines fertigen Songs neu erzeugen (task_type "repaint", Klangmodell ohne Sprachmodell). */
+export interface RepaintRequest {
+  /** Der ganze Song */
+  source: Uint8Array;
+  /** Dateiname inkl. Endung, damit der Modellserver MP3/WAV erkennt */
+  sourceName: string;
+  /** Sekunden */
+  start: number;
+  end: number;
+  /** Felder wie bei generate (caption, lyrics, bpm, keyscale, seed, inference_steps …) */
+  params: Record<string, unknown>;
+}
+
 export interface MusicEngine {
   readonly name: string;
   /**
@@ -53,6 +66,8 @@ export interface MusicEngine {
   plan(params: Record<string, unknown>, writeLyrics: boolean, progress: ProgressReporter, signal: AbortSignal): Promise<SongResultMeta>;
   /** Eine Einzelspur mit dem Spuren-Modell (Base); liefert WAV (Float 32). */
   stem(request: StemRequest, progress: ProgressReporter, signal: AbortSignal): Promise<Uint8Array>;
+  /** Song mit neu erzeugtem Abschnitt; außerhalb des Abschnitts bleibt das Audio unverändert. */
+  repaint(request: RepaintRequest, progress: ProgressReporter, signal: AbortSignal): Promise<GeneratedAudio>;
   /** Erzeugt einen Song. `signal` bricht ab (der Server-Job wird dann ebenfalls beendet). */
   generate(params: Record<string, unknown>, progress: ProgressReporter, signal: AbortSignal): Promise<GeneratedAudio>;
   analyze(audio: Blob, filename: string): Promise<AnalysisResult>;

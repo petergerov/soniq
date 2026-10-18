@@ -10,6 +10,7 @@ import { wavDepthFor } from "../infrastructure/wav.ts";
 import type { ExtractTracks } from "./extract.ts";
 import type { StemVersions } from "./stem-versions.ts";
 import { hasAccompany, hasReplace, type ReplaceAccompany } from "./replace-accompany.ts";
+import { hasRepaint, runRepaint } from "./repaint.ts";
 import { hasTracks, type TrackByTrack } from "./track-by-track.ts";
 
 /** Was andere Services vom Worker brauchen: anstoßen und einen laufenden Auftrag abbrechen. */
@@ -112,11 +113,13 @@ export class GenerationWorker implements JobRunner {
         songs.markDone(songId, { file: result.file, engine: `${engine.name}+${params.mode}`, resultMeta: JSON.stringify(result.meta), finishedAt: nowIso() });
         return;
       }
-      const result = await engine.generate({ ...params }, report, abort.signal);
+      const result = hasRepaint(params)
+        ? await runRepaint(this.deps, params, engine, report, abort.signal)
+        : await engine.generate({ ...params }, report, abort.signal);
       const file = `${songId}.${result.extension}`;
       if (songs.status(songId) !== "running") return;   // inzwischen abgebrochen
       await storage.save(file, result.audio);
-      songs.markDone(songId, { file, engine: engine.name, resultMeta: JSON.stringify(result.meta), finishedAt: nowIso() });
+      songs.markDone(songId, { file, engine: hasRepaint(params) ? `${engine.name}+repaint` : engine.name, resultMeta: JSON.stringify(result.meta), finishedAt: nowIso() });
     } catch (e) {
       if (abort.signal.aborted) return;                   // vom Nutzer abgebrochen: Status steht schon auf "cancelled"
       songs.markError(songId, e instanceof Error ? e.message || e.name : String(e), nowIso());

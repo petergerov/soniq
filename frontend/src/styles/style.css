@@ -606,3 +606,23 @@ body.in-mixer { padding-bottom: 24px; }
   .mixer-wave, .mixer-lanes { grid-column: 1; }
   .mixer-ver-actions { margin-left: 0; width: 100%; justify-content: flex-end; }
 }
+
+/* Repaint: Abschnitt auf der Wellenform wählen */
+dialog.repaint-dlg { width: min(640px, calc(100vw - 32px)); }
+.repaint-dlg .col-title { margin-bottom: 6px; }
+.repaint-song { color: var(--muted); font-weight: 500; }
+.repaint-help { margin: 0 0 14px; line-height: 1.5; }
+.repaint-wave { position: relative; padding: 6px 0; border-radius: var(--radius-sm); background: var(--surface-2);
+  cursor: crosshair; touch-action: none; user-select: none; -webkit-user-select: none; }
+.repaint-sel { position: absolute; top: 0; bottom: 0; z-index: 1; pointer-events: none; background: var(--accent-tint);
+  border-left: 2px solid var(--accent-soft); border-right: 2px solid var(--accent-soft); cursor: ew-resize; }
+.repaint-times { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 12px 0 18px; }
+.repaint-times label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.repaint-times input { width: 84px; }
+.repaint-len.err, .repaint-err { color: var(--error); }
+.repaint-err { margin: 0 0 12px; }
+.repaint-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.repaint-bar .lbl { margin: 0; }
+.repaint-counts { display: flex; gap: 4px; }
+.repaint-counts .chip { min-width: 32px; cursor: pointer; text-align: center; }
+.repaint-dlg .field > .small { line-height: 1.45; }

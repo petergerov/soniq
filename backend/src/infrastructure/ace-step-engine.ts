@@ -8,7 +8,7 @@ import type { HealthInfo, Settings } from "../../../shared/api.ts";
 import type { SongResultMeta } from "../../../shared/api.ts";
 import {
   DIT_MODELS, EngineError, STEM_GUIDANCE, STEM_MODELS, STEM_SHIFT, STEM_STEPS,
-  type AnalysisResult, type GeneratedAudio, type MusicEngine, type ProgressReporter, type StemRequest,
+  type AnalysisResult, type GeneratedAudio, type MusicEngine, type ProgressReporter, type RepaintRequest, type StemRequest,
 } from "../domain/music-engine.ts";
 import { DEFAULT_OUTPUT_FORMAT, OUTPUT_FORMATS, type AceOutputFormat } from "../domain/output-format.ts";
 import { parseMultipart } from "./multipart.ts";
@@ -152,6 +152,25 @@ export class AceStepEngine implements MusicEngine {
     const { audio, extension } = await this.extractAudio(res);
     if (extension !== "wav") throw new EngineError(`Spur ${r.track}: WAV erwartet`);
     return audio;
+  }
+
+  async repaint(r: RepaintRequest, progress: ProgressReporter, signal: AbortSignal): Promise<GeneratedAudio> {
+    // Ohne Sprachmodell: Caption und Lyrics gehen wörtlich an das Klangmodell, die Länge gibt die Vorlage vor
+    const req: Json = Object.fromEntries(
+      Object.entries(r.params).filter(([k, v]) => ACE_FIELDS.has(k) && k !== "duration" && v !== null && v !== undefined && v !== ""),
+    );
+    Object.assign(req, this.outputFormat, {
+      task_type: "repaint", synth_model: this.ditModel, repainting_start: r.start, repainting_end: r.end,
+    });
+    delete req.lm_model;
+    const form = new FormData();
+    form.append("request", new Blob([JSON.stringify(req)], { type: "application/json" }), "request.json");
+    form.append("audio", new Blob([new Uint8Array(r.source)], { type: audioType(r.sourceName) }), r.sourceName);
+    const job = await this.startJob(this.base, "/synth", { body: form }, signal);
+    const res = await this.waitForJob(this.base, job, "Repaint", performance.now(), progress, signal);
+    const { audio, extension } = await this.extractAudio(res);
+    const meta = Object.fromEntries(META_FIELDS.map((k) => [k, r.params[k] ?? null]));
+    return { audio, extension, meta };
   }
 
   /** Song hochladen, das Modell beschreibt Stil, Tempo, Tonart, Lyrics (/understand, läuft auf dem LM-Server). */

@@ -156,7 +156,12 @@ export class LibraryStore {
   /** Eine weitere Version desselben Prompts (gleiche Gruppe, neuer Seed). */
   async generateAnother(song: Song): Promise<void> {
     const p = song.params;
-    const { mode, tracks, keepers: _keepers, source: _source, ...rest } = p;
+    // Repaint: derselbe Abschnitt derselben Vorlage noch einmal, mit neuem Seed
+    if (p.mode === "repaint" && p.repaint) {
+      await this.api.repaint(p.repaint.song_id, { start: p.repaint.start, end: p.repaint.end, caption: p.caption, lyrics: p.lyrics, count: 1 });
+      return this.refresh();
+    }
+    const { mode, tracks, keepers: _keepers, source: _source, repaint: _repaint, ...rest } = p;
     await this.api.generate({
       ...rest, instrumental: false, keep_caption: p.use_cot_caption !== true, title: song.title || "",
       seed: -1, variants: 1, group_id: song.group_id, folder_id: song.folder_id,

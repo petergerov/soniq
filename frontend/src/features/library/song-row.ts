@@ -40,6 +40,7 @@ const ICON_CROSS = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" 
 const ICON_THUMB_DOWN = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 14V3"/><path d="M9 18.5L10 14H4.7a2 2 0 0 1-2-2.3l1.2-7A2 2 0 0 1 5.9 3H17v11l-4 7a2.4 2.4 0 0 1-4-2.5z"/></svg>`;
 const ICON_STEMS = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h13"/></svg>`;
 const ICON_REUSE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M12 3l7 7h-4v10h-6V10H5l7-7z"/></svg>`;
+const ICON_REPAINT = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h3"/><path d="M18 12h3"/><path d="M8 7v10"/><path d="M12 4v16"/><path d="M16 7v10"/></svg>`;
 const ICON_DOTS = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>`;
 const ICON_MIXER = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 8h10"/><path d="M18 8h2"/><circle cx="16" cy="8" r="2"/><path d="M4 16h2"/><path d="M10 16h10"/><circle cx="8" cy="16" r="2"/></svg>`;
 
@@ -58,6 +59,7 @@ export function shortError(message: string | null, t: Translate): string {
   if (/Codes/i.test(msg)) return t("err_codes");
   if (/Zeitüberschreitung/i.test(msg)) return t("err_timeout");
   if (/keine Lyrics/i.test(msg)) return t("err_no_lyrics");
+  if (/Vorlage gelöscht/i.test(msg)) return t("err_repaint_source");
   return t("err_details");
 }
 
@@ -68,9 +70,10 @@ export function generatedLyrics(song: Song): string {
   return song.status === "done" && song.lyrics !== "[Instrumental]" && hasText ? lyrics.trim() : "";
 }
 
-function metaLine(song: Song): string {
+function metaLine(song: Song, t: Translate): string {
   const m = song.result_meta ?? {}, p = song.params;
   return [
+    p.mode === "repaint" && p.repaint && t("repaint_badge", `${formatDuration(p.repaint.start)}–${formatDuration(p.repaint.end)}`),
     m.bpm && `${m.bpm}BPM`,
     p.inference_steps ? `${p.inference_steps}IT` : null,
     p.lm_temperature != null ? `${Number(p.lm_temperature).toFixed(1)}VAR` : null,
@@ -133,6 +136,7 @@ function actionButtons(song: Song, lyrics: string, ctx: SongRowContext): string 
 
   const overflow = [
     done && menuItem("hide", t(song.hidden ? "unhide" : "hide"), { icon: ICON_THUMB_DOWN, on: song.hidden }),
+    done && song.url && menuItem("repaint", t("repaint"), { icon: ICON_REPAINT }),
     done && song.url && `<a class="song-menu-item" href="${song.url}?download=1" role="menuitem" data-a="download" download>${esc(t("download"))}</a>`,
     lyrics && menuItem("lyrics", t("show_lyrics"), { on: ctx.lyricsOpen }),
     // Stereo-Mix ohne Spuren: „Stem Separation“. Fertige Spuren hört, lädt und bearbeitet man im Mixer
@@ -172,7 +176,7 @@ function lyricsBlock(song: Song, lyrics: string, ctx: SongRowContext): string {
 export function canExtract(song: Song): boolean {
   if (song.status !== "done" || !song.file) return false;
   const mode = song.params.mode;
-  return !mode || mode === "full";
+  return !mode || mode === "full" || mode === "repaint";
 }
 
 function extractBlock(song: Song, ctx: SongRowContext): string {
@@ -228,6 +232,6 @@ export function renderSongRow(song: Song, ctx: SongRowContext): string {
   const classes = ["song", ctx.isCurrent && "playing", ctx.startsGroup && "new-group", ctx.crossing === "from" && "cross-from", song.hidden && "is-hidden", ctx.menuOpen && "menu-open"].filter(Boolean).join(" ");
   return `<div class="${classes}" data-id="${song.id}" draggable="${ctx.hasFolders && !ctx.editing}">
       ${leftSlot(song, ctx)}
-      <div style="min-width:0">${titleBlock(song, ctx)}<div class="m" title="${ctx.t("meta_tip")}">${esc(metaLine(song))}</div>${stateLine(song, ctx)}</div>
+      <div style="min-width:0">${titleBlock(song, ctx)}<div class="m" title="${ctx.t("meta_tip")}">${esc(metaLine(song, ctx.t))}</div>${stateLine(song, ctx)}</div>
       <div class="actions">${actionButtons(song, lyrics, ctx)}</div>${lyricsBlock(song, lyrics, ctx)}${extractPanel(song, ctx)}</div>`;
 }

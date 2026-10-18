@@ -9,6 +9,7 @@ import { Router } from "./core/router.ts";
 import { setPackagedApp } from "./core/stems-hint.ts";
 import { Dropzone } from "./features/analyze/dropzone.ts";
 import { GeneratorForm } from "./features/generator/generator-form.ts";
+import { RepaintDialog } from "./features/repaint/repaint-dialog.ts";
 import { ReplaceView } from "./features/replace/replace-view.ts";
 import { FolderBar } from "./features/library/folder-bar.ts";
 import { LibraryHeader } from "./features/library/library-header.ts";
@@ -78,6 +79,9 @@ const mixer = new MixerView({
   api, t, engine, findSong: (id) => store.find(id), back: () => router.go("library"),
   stemsAvailable: () => store.stemsAvailable,
 });
+const repaint = new RepaintDialog({
+  api, t, engine, playFrom: (song, at) => playSong(song, { at }), onQueued: () => void store.refresh(),
+});
 songList = new SongList({
   store, played, playback: player, drag, t, play: playSong, // Übernehmen und Kreuzen füllen das Formular: dafür auf die Seite „Erzeugen“ wechseln
   reuse: (song) => { form.fill(song); router.go("generate"); },
@@ -86,6 +90,7 @@ songList = new SongList({
   cancelExtract: (songId) => api.cancelExtract(songId),
   deleteAllStems: (songId) => api.deleteAllStems(songId),
   openMixer: (song) => router.go("mixer", song.id),
+  repaint: (song) => repaint.open(song),
 });
 router.onChange((state) => {
   if (state.route === "mixer" && state.songId) void mixer.open(state.songId).catch((e: Error) => errorDialog(t, e));

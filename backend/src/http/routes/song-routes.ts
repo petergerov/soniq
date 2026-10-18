@@ -4,7 +4,7 @@ import type { LibraryService } from "../../services/library-service.ts";
 import { queryBool, readJson } from "../request.ts";
 import { FileResponse } from "../responses.ts";
 import type { Router } from "../router.ts";
-import { parseGenerateCommand, parseSongPatch } from "../validation.ts";
+import { parseGenerateCommand, parseRepaintCommand, parseSongPatch } from "../validation.ts";
 
 export function registerSongRoutes(router: Router, generation: GenerationService, library: LibraryService): void {
   router
@@ -18,6 +18,7 @@ export function registerSongRoutes(router: Router, generation: GenerationService
     }))
     .get("/api/songs/:id", ({ params }) => library.get(params.id!))
     .patch("/api/songs/:id", async ({ req, params }) => library.update(params.id!, parseSongPatch(await readJson(req))))
+    .post("/api/songs/:id/repaint", async ({ req, params }) => generation.enqueueRepaint(params.id!, parseRepaintCommand(await readJson(req))))
     .post("/api/songs/:id/retry", ({ params }) => {
       generation.retry(params.id!);
       return library.get(params.id!);

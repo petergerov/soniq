@@ -28,6 +28,8 @@ export interface SongListDeps {
   extractStems: (songId: string, request: ExtractRequest) => Promise<Stem[]>;
   cancelExtract: (songId: string) => Promise<Stem[]>;
   deleteAllStems: (songId: string) => Promise<Stem[]>;
+  /** Abschnitt neu erzeugen (Dialog mit Wellenform) */
+  repaint: (song: Song) => void;
   /** Mixer öffnen (Waveforms, Mute, Solo, Versionen, Downloads) */
   openMixer: (song: Song) => void;
 }
@@ -161,6 +163,8 @@ export class SongList {
         return;
       case "mixer":
         return this.deps.openMixer(song);
+      case "repaint":
+        return this.deps.repaint(song);
       case "download":
         return; // <a href> lädt selbst; Menü ist schon zu
       case "fav": return store.toggleFavorite(song);

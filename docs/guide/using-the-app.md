@@ -92,6 +92,15 @@ R, V, U and Ctrl/⌘ + Enter work on the Create page only.
 
 **Comparing versions:** while a song with several versions (A, B, C …) is playing, the player shows their letters. Click one (or press **C**) and that version continues at the same position, so you hear the difference directly.
 
+**Repaint a section:** ⋮ › **Repaint section** opens the song's waveform. Drag across it to choose the part to
+regenerate (at least 2 seconds; drag an edge to adjust it, click to play from that spot, ▶ plays the section with a
+second of lead-in). Change the description or the lines of the lyrics in that section if you like, choose 1–3
+versions and click **Repaint**. Everything outside the section stays exactly as it was. The result is a new version
+of the song (B, C …) with "repainted 1:40–1:55" in its line, so you can compare it with the original at the same
+spot. It takes about as long as generating the whole song, because the sound model goes over the full length. The
+plus button on a repainted version repaints the same section again with a new seed. Deleting the original before a
+waiting repaint has started makes that repaint fail.
+
 **The dice learn from your favorites:** terms that appear in the style or prompt of songs with a star come up more often when rolling.
 
 Click a title to rename it. The line below shows **BPM · IT** (iterations) **· VAR** (variance) · key · length.
