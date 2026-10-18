@@ -33,8 +33,8 @@ export interface FinishedSong {
   finishedAt: string;
 }
 
-/** Wo params hochgeladene Vorlagen nennt */
-const UPLOAD_COLUMNS = ["json_extract(params,'$.cover.source.upload')", "json_extract(params,'$.reference.upload')"] as const;
+/** Wo params eine hochgeladene Vorlage nennt (Original eines Covers) */
+const UPLOAD_COLUMN = "json_extract(params,'$.cover.source.upload')";
 
 function folderClause(folder: FolderFilter | undefined): { sql: string; params: SqlParam[] } {
   if (folder === "none") return { sql: " AND folder_id IS NULL", params: [] };
@@ -108,18 +108,16 @@ export class SongRepository {
     return this.db.get<{ n: number }>("SELECT COUNT(*) AS n FROM songs WHERE status IN ('queued','running')")?.n ?? 0;
   }
 
-  /** Songdateien und hochgeladene Vorlagen (Cover, Klang-Referenz) */
+  /** Songdateien und hochgeladene Originale von Covern */
   allFiles(): string[] {
     return this.db.all<{ file: string }>(
-      `SELECT file FROM songs WHERE file IS NOT NULL
-       UNION SELECT ${UPLOAD_COLUMNS[0]} FROM songs WHERE ${UPLOAD_COLUMNS[0]} IS NOT NULL
-       UNION SELECT ${UPLOAD_COLUMNS[1]} FROM songs WHERE ${UPLOAD_COLUMNS[1]} IS NOT NULL`,
+      `SELECT file FROM songs WHERE file IS NOT NULL UNION SELECT ${UPLOAD_COLUMN} FROM songs WHERE ${UPLOAD_COLUMN} IS NOT NULL`,
     ).map((r) => r.file);
   }
 
   /** Nutzt noch ein Song diese hochgeladene Vorlage? */
   uploadInUse(upload: string): boolean {
-    return !!this.db.get(`SELECT 1 FROM songs WHERE ${UPLOAD_COLUMNS.map((c) => `${c}=?`).join(" OR ")} LIMIT 1`, upload, upload);
+    return !!this.db.get(`SELECT 1 FROM songs WHERE ${UPLOAD_COLUMN}=? LIMIT 1`, upload);
   }
 
   countByFolder(): Map<string | null, number> {

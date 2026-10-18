@@ -30,8 +30,6 @@ export interface SongParams {
   repaint?: RepaintRegion;
   /** Bei mode "cover": diese Vorlage im neuen Stil */
   cover?: CoverSettings;
-  /** Klang-Referenz ("klingt wie"), bei ganzem Song und Cover */
-  reference?: AudioRef;
 }
 
 export type GenerationMode = "full" | "tracks" | "replace" | "accompany" | "repaint" | "cover";
@@ -143,7 +141,6 @@ export interface GenerateRequest {
   tracks?: StemTrack[];
   /** Bei mode "cover" */
   cover?: CoverSettings;
-  reference?: AudioRef;
   group_id?: string | null;
   folder_id?: string | null;
 }

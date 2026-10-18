@@ -1,4 +1,6 @@
-// Bereich „Audio analysieren“: Song hineinziehen oder anklicken, das Ergebnis füllt das Formular.
+// Bereich „Song als Vorlage“: Song hineinziehen oder anklicken, dann wählen:
+//   Tempo & Stil übernehmen = das Modell beschreibt die Datei, das Formular übernimmt es (neuer Song)
+//   Covern                 = die Datei ist das Original eines Covers (Erzeugung: Cover)
 import type { AnalyzeResult } from "../../../../shared/api.ts";
 import type { ApiClient } from "../../core/api-client.ts";
 import { byId } from "../../core/dom.ts";
@@ -8,20 +10,32 @@ import { toServerReadableAudio, UnsupportedAudioError } from "./audio-converter.
 type State = "" | "busy" | "ok" | "err";
 const OK_VISIBLE_MS = 4000;
 
+export interface DropzoneDeps {
+  api: ApiClient;
+  t: Translate;
+  /** Analyse fürs Formular übernehmen */
+  onAnalysis: (result: AnalyzeResult) => void;
+  /**
+   * Datei als Original eines Covers; die Analyse liefert Lyrics, Tempo und Tonart dazu (null, wenn sie scheiterte).
+   * false = Hochladen fehlgeschlagen (die Meldung steht dann am Cover).
+   */
+  onCover: (file: File, analysis: AnalyzeResult | null) => Promise<boolean>;
+}
+
 export class Dropzone {
-  private readonly api: ApiClient;
-  private readonly t: Translate;
-  /** file: die hochgeladene Fassung (WAV oder MP3), für Cover und Klang-Referenz */
-  private readonly onResult: (result: AnalyzeResult, file: File) => void;
+  private readonly deps: DropzoneDeps;
   private readonly zone = byId("dropzone");
   private readonly status = byId("dzStatus");
   private readonly fileInput = byId<HTMLInputElement>("fileInput");
+  private readonly actions = byId("srcActions");
+  private readonly takeButton = byId<HTMLButtonElement>("srcTakeBtn");
+  private readonly coverButton = byId<HTMLButtonElement>("srcCoverBtn");
+  /** Abgelegte Datei, schon in einer Fassung, die der Modellserver liest (WAV oder MP3) */
+  private file: File | null = null;
   private hideTimer: number | undefined;
 
-  constructor(api: ApiClient, t: Translate, onResult: (result: AnalyzeResult, file: File) => void) {
-    this.api = api;
-    this.t = t;
-    this.onResult = onResult;
+  constructor(deps: DropzoneDeps) {
+    this.deps = deps;
     this.bindEvents();
   }
 
@@ -34,27 +48,71 @@ export class Dropzone {
         fileInput.click();
       }
     });
-    fileInput.addEventListener("change", () => void this.analyze(fileInput.files?.[0]));
+    fileInput.addEventListener("change", () => {
+      void this.choose(fileInput.files?.[0]);
+      fileInput.value = "";   // dieselbe Datei noch einmal wählen können
+    });
     for (const type of ["dragenter", "dragover"]) zone.addEventListener(type, (e) => { e.preventDefault(); zone.classList.add("drag"); });
     for (const type of ["dragleave", "dragend"]) zone.addEventListener(type, (e) => { e.preventDefault(); zone.classList.remove("drag"); });
     zone.addEventListener("drop", (e) => {
       e.preventDefault();
       zone.classList.remove("drag");
-      void this.analyze(e.dataTransfer?.files[0]);
+      void this.choose(e.dataTransfer?.files[0]);
     });
+    this.takeButton.addEventListener("click", () => void this.take());
+    this.coverButton.addEventListener("click", () => void this.cover());
   }
 
-  private async analyze(file: File | undefined): Promise<void> {
+  /** Datei merken und fragen, was damit passieren soll. */
+  private async choose(file: File | undefined): Promise<void> {
     if (!file) return;
-    this.show("busy", this.t("analyzing", file.name));
+    const { t } = this.deps;
     try {
-      const readable = await toServerReadableAudio(file);
-      this.onResult(await this.api.analyze(readable), readable);
-      this.show("ok", this.t("analyzed", file.name));
+      this.file = await toServerReadableAudio(file);
+      this.actions.hidden = false;
+      this.show("", t("src_chosen", file.name));
     } catch (err) {
-      const message = err instanceof UnsupportedAudioError ? this.t("decode_failed", file.name) : (err as Error).message;
-      this.show("err", `${this.t("error")}: ${message}`);
+      this.file = null;
+      this.actions.hidden = true;
+      const message = err instanceof UnsupportedAudioError ? t("decode_failed", file.name) : (err as Error).message;
+      this.show("err", `${t("error")}: ${message}`);
     }
+  }
+
+  private async take(): Promise<void> {
+    const file = this.file;
+    if (!file) return;
+    const { t } = this.deps;
+    this.busy(t("analyzing", file.name));
+    try {
+      this.deps.onAnalysis(await this.deps.api.analyze(file));
+      this.show("ok", t("analyzed", file.name));
+    } catch (err) {
+      this.show("err", `${t("error")}: ${(err as Error).message}`);
+    } finally {
+      this.busy("");
+    }
+  }
+
+  private async cover(): Promise<void> {
+    const file = this.file;
+    if (!file) return;
+    const { t } = this.deps;
+    this.busy(t("analyzing", file.name));
+    try {
+      // Ohne Analyse geht das Cover trotzdem, nur ohne Lyrics und Tempo der Datei
+      const analysis = await this.deps.api.analyze(file).catch(() => null);
+      if (await this.deps.onCover(file, analysis)) this.show("ok", t("src_covered", file.name));
+      else this.show("", t("src_chosen", file.name));
+    } finally {
+      this.busy("");
+    }
+  }
+
+  /** Während der Analyse: Status zeigen, Knöpfe sperren ("" = fertig) */
+  private busy(text: string): void {
+    this.takeButton.disabled = this.coverButton.disabled = !!text;
+    if (text) this.show("busy", text);
   }
 
   private show(state: State, text: string): void {

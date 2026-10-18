@@ -65,8 +65,8 @@ export interface AudioFile {
 /** Vorlage im neuen Stil (task_type "cover" / "cover-nofsq", Klangmodell ohne Sprachmodell); Länge = Vorlage. */
 export interface CoverRequest {
   source: AudioFile;
-  /** Klang-Referenz; fehlt bei freiem Cover ohne "klingt wie" */
-  reference?: AudioFile;
+  /** Klang-Referenz (ref_audio): ab Stufe 2 das Original selbst, bei freiem Cover keine */
+  reference?: AudioFile | undefined;
   task: CoverTask;
   /** audio_cover_strength: Anteil der Schritte, die die Vorlage hören */
   strength: number;
@@ -104,11 +104,8 @@ export interface MusicEngine {
   repaint(request: RepaintRequest, progress: ProgressReporter, signal: AbortSignal): Promise<GeneratedAudio>;
   /** Vorlage im neuen Stil; Länge, Aufbau und (je nach Stufe) Klang kommen von der Vorlage. */
   cover(request: CoverRequest, progress: ProgressReporter, signal: AbortSignal): Promise<GeneratedAudio>;
-  /**
-   * Erzeugt einen Song. `signal` bricht ab (der Server-Job wird dann ebenfalls beendet).
-   * `reference`: Klang-Referenz, das Klangmodell nimmt ihre Klangfarbe auf.
-   */
-  generate(params: Record<string, unknown>, progress: ProgressReporter, signal: AbortSignal, reference?: AudioFile): Promise<GeneratedAudio>;
+  /** Erzeugt einen Song. `signal` bricht ab (der Server-Job wird dann ebenfalls beendet). */
+  generate(params: Record<string, unknown>, progress: ProgressReporter, signal: AbortSignal): Promise<GeneratedAudio>;
   analyze(audio: Blob, filename: string): Promise<AnalysisResult>;
   health(): Promise<HealthInfo>;
 }

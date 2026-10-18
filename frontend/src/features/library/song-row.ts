@@ -42,7 +42,6 @@ const ICON_STEMS = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" 
 const ICON_REUSE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M12 3l7 7h-4v10h-6V10H5l7-7z"/></svg>`;
 const ICON_REPAINT = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h3"/><path d="M18 12h3"/><path d="M8 7v10"/><path d="M12 4v16"/><path d="M16 7v10"/></svg>`;
 const ICON_COVER = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5"/></svg>`;
-const ICON_SOUNDS_LIKE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4"/><path d="M8 7v10"/><path d="M12 4v16"/><path d="M16 8v8"/><path d="M20 11v2"/></svg>`;
 const ICON_DOTS = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>`;
 const ICON_MIXER = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 8h10"/><path d="M18 8h2"/><circle cx="16" cy="8" r="2"/><path d="M4 16h2"/><path d="M10 16h10"/><circle cx="8" cy="16" r="2"/></svg>`;
 
@@ -77,7 +76,6 @@ function metaLine(song: Song, t: Translate): string {
   return [
     p.mode === "repaint" && p.repaint && t("repaint_badge", `${formatDuration(p.repaint.start)}–${formatDuration(p.repaint.end)}`),
     p.mode === "cover" && p.cover && t("cover_badge", p.cover.source.name),
-    p.reference && t("ref_badge", p.reference.name),
     m.bpm && `${m.bpm}BPM`,
     p.inference_steps ? `${p.inference_steps}IT` : null,
     p.lm_temperature != null ? `${Number(p.lm_temperature).toFixed(1)}VAR` : null,
@@ -142,7 +140,6 @@ function actionButtons(song: Song, lyrics: string, ctx: SongRowContext): string 
     done && menuItem("hide", t(song.hidden ? "unhide" : "hide"), { icon: ICON_THUMB_DOWN, on: song.hidden }),
     done && song.url && menuItem("repaint", t("repaint"), { icon: ICON_REPAINT }),
     done && song.url && menuItem("cover", t("cover_menu"), { icon: ICON_COVER }),
-    done && song.url && menuItem("sounds-like", t("ref_menu"), { icon: ICON_SOUNDS_LIKE }),
     done && song.url && `<a class="song-menu-item" href="${song.url}?download=1" role="menuitem" data-a="download" download>${esc(t("download"))}</a>`,
     lyrics && menuItem("lyrics", t("show_lyrics"), { on: ctx.lyricsOpen }),
     // Stereo-Mix ohne Spuren: „Stem Separation“. Fertige Spuren hört, lädt und bearbeitet man im Mixer

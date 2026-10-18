@@ -1,4 +1,4 @@
-// Audio als Vorlage (Cover) oder Klang-Referenz: ein Song der Bibliothek oder eine hochgeladene Datei.
+// Original eines Covers: ein Song der Bibliothek oder eine hochgeladene Datei.
 // Hochgeladene Dateien liegen einmal im Song-Ordner (Name aus dem Inhalt), so teilen sich alle Versionen eines
 // Auftrags eine Kopie. Gelöscht wird sie mit dem letzten Song, der sie nutzt.
 import { createHash } from "node:crypto";
@@ -23,10 +23,6 @@ export interface SourceAudioDeps {
   storage: SongStorage;
 }
 
-/** Hochgeladene Vorlagen in params */
-function uploadsOf(params: SongParams): string[] {
-  return [params.cover?.source.upload, params.reference?.upload].filter((u): u is string => !!u);
-}
 
 export class SourceAudio {
   private readonly deps: SourceAudioDeps;
@@ -73,11 +69,10 @@ export class SourceAudio {
     return { data: await this.deps.storage.read(file), name: file };
   }
 
-  /** Nach dem Löschen eines Songs: seine Uploads entfernen, wenn kein anderer Song sie nutzt. */
+  /** Nach dem Löschen eines Songs: sein hochgeladenes Original entfernen, wenn kein anderer Song es nutzt. */
   async release(params: SongParams): Promise<void> {
-    for (const upload of uploadsOf(params)) {
-      if (!this.deps.songs.uploadInUse(upload)) await this.deps.storage.remove(upload);
-    }
+    const upload = params.cover?.source.upload;
+    if (upload && !this.deps.songs.uploadInUse(upload)) await this.deps.storage.remove(upload);
   }
 
   /** Beim Start: Uploads ohne Song, älter als ein Tag. */

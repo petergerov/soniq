@@ -67,7 +67,6 @@ export function parseGenerateCommand(input: Input): GenerateCommand {
     groupId: optionalId(input, "group_id"),
     folderId: optionalId(input, "folder_id"),
     ...generationMode(input),
-    reference: input.reference === undefined || input.reference === null ? null : audioRef(input.reference, "reference"),
   };
 }
 

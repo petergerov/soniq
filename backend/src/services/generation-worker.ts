@@ -32,7 +32,7 @@ export interface GenerationWorkerDeps {
   extract: ExtractTracks;
   replaceAccompany: ReplaceAccompany;
   versions: StemVersions;
-  /** Vorlagen für Cover und Klang-Referenz */
+  /** Originale der Cover */
   sources: SourceAudio;
   nextStemJobSongId: () => string | undefined;
   log?: (message: string) => void;
@@ -122,7 +122,7 @@ export class GenerationWorker implements JobRunner {
         ? await runRepaint(this.deps, params, engine, report, abort.signal)
         : hasCover(params)
           ? await runCover(sources, params, engine, report, abort.signal)
-          : await engine.generate({ ...params }, report, abort.signal, params.reference && await sources.read(params.reference));
+          : await engine.generate({ ...params }, report, abort.signal);
       const file = `${songId}.${result.extension}`;
       if (songs.status(songId) !== "running") return;   // inzwischen abgebrochen
       await storage.save(file, result.audio);

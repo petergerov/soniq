@@ -627,7 +627,12 @@ dialog.repaint-dlg { width: min(640px, calc(100vw - 32px)); }
 .repaint-counts .chip { min-width: 32px; cursor: pointer; text-align: center; }
 .repaint-dlg .field > .small { line-height: 1.45; }
 
-/* Cover und „Klingt wie“: Vorlage aus der Bibliothek oder als Datei */
+/* Song als Vorlage: nach dem Ablegen Tempo & Stil übernehmen oder covern */
+.src-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.src-actions[hidden] { display: none; }
+.src-actions .sek { width: auto; }
+
+/* Cover: Original aus der Bibliothek oder aus „Song als Vorlage“ */
 .cover-box { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
 .cover-box[hidden], .src-chip[hidden] { display: none; }
 .src-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -640,6 +645,6 @@ dialog.repaint-dlg { width: min(640px, calc(100vw - 32px)); }
   color: var(--muted); cursor: pointer; font: inherit; font-size: 11px; }
 .src-x:hover { color: var(--text); background: var(--surface-2); }
 .src-x:focus-visible { outline: none; box-shadow: var(--focus); }
-.cover-box > .small, .ref > .small { line-height: 1.45; }
+.cover-box > .small { line-height: 1.45; }
 .cover-close { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
 .slider-ends { display: flex; justify-content: space-between; color: var(--faint); margin-top: -2px; }

@@ -21,11 +21,11 @@ export async function runCover(
   sources: SourceAudio, params: SongParams & { cover: CoverSettings }, engine: MusicEngine,
   progress: ProgressReporter, signal: AbortSignal,
 ): Promise<GeneratedAudio> {
-  const { cover, reference, mode: _mode, prompt: _prompt, style: _style, ...rest } = params;
+  const { cover, mode: _mode, prompt: _prompt, style: _style, ...rest } = params;
   const step = coverStep(cover.closeness);
   const source = await sources.read(cover.source);
-  // Eigene Klang-Referenz geht vor; ab Stufe 2 klingt das Cover sonst nach der Vorlage selbst
-  const ref = reference ? await sources.read(reference) : step.selfReference ? source : undefined;
+  // Ab Stufe 2 ist das Original seine eigene Klang-Referenz: erst dann steuert die Stärke die Nähe
+  const ref = step.selfReference ? source : undefined;
   const fields: Record<string, unknown> = { ...rest };
   if (!rest.lyrics.trim()) {
     const plan = await planSong({ ...params, duration: cover.source.duration || rest.duration }, true, engine, progress, signal);

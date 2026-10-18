@@ -26,7 +26,7 @@ While songs are being generated or waiting, the Library tab shows how many (hove
 
 | # | Element | What it does |
 |---|---|---|
-| 1 | **Analyze audio file** | Upload field at the top of the form: drop a song on it or click it. The app analyzes it and fills in prompt, tempo and length. Works with WAV, MP3, M4A, FLAC and OGG. |
+| 1 | **Song as a starting point** | Upload field at the top of the form: drop a song on it or click it, then choose. **Take tempo & style**: the app analyzes it and fills in prompt, tempo and length for a new song. **Cover it**: the file becomes the original of a cover (see below). Works with WAV, MP3, M4A, FLAC and OGG. |
 | 2 | **Title** | Only for finding the song again. The dice suggests a name. |
 | 3 | **Prompt** | Your idea: mood, scene, sound. The dice rolls an idea. |
 | 4 | **Style** | Genre and instruments. Dice: a suggestion. Under “Styles”, cards add terms. |
@@ -55,21 +55,16 @@ Below the prompt, **Mood**, **Scene** and **Detail** show the building blocks of
 
 Below the style, three **sliders** (calm ↔ energetic, acoustic ↔ electronic, dark ↔ bright) write a matching word into the style. The middle position writes nothing.
 
-After analyzing a song, **Similar but different** appears under the upload field. Each click keeps tempo, key, length and description of the analyzed song and rolls a new style.
-Next to it, **Cover it** and **Sounds like this file** use the analyzed file for the two features below.
+After **Take tempo & style**, **Similar but different** appears under the upload field. Each click keeps tempo, key, length and description of the analyzed song and rolls a new style.
 
-**Cover** (Generation › Cover): plays an existing song in a new style. Choose the original with **Choose file …**, or
-in the library with ⋮ › **Cover …** on a song (that also fills in its lyrics and a title). Prompt, style, dice and
+**Cover** (Generation › Cover): plays an existing song in a new style. The original is a file from **Song as a
+starting point › Cover it** (the app also reads its lyrics, tempo and key), or in the library ⋮ › **Cover …** on a
+song (that fills in its lyrics and a title). Prompt, style, dice and
 sliders then describe the new style; length and structure come from the original, so the Length slider disappears.
 BPM, key and time signature on Auto take those of the original. **Closeness to the original** goes from 1 (freely
 replayed, new sound) to 5 (melody, harmonies and sound stay close to the original); 2 is the default. The model sings
-the lyrics as they are; leave them empty and it writes new ones first. A cover takes about as long as a new song of
-the same length.
-
-**Sounds like** (below the style): optional. Choose a file, or in the library ⋮ › **Use as sound reference**, and new
-songs take on its sound (instruments, room, mix); melody and structure still come from prompt and style. The effect is
-moderate. It works for whole songs and covers, not track by track. With a cover, your reference replaces the original
-as the sound model's reference, so the right end of the closeness slider stays less close. **✕** removes it.
+the lyrics as they are; leave them empty and it writes new ones first (that can take several minutes). A cover takes
+about as long as a new song of the same length. **✕** next to the original removes it.
 
 ## Keyboard shortcuts
 

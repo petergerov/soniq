@@ -110,7 +110,7 @@ export class AceStepEngine implements MusicEngine {
     return info;
   }
 
-  async generate(params: Json, progress: ProgressReporter, signal: AbortSignal, reference?: AudioFile): Promise<GeneratedAudio> {
+  async generate(params: Json, progress: ProgressReporter, signal: AbortSignal): Promise<GeneratedAudio> {
     const req = aceFields(params);
     req.use_cot_caption ??= false;      // Prompt wörtlich übernehmen
     Object.assign(req, this.outputFormat);   // Dateiformat aus den Einstellungen (Vorgabe: WAV 16 Bit)
@@ -128,11 +128,8 @@ export class AceStepEngine implements MusicEngine {
     Object.assign(enriched, this.outputFormat);
     enriched.synth_model = req.synth_model;
 
-    // 2) Synthese, mit Klang-Referenz als Multipart
-    const body = reference
-      ? { body: synthForm(enriched, { ref_audio: reference }) }
-      : { body: JSON.stringify(enriched), headers: { "content-type": "application/json" } };
-    const synthJob = await this.startJob(this.base, "/synth", body, signal);
+    // 2) Synthese
+    const synthJob = await this.startJob(this.base, "/synth", { body: JSON.stringify(enriched), headers: { "content-type": "application/json" } }, signal);
     const synthResult = await this.waitForJob(this.base, synthJob, "Synthese", start, progress, signal);
     const { audio, extension } = await this.extractAudio(synthResult);
     const meta = Object.fromEntries(META_FIELDS.map((k) => [k, enriched[k] ?? null]));

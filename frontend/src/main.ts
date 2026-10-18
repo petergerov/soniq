@@ -45,7 +45,7 @@ const drag = new SongDrag();
 const form = new GeneratorForm({
   api, t, targetFolder: () => store.targetFolder, onQueued: () => void store.refresh(), preferredTerms: () => store.favoriteTerms,
 });
-new Dropzone(api, t, (result, file) => form.applyAnalysis(result, file));
+new Dropzone({ api, t, onAnalysis: (result) => form.applyAnalysis(result), onCover: (file, analysis) => form.coverFile(file, analysis) });
 const replace = new ReplaceView({
   api, t, targetFolder: () => store.targetFolder, onQueued: () => { void store.refresh(); router.go("library"); },
 });
@@ -92,7 +92,6 @@ songList = new SongList({
   openMixer: (song) => router.go("mixer", song.id),
   repaint: (song) => repaint.open(song),
   cover: (song) => { form.coverOf(song); router.go("generate"); },
-  soundsLike: (song) => { router.go("generate"); form.soundsLike(song); },
 });
 router.onChange((state) => {
   if (state.route === "mixer" && state.songId) void mixer.open(state.songId).catch((e: Error) => errorDialog(t, e));

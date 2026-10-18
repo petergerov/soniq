@@ -47,19 +47,21 @@
 
   <section class="card" data-route="generate">
     <div class="field analyze">
-      <span class="lbl" data-i18n="analyze">Audio analysieren</span>
+      <span class="lbl" data-i18n="analyze">Song als Vorlage</span>
       <div id="dropzone" class="dropzone" tabindex="0" role="button"
-           aria-label="Song hochladen und analysieren" data-i18n-aria="drop_aria">
+           aria-label="Song hochladen" data-i18n-aria="drop_aria">
         <input id="fileInput" type="file" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg" hidden>
         <svg class="dz-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4"/><path d="M7.5 8.5L12 4l4.5 4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
         <span class="dz-text">
-          <span class="dz-hint" data-i18n="drop_title">Song hierher ziehen oder klicken — Stil und Tempo werden übernommen</span>
+          <span class="dz-hint" data-i18n="drop_title">Song hierher ziehen oder klicken</span>
           <span id="dzStatus" class="dz-status" role="status" aria-live="polite"></span>
         </span>
       </div>
+      <div id="srcActions" class="src-actions" hidden>
+        <button type="button" id="srcTakeBtn" class="sek" title="Das Modell hört die Datei an und füllt Prompt, Tempo, Tonart und Länge aus. Daraus entsteht ein neuer Song." data-i18n-title="src_take_tip" data-i18n="src_take">Tempo &amp; Stil übernehmen</button>
+        <button type="button" id="srcCoverBtn" class="sek" title="Diese Datei im Stil des Formulars nachspielen: Aufbau und Länge bleiben (Erzeugung: Cover)" data-i18n-title="src_cover_tip" data-i18n="src_cover">Covern</button>
+      </div>
       <button type="button" id="similarBtn" class="sek rand similar" hidden title="Tempo, Tonart, Länge und Beschreibung der Analyse bleiben, der Stil wird neu gewürfelt" data-i18n-title="similar_tip"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg><span data-i18n="similar">Ähnlich, aber anders</span></button>
-      <button type="button" id="coverThisBtn" class="sek similar" hidden title="Diese Datei im Stil des Formulars nachspielen (Erzeugung: Cover)" data-i18n-title="cover_this_tip" data-i18n="cover_this">Als Cover</button>
-      <button type="button" id="refThisBtn" class="sek similar" hidden title="Neue Songs übernehmen die Klangfarbe dieser Datei" data-i18n-title="ref_this_tip" data-i18n="ref_this">Klingt wie diese Datei</button>
     </div>
     <form id="genForm">
       <div class="presetrow">
@@ -86,8 +88,6 @@
         <div id="coverBox" class="cover-box" hidden>
           <div class="src-row">
             <span id="coverSrc" class="src-chip"></span>
-            <button type="button" id="coverPick" class="sek" data-i18n="src_pick">Datei wählen …</button>
-            <input id="coverFile" type="file" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg" hidden>
           </div>
           <span id="coverHint" class="small"></span>
           <div class="cover-close">
@@ -162,15 +162,6 @@
       <!-- Feste Vorgaben, nicht mehr sichtbar: Instrumental (wird über den Gesang-Schalter gesteuert) und Prompt wörtlich -->
       <input type="checkbox" name="instrumental" checked hidden>
       <input type="checkbox" name="keep_caption" checked hidden>
-
-      <div id="refBox" class="field ref"><span class="lbl" title="Optional: eine Datei oder ein Song, dessen Klangfarbe die neuen Songs übernehmen (Instrumente, Raum, Mischung). Melodie und Aufbau kommen weiter aus Prompt und Stil." data-i18n-title="ref_tip" data-i18n="ref_label">Klingt wie</span>
-        <div class="src-row">
-          <span id="refSrc" class="src-chip"></span>
-          <button type="button" id="refPick" class="sek" data-i18n="src_pick">Datei wählen …</button>
-          <input id="refFile" type="file" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg" hidden>
-        </div>
-        <span id="refHint" class="small" hidden></span>
-      </div>
 
       <div id="lengthBox" class="field"><span class="lbl" data-i18n="length">Länge</span>
         <div class="slider" data-fmt="dur">

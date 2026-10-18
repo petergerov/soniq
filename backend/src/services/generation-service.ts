@@ -1,5 +1,5 @@
 // Neue Songs in Auftrag geben, wiederholen, abbrechen oder löschen.
-import { MIN_REPAINT_SECONDS, type AudioRef, type CoverSettings, type GenerateResponse, type GenerationMode, type SongParams, type SongResultMeta, type StemIntent, type StemTrack } from "../../../shared/api.ts";
+import { MIN_REPAINT_SECONDS, type CoverSettings, type GenerateResponse, type GenerationMode, type SongParams, type SongResultMeta, type StemIntent, type StemTrack } from "../../../shared/api.ts";
 import { AppError } from "../domain/errors.ts";
 import { newId, randomSeed } from "../domain/ids.ts";
 import { INSTRUMENTAL, nowIso } from "../domain/song.ts";
@@ -34,7 +34,6 @@ export interface GenerateCommand {
   mode: GenerationMode;    // "tracks" = Spur für Spur (siehe services/track-by-track.ts)
   tracks: StemTrack[];     // bei "tracks", schon in Reihenfolge
   cover: CoverSettings | null;     // bei "cover"
-  reference: AudioRef | null;      // Klang-Referenz (nicht bei "tracks")
 }
 
 /** Geprüfte Anfrage für Ersetzen / Begleiten (Upload + JSON). */
@@ -101,7 +100,6 @@ export class GenerationService {
     }
     // Cover: Länge von der Vorlage, Tempo/Tonart/Takt auf Auto von ihr (bei einem Song der Bibliothek)
     const cover = cmd.mode === "cover" && cmd.cover ? await this.deps.sources.check(cmd.cover.source) : null;
-    const reference = cmd.mode !== "tracks" && cmd.reference ? (await this.deps.sources.check(cmd.reference)).ref : null;
     const m = cover?.meta ?? {};
     const base: Omit<SongParams, "seed"> = {
       prompt: cmd.prompt,
@@ -118,7 +116,6 @@ export class GenerationService {
       use_cot_caption: !cmd.keepCaption,
       ...(tracks.length ? { mode: "tracks" as const, tracks } : {}),
       ...(cover && cmd.cover ? { mode: "cover" as const, cover: { source: cover.ref, closeness: cmd.cover.closeness } } : {}),
-      ...(reference ? { reference } : {}),
     };
     const groupId = cmd.groupId || newId();
     const folderId = cmd.folderId && this.deps.folders.find(cmd.folderId) ? cmd.folderId : null;
