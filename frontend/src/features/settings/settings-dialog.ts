@@ -101,7 +101,7 @@ export class SettingsDialog {
     byId("stemsGetXl").hidden = !s.stems_available || s.stems_xl_available || !s.packaged;
     // Demucs: installiert, in der fertigen App nachladbar (wenn die Programme dabei sind), sonst Hinweis auf den Installer.
     // Auf dem Mac gehört das Core-ML-Modell dazu; fehlt nur es, lädt der Knopf es nach.
-    const coremlMissing = s.demucs_coreml_supported && !s.demucs_coreml.demucs_6s;
+    const coremlMissing = s.demucs_coreml_supported && !Object.values(s.demucs_coreml).every(Boolean);
     const demucsReady = Object.values(s.demucs).every(Boolean) && !coremlMissing;
     byId("demucsField").hidden = s.packaged && !s.demucs_supported;
     byId("demucsState").textContent = demucsReady ? this.t("stems_model_ok") : s.packaged ? "" : this.t("demucs_missing_install");

@@ -1,8 +1,8 @@
 // Stem Separation mit Demucs (demucs.cpp, MIT): ein eigenes Trennmodell statt ACE-Step extract.
 // demucs.cpp rechnet nur auf der CPU (auf dem Mac mit Accelerate), liefert alle Spuren eines Modells in einem Durchgang.
-// Auf dem Mac rechnet htdemucs_6s als Core ML (soniq-demucs, macos/demucs-coreml.swift), wenn Programm und Modell da
-// sind: auf der GPU etwa neunmal so schnell, auf der CPU fünfmal (Einstellung demucs_device). Scheitert es, übernimmt
-// demucs.cpp. Beide lesen nur 44,1 kHz: hin- und zurückgerechnet wird hier, die Spuren haben danach die Song-Rate.
+// Auf dem Mac rechnen beide als Core ML (soniq-demucs, macos/demucs-coreml.swift), wenn Programm und Modell da sind:
+// 4 Spuren mit htdemucs statt htdemucs_ft (90 s: 6 s statt 342 s, gegen die echten Spuren etwas besser), 6 Spuren
+// mit htdemucs_6s (GPU 6 s, CPU 11 s statt 57 s). Einstellung demucs_device; scheitert Core ML, übernimmt demucs.cpp. Beide lesen nur 44,1 kHz: hin- und zurückgerechnet wird hier, die Spuren haben danach die Song-Rate.
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -26,7 +26,7 @@ interface ModelSpec {
 const FOUR: readonly [string, StemTrack][] = [["drums", "drums"], ["bass", "bass"], ["other", "other"], ["vocals", "vocals"]];
 /** Core-ML-Programm neben den Programmen von demucs.cpp, und die Modelle, die es rechnen kann (STFT im Modell) */
 const COREML_BIN = "soniq-demucs";
-const COREML_PACKAGES: Partial<Record<DemucsModel, string>> = { demucs_6s: "demucs_6s_f32.mlpackage" };
+const COREML_PACKAGES: Partial<Record<DemucsModel, string>> = { demucs_ft: "demucs_f32.mlpackage", demucs_6s: "demucs_6s_f32.mlpackage" };
 
 const SPECS: Record<DemucsModel, ModelSpec> = {
   demucs_ft: {

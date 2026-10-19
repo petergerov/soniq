@@ -159,10 +159,12 @@ demucs_models() {
   done
 }
 
-# Demucs als Core ML (nur macOS, macos/demucs-coreml.swift): htdemucs_6s mit der STFT im Modell, auf GPU oder CPU
-# schneller als demucs.cpp. Gezipptes .mlpackage, entpackt nach $MODELS/demucs/. Datei:Größe in MB:SHA-256.
+# Demucs als Core ML (nur macOS, macos/demucs-coreml.swift), auf GPU oder CPU weit schneller als demucs.cpp:
+# htdemucs (4 Spuren, STFT im Programm) und htdemucs_6s (STFT im Modell). Gezippte .mlpackage, entpackt nach
+# $MODELS/demucs/. Datei:Größe in MB:SHA-256.
 DEMUCS_COREML_BASE="https://github.com/petergerov/gig-songbook/releases/download/1.0.0"
-DEMUCS_COREML_FILES="demucs_6s_f32.mlpackage.zip:240:3b3f70f8c73d4c0d66000358d8e516d235a8a79887fcb776c68a5b016a5ef7e3"
+DEMUCS_COREML_FILES="demucs_f32.mlpackage.zip:76:fceed0d92722b644ab3c7d3bad10ee387b6751b9b173d67e5b4012fc9b0800a4
+demucs_6s_f32.mlpackage.zip:240:3b3f70f8c73d4c0d66000358d8e516d235a8a79887fcb776c68a5b016a5ef7e3"
 
 # Programm für Demucs als Core ML nach <Ordner>/soniq-demucs bauen, sofern die Quelle neuer ist. [swiftc-Optionen]
 demucs_coreml_build() {

@@ -46,6 +46,13 @@
   </header>
 
   <section class="card" data-route="generate">
+    <!-- Vorlagen zuerst: sie setzen fast alles darunter (eigene und Beispiel-Songs) -->
+    <div class="presetrow">
+      <span class="lbl" title="Eigene Einstellungen speichern und mit einem Klick laden. Darunter fertige Beispiel-Songs zum Ausprobieren." data-i18n-title="presets_tip" data-i18n="presets">Vorlagen</span>
+      <select id="presetSelect" class="mini" aria-label="Vorlage laden" data-i18n-aria="preset_pick"></select>
+      <button type="button" id="presetSave" class="sek" title="Aktuelle Einstellungen als Vorlage speichern (ohne Prompt, Titel, Lyrics und Seed)" data-i18n-title="preset_save_tip" data-i18n="preset_save">Speichern</button>
+      <button type="button" id="presetDelete" class="sek icon" title="Vorlage löschen" aria-label="Vorlage löschen" data-i18n-title="preset_del" data-i18n-aria="preset_del" disabled>✕</button>
+    </div>
     <div class="field analyze">
       <span class="lbl" title="Einen vorhandenen Song als Ausgangspunkt: Tempo und Stil für einen neuen Song übernehmen oder ihn in neuem Stil covern." data-i18n-title="analyze_tip" data-i18n="analyze">Song als Vorlage</span>
       <div id="dropzone" class="dropzone" tabindex="0" role="button"
@@ -64,12 +71,6 @@
       <button type="button" id="similarBtn" class="sek rand similar" hidden title="Tempo, Tonart, Länge und Beschreibung der Analyse bleiben, der Stil wird neu gewürfelt" data-i18n-title="similar_tip"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg><span data-i18n="similar">Ähnlich, aber anders</span></button>
     </div>
     <form id="genForm">
-      <div class="presetrow">
-        <span class="lbl" title="Eigene Einstellungen speichern und mit einem Klick laden. Darunter fertige Beispiel-Songs zum Ausprobieren." data-i18n-title="presets_tip" data-i18n="presets">Vorlagen</span>
-        <select id="presetSelect" class="mini" aria-label="Vorlage laden" data-i18n-aria="preset_pick"></select>
-        <button type="button" id="presetSave" class="sek" title="Aktuelle Einstellungen als Vorlage speichern (ohne Prompt, Titel, Lyrics und Seed)" data-i18n-title="preset_save_tip" data-i18n="preset_save">Speichern</button>
-        <button type="button" id="presetDelete" class="sek icon" title="Vorlage löschen" aria-label="Vorlage löschen" data-i18n-title="preset_del" data-i18n-aria="preset_del" disabled>✕</button>
-      </div>
       <div id="lyricsBox" class="field vocals"><span class="lbl" title="Instrumental: ohne Gesang. Song: mit Gesang; Sprache und Stimme sind wählbar, die Lyrics schreibst du oder das Modell." data-i18n-title="vocals_tip" data-i18n="vocals">Komposition</span>
         <div class="seg" role="group" aria-label="Komposition" data-i18n-aria="vocals">
           <button type="button" class="sek" data-vocals="instrumental" aria-pressed="true" data-i18n="instrumental">Instrumental</button>
@@ -378,7 +379,7 @@
     </div>
     <div class="field" id="demucsField" hidden><span class="lbl" title="" data-i18n-title="demucs_tip" data-i18n="demucs_model">Demucs</span>
       <span class="small" id="demucsState"></span>
-      <label class="small demucs-device" id="demucsDeviceRow" hidden title="Gilt für 6 Spuren (Core ML). GPU: etwa doppelt so schnell wie die CPU, aber etwas ungenauer (vor allem beim Bass). 4 Spuren rechnet weiter demucs.cpp auf der CPU." data-i18n-title="demucs_device_tip">
+      <label class="small demucs-device" id="demucsDeviceRow" hidden title="Demucs auf dem Mac (Core ML). 4 Spuren: GPU und CPU gleich schnell und gleich genau. 6 Spuren: GPU etwa doppelt so schnell, aber etwas ungenauer (vor allem beim Bass)." data-i18n-title="demucs_device_tip">
         <span data-i18n="demucs_device">Rechnet auf</span>
         <select name="demucs_device" class="mini">
           <option value="gpu" data-i18n="demucs_gpu">GPU (schneller)</option>

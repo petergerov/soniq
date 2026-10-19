@@ -48,7 +48,7 @@ Nicht bei Spur-für-Spur, Replace oder Begleitung — die haben bereits Einzelsp
 
 | Wahl | Modell | Spuren | Dauer (Mac, 32 GB, 4 Threads) |
 |---|---|---|---|
-| Demucs · 4 Stems | `htdemucs_ft`: vier nachtrainierte Modelle (4 × 84 MB), beste Qualität | drums, bass, vocals, other | ~3,2 × Songlänge (90-s-Song: 288 s) |
+| Demucs · 4 Stems | `htdemucs_ft`: vier nachtrainierte Modelle (4 × 84 MB), beste Qualität; Mac: `htdemucs` als Core ML (100 MB) | drums, bass, vocals, other | demucs.cpp ~3,2 × Songlänge (90 s: 288–342 s); Mac mit Core ML ~0,07 × (90 s: 6 s) |
 | Demucs · 6 Stems | `htdemucs_6s` (55 MB; Mac: Core ML 340 MB) | drums, bass, guitar, keyboard (Klavier), vocals, other | demucs.cpp ~0,9 × Songlänge (90 s: 78 s); Mac mit Core ML: GPU ~0,1 ×, CPU ~0,15 × |
 | ACE-Step | Spuren-Modell, `extract` je Spur | 2 / 4 / 6 nach festem Set | je Spur etwa so lange wie der Song |
 
@@ -62,8 +62,14 @@ mit der STFT im Modell (`demucs_6s_f32.mlpackage`, 32 Bit, aus der App Gig Songb
 (7,8 s, 25 % Überlappung, Dreiecks-Gewichte, Mix normiert). Einstellung `demucs_device`: GPU (Vorgabe) oder CPU.
 Gemessen an „Slow Tide“ (90 s, M2 Pro) gegen die echten Spuren (Spur-für-Spur-Song, SI-SDR): demucs.cpp −3,2 dB in 57 s,
 Core ML CPU −2,9 dB in 11 s, Core ML GPU −4,2 dB in 6 s. Die GPU rechnet also ungenauer (Bass −0,3 statt 2,4 dB), die CPU
-so genau wie demucs.cpp (Übereinstimmung 10 dB, Drums 16,5 dB). Scheitert Core ML, rechnet demucs.cpp. htdemucs_ft
-(4 Stems) läuft weiter mit demucs.cpp: das 4-Spur-Core-ML-Modell braucht die STFT außerhalb und ist kein ft-Modell.
+so genau wie demucs.cpp (Übereinstimmung 10 dB, Drums 16,5 dB). Scheitert Core ML, rechnet demucs.cpp.
+
+**Core ML (Mac, 4 Stems):** `demucs_f32.mlpackage` ist `htdemucs` (ein Modell, nicht das nachtrainierte htdemucs_ft)
+mit der STFT außerhalb: Eingänge `audio_waveform` und `spectral_magnitude` (Real/Imaginärteil je Kanal), Ausgänge
+`time_output` und `freq_output` in Float 16. STFT und inverse STFT übernimmt `soniq-demucs` mit den Funktionen aus
+der App Gig Songbook (`HTDemucsSeparationEngine.swift`), auf dem rohen Mix. Am selben Song: GPU und CPU je 6 s,
+−2,4 dB (Übereinstimmung GPU/CPU 41 dB); demucs.cpp mit htdemucs_ft −2,6 dB in 342 s. Hier verliert die GPU also
+nichts.
 
 Ablauf (`infrastructure/demucs-separator.ts`): Song auf 44,1 kHz (das liest demucs.cpp) als Float-WAV in `data/tmp`,
 `demucs_mt.cpp.main` bzw. `demucs_ft_mt.cpp.main` mit 1–4 Threads je nach Arbeitsspeicher (je Thread ~1,7 GB), Spuren
