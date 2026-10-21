@@ -49,6 +49,12 @@ function isConnectionError(e: unknown): boolean {
   return e instanceof TypeError && (e.message === "fetch failed" || ["ECONNREFUSED", "ECONNRESET", "ENOTFOUND", "EHOSTUNREACH"].includes(code));
 }
 
+/** Verbindung beim Senden zurückgesetzt (Server war erreichbar, hat die Anfrage aber nicht gelesen) */
+function isConnectionReset(e: unknown): boolean {
+  const code = (e as { cause?: { code?: string } }).cause?.code ?? "";
+  return e instanceof TypeError && ["ECONNRESET", "EPIPE", "UND_ERR_SOCKET"].includes(code);
+}
+
 function firstItem(value: unknown): Json {
   return (Array.isArray(value) ? value[0] : value) as Json;
 }
@@ -205,13 +211,19 @@ export class AceStepEngine implements MusicEngine {
   }
 
   private async request(url: string, init: RequestInit, timeoutMs: number, signal?: AbortSignal): Promise<Response> {
-    const timeout = AbortSignal.timeout(timeoutMs);
-    try {
-      return await fetch(url, { ...init, signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
-    } catch (e) {
-      // Der Text "nicht erreichbar" wird in der Oberfläche erkannt und übersetzt
-      if (isConnectionError(e)) throw new EngineError(`Modellserver nicht erreichbar (${new URL(url).origin}). Läuft ace-server?`);
-      throw e;
+    for (let attempt = 1; ; attempt++) {
+      const timeout = AbortSignal.timeout(timeoutMs);
+      try {
+        return await fetch(url, { ...init, signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
+      } catch (e) {
+        // ace-server schließt ruhende Verbindungen nach 5 s. Rechnet Node gerade (Spuren mischen, WAV kodieren), läuft
+        // sein eigener früherer Timer nicht, und die nächste Anfrage geht über die Verbindung, die der Server im selben
+        // Moment schließt: ECONNRESET, die Anfrage kam nie an (Spur 5/5 von "The Same Love …"). Nochmal über eine neue.
+        if (attempt === 1 && isConnectionReset(e)) continue;
+        // Der Text "nicht erreichbar" wird in der Oberfläche erkannt und übersetzt
+        if (isConnectionError(e)) throw new EngineError(`Modellserver nicht erreichbar (${new URL(url).origin}). Läuft ace-server?`);
+        throw e;
+      }
     }
   }
 

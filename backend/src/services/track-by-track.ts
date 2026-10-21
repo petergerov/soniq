@@ -3,21 +3,30 @@
 //   1. Sprachmodell plant Tempo, Tonart, Takt, Länge und (wenn leer) Lyrics, damit alle Spuren dazu passen
 //   2. Spuren nacheinander, jede sofort gespeichert (erscheint in der Spurenliste)
 //   3. Mix speichern
+// Ein Neuversuch (nach Fehler, Abbruch oder Neustart) macht bei der ersten nicht fertigen Spur weiter.
 import type { SongParams, SongResultMeta, StemTrack } from "../../../shared/api.ts";
 import { EngineError, type MusicEngine, type ProgressReporter } from "../domain/music-engine.ts";
 import { newId } from "../domain/ids.ts";
 import { INSTRUMENTAL, nowIso } from "../domain/song.ts";
 import { pieceStyle } from "../../../shared/piece-style.ts";
-import { isProseCaption, legoCaption, orderTracks, stemFileName, VOCAL_TRACKS } from "../domain/stem.ts";
+import { isProseCaption, legoCaption, orderTracks, stemFileName, VOCAL_TRACKS, type StemRecord } from "../domain/stem.ts";
+import type { SongRepository } from "../infrastructure/song-repository.ts";
 import type { SongStorage } from "../infrastructure/song-storage.ts";
 import type { StemRepository } from "../infrastructure/stem-repository.ts";
 import { encodeWav, limitPeak, mix, parseWav, silence, type Pcm, type WavDepth } from "../infrastructure/wav.ts";
 
 export interface TrackByTrackDeps {
   stems: StemRepository;
+  songs: SongRepository;
   storage: SongStorage;
   /** Spuren und Song-Datei des Songs löschen (für einen Neuversuch) */
   removeStems: (songId: string) => Promise<void>;
+}
+
+/** Was ein Neuversuch weiterverwendet: den Plan und die fertigen Spuren vom Anfang an */
+interface Resume {
+  meta: SongResultMeta;
+  done: (StemRecord & { file: string })[];
 }
 
 export interface TrackByTrackResult {
@@ -64,6 +73,28 @@ function formatElapsed(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
+/** Eigene Angaben haben Vorrang, der Rest kommt aus dem Plan des Sprachmodells */
+function songMeta(params: SongParams, plan: SongResultMeta, wantsVocals: boolean): SongResultMeta {
+  return {
+    bpm: params.bpm || plan.bpm || null,
+    keyscale: params.keyscale || plan.keyscale || null,
+    timesignature: params.timesignature || plan.timesignature || null,
+    duration: params.duration || plan.duration || DEFAULT_DURATION,
+    vocal_language: params.vocal_language || plan.vocal_language || null,
+    lyrics: params.lyrics || (wantsVocals ? plan.lyrics : INSTRUMENTAL) || INSTRUMENTAL,
+    caption: params.caption,
+  };
+}
+
+/**
+ * Plan nur aus den eigenen Angaben, wenn sie alles festlegen, was die Spuren bekommen; sonst undefined.
+ * Für Neuversuche von Songs, deren Plan noch nicht gespeichert wurde (vor dem Fortsetzen erzeugt).
+ */
+function planFromParams(params: SongParams, wantsVocals: boolean): SongResultMeta | undefined {
+  if (!params.bpm || !params.keyscale || !params.timesignature || !params.duration || (wantsVocals && !params.lyrics)) return undefined;
+  return songMeta(params, {}, wantsVocals);
+}
+
 export class TrackByTrack {
   private readonly deps: TrackByTrackDeps;
 
@@ -75,37 +106,47 @@ export class TrackByTrack {
    * @param depth Bittiefe der Dateien (aus den Einstellungen; bei MP3 16 Bit, denn gemischt wird als WAV)
    */
   async run(songId: string, params: SongParams, engine: MusicEngine, depth: WavDepth, progress: ProgressReporter, signal: AbortSignal): Promise<TrackByTrackResult> {
-    const { stems, storage } = this.deps;
+    const { stems, songs, storage } = this.deps;
     const tracks = orderTracks(params.tracks ?? []);
+    const wantsVocals = tracks.some((t) => VOCAL_TRACKS.includes(t));
     const start = performance.now();
     const elapsed = () => formatElapsed(Math.floor((performance.now() - start) / 1000));
 
-    // Neuversuch: alte Spuren weg, dann alle Spuren als "wartet" anlegen (Reihenfolge = Position)
-    await this.deps.removeStems(songId);
+    // Neuversuch: fertige Spuren vom Anfang an bleiben, die übrigen samt Dateien weg; ohne Plan alles neu.
+    // Dann die fehlenden Spuren als "wartet" anlegen (Reihenfolge = Position)
+    const resume = await this.resumable(songId, params, tracks, wantsVocals);
+    const kept = resume?.done ?? [];
+    if (resume) {
+      for (const stem of stems.forSong(songId).slice(kept.length)) {
+        if (stem.file) await storage.remove(stem.file);
+        stems.delete(stem.id);
+      }
+    } else {
+      await this.deps.removeStems(songId);
+    }
     const ids = tracks.map((track, position) => {
+      if (position < kept.length) return { id: kept[position]!.id, track };
       const id = newId();
       stems.insert({ id, songId, track, kind: "generated", position, createdAt: nowIso() });
       return { id, track };
     });
 
     try {
-      // 1) Plan: eigene Angaben haben Vorrang, der Rest kommt vom Sprachmodell
-      const wantsVocals = tracks.some((t) => VOCAL_TRACKS.includes(t));
-      const plan = await planSong(params, wantsVocals && !params.lyrics, engine, progress, signal);
-      const meta: SongResultMeta = {
-        bpm: params.bpm || plan.bpm || null,
-        keyscale: params.keyscale || plan.keyscale || null,
-        timesignature: params.timesignature || plan.timesignature || null,
-        duration: params.duration || plan.duration || DEFAULT_DURATION,
-        vocal_language: params.vocal_language || plan.vocal_language || null,
-        lyrics: params.lyrics || (wantsVocals ? plan.lyrics : INSTRUMENTAL) || INSTRUMENTAL,
-        caption: params.caption,
-      };
+      // 1) Plan: eigene Angaben haben Vorrang, der Rest kommt vom Sprachmodell. Gespeichert, damit ein Neuversuch
+      //    die fertigen Spuren weiterverwenden kann (neu geplant passten Tempo, Tonart oder Lyrics nicht mehr dazu)
+      const meta = resume?.meta
+        ?? songMeta(params, await planSong(params, wantsVocals && !params.lyrics, engine, progress, signal), wantsVocals);
+      songs.setResultMeta(songId, JSON.stringify(meta));
 
-      // 2) Spuren nacheinander, jede auf der Summe der vorherigen
+      // 2) Spuren nacheinander, jede auf der Summe der vorherigen; fertige aus einem früheren Versuch nur einlesen
       let sum: Pcm = silence(meta.duration!);
       for (const [i, { id, track }] of ids.entries()) {
         signal.throwIfAborted();
+        if (i < kept.length) {
+          const pcm = parseWav(await storage.read(kept[i]!.file));
+          sum = i === 0 ? pcm : mix([sum, pcm]);
+          continue;
+        }
         stems.markRunning(id);
         const label = `${i + 1}/${ids.length} ${track}`;
         const wav = await engine.stem({
@@ -131,6 +172,25 @@ export class TrackByTrack {
       for (const { id } of ids) if (stems.find(id)?.status !== "done") stems.markError(id, message, nowIso());
       throw e;
     }
+  }
+
+  /**
+   * Weiterverwendbares aus einem früheren Versuch: dieselben Spuren, mindestens die erste fertig (mit Datei) und der
+   * Plan bekannt. Nur fertige Spuren vom Anfang an zählen, jede spätere entstand auf der Summe der vorherigen.
+   */
+  private async resumable(songId: string, params: SongParams, tracks: StemTrack[], wantsVocals: boolean): Promise<Resume | undefined> {
+    const { stems, songs, storage } = this.deps;
+    const existing = stems.forSong(songId);
+    if (existing.length !== tracks.length || existing.some((s, i) => s.kind !== "generated" || s.track !== tracks[i])) return undefined;
+    const done: Resume["done"] = [];
+    for (const stem of existing) {
+      if (stem.status !== "done" || !stem.file || !(await storage.exists(stem.file))) break;
+      done.push({ ...stem, file: stem.file });
+    }
+    if (!done.length) return undefined;
+    const saved = songs.find(songId)?.result_meta;
+    const meta = saved ? JSON.parse(saved) as SongResultMeta : planFromParams(params, wantsVocals);
+    return meta ? { meta, done } : undefined;
   }
 }
 

@@ -37,6 +37,10 @@ nach drei Versuchen bricht der Song ab, bevor Spuren entstehen („Keine Lyrics 
 
 **Ergebnis:** Bibliothek-Eintrag mit Fertig-Mix und einzelnen Spuren (`kind: generated`).
 
+**Fehler, Abbruch, Neustart:** Fertige Spuren bleiben. „Erneut versuchen“ macht bei der ersten fehlenden Spur weiter,
+mit demselben Plan (Tempo, Tonart, Takt, Länge, Lyrics) und denselben Seeds. Von vorn beginnt er nur, wenn der Plan
+nicht gespeichert ist (Songs aus älteren Versionen) und nicht alles davon selbst angegeben war.
+
 ---
 
 ## Spuren herauslösen (Extract)

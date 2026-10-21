@@ -143,7 +143,8 @@ its drums came out cleaner.
 Each track takes about as long as a whole song of the same length.
 
 - **Track by track** (Create › Generation): a new song built instrument by instrument, each track fitting the ones
-  before. The mix is exactly the sum of the tracks.
+  before. The mix is exactly the sum of the tracks. If it stops (error, cancel, restart), **Retry** keeps the finished
+  tracks and continues with the first missing one.
 - **Stem Separation** (library, ⋮ menu of a song): split a finished song into tracks. **Demucs · 4 stems** (best quality:
   drums, bass, vocals, other) or **Demucs · 6 stems** (adds guitar and piano) split the actual mix, all tracks in one
   pass; WAV songs only. On a Mac both run on the GPU, a 2–3 minute song in about 10–15 seconds. Gear › Demucs ›

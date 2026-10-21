@@ -89,7 +89,7 @@ async function main(): Promise<void> {
   const stems = new StemRepository(db);
   const stemService = new StemService({ stems, songs, storage });
   const stemsAvailable = () => Object.values(STEM_MODELS).some(modelInstalled);
-  const trackByTrack = new TrackByTrack({ stems, storage, removeStems: (id) => stemService.removeForSong(id) });
+  const trackByTrack = new TrackByTrack({ stems, songs, storage, removeStems: (id) => stemService.removeForSong(id) });
   const demucs = new DemucsSeparator({
     binDir: config.demucsBinDir, modelsDir: config.modelsDir, tmpDir: join(config.dataDir, "tmp"), log, device: () => settings.get().demucs_device,
   });

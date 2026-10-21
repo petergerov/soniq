@@ -256,8 +256,9 @@ Step 2 in the code: `services/track-by-track.ts`. `POST /api/generate` takes `mo
 model: `lm_mode: "generate"` when lyrics have to be written (like a whole song, ~10 s per 30 s of music; `"inspire"`
 would be faster but chose `[Instrumental]` in 3 of 4 tries with the "Acoustic Male" preset), otherwise `"format"`
 (~3 s, no audio codes). Tracks and mix are always WAV
-(bit depth from the settings, 16 bit when MP3 is set). Progress "2/5 bass · 1:23"; cancel keeps finished tracks,
-retry starts over. The time estimate counts each track as one pass (`units` in `queue-estimate.ts`).
+(bit depth from the settings, 16 bit when MP3 is set). Progress "2/5 bass · 1:23"; cancel and errors keep finished
+tracks, retry continues with the first unfinished one on the stored plan (`result_meta`, written right after planning;
+without it only when bpm, key, time signature, length and lyrics were all given, otherwise it starts over). The time estimate counts each track as one pass (`units` in `queue-estimate.ts`).
 Measured: 30 s song with drums, bass, vocals in 2:18.
 
 Step 3 in the code: `features/generator/track-picker.ts` (switch "Whole song | Track by track" under Composition,

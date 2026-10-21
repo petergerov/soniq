@@ -149,6 +149,11 @@ export class SongRepository {
     this.db.run("UPDATE songs SET message=? WHERE id=?", message, id);
   }
 
+  /** Metadaten schon während der Erzeugung (Plan von "Spur für Spur"); markDone schreibt sie am Ende erneut. */
+  setResultMeta(id: string, resultMeta: string): void {
+    this.db.run("UPDATE songs SET result_meta=? WHERE id=?", resultMeta, id);
+  }
+
   /** Nur wenn der Song noch läuft (nicht zwischendurch abgebrochen wurde). */
   markDone(id: string, r: FinishedSong): boolean {
     return this.db.run(
